@@ -1,0 +1,37 @@
+# Amélioration: Modification du Profil Utilisateur
+
+L'objectif est de permettre à un utilisateur de modifier son propre profil après avoir été ajouté par un administrateur. 
+
+## Proposed Changes
+
+### Backend
+
+#### [MODIFY] [users.dto.ts](file:///c:/Users/rania/vaerdia/backend/src/features/users/dto/users.dto.ts)
+- Ajouter un `UpdateProfileDto` qui permet uniquement de modifier `fullName`, `email`, et `password` (sans permettre de modifier le `role` ou le statut `isActive`).
+
+#### [MODIFY] [users.controller.ts](file:///c:/Users/rania/vaerdia/backend/src/features/users/controller/users.controller.ts)
+- Ajouter un endpoint `@Patch('me')` protégé uniquement par `JwtAuthGuard` (accessible à tous les utilisateurs connectés).
+- Cet endpoint utilisera le `UpdateProfileDto` et appellera `usersService.update(req.user.id, dto)`.
+
+### Frontend
+
+#### [NEW] [ProfilePage.tsx](file:///c:/Users/rania/vaerdia/frontend/src/pages/ProfilePage.tsx)
+- Créer une nouvelle page `ProfilePage` avec un formulaire permettant à l'utilisateur de modifier ses informations (Nom, Email, Mot de passe).
+- Cette page sera accessible via le menu utilisateur (en haut à droite ou dans la barre latérale).
+
+#### [MODIFY] [App.tsx](file:///c:/Users/rania/vaerdia/frontend/src/App.tsx)
+- Ajouter la route `/profile` pointant vers `ProfilePage`.
+
+#### [MODIFY] [Sidebar.tsx](file:///c:/Users/rania/vaerdia/frontend/src/components/layout/Sidebar.tsx) ou Header
+- Ajouter un lien "Mon Profil" renvoyant vers la route `/profile`.
+
+---
+
+## Verification Plan
+
+### Manual Verification
+1. Me connecter avec un utilisateur normal (non-admin).
+2. Cliquer sur le lien "Mon Profil" dans le menu.
+3. Modifier mon nom et mon mot de passe.
+4. Sauvegarder et vérifier qu'un message de succès apparaît.
+5. Me déconnecter et me reconnecter avec le nouveau mot de passe pour confirmer que la modification a bien fonctionné.
