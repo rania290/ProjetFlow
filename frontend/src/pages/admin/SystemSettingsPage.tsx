@@ -1,30 +1,252 @@
 import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Settings, Zap, Users, Database, ShieldCheck, Save,
+  Check, AlertCircle, Sun, Moon, Globe, Activity,
+  ShieldAlert, Rocket, ChevronRight, Layers, Server, Lock
+} from 'lucide-react';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { adminApi } from '../../api/admin.api';
+import { useUi } from '../../store/uiStore';
 
-type SystemSettings = {
-  siteName?: string;
-  version?: string;
-  maxUsers?: number;
-  currentUsers?: number;
-  maintenance?: boolean;
-  [key: string]: unknown;
-};
+/* ─── Reusable components from user template ─── */
+const Field = ({ label, hint, children }: { label: string, hint?: string, children: React.ReactNode }) => (
+  <div className="space-y-2">
+    <div className="flex items-baseline justify-between">
+      <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' }}>
+        {label}
+      </label>
+      {hint && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{hint}</span>}
+    </div>
+    {children}
+  </div>
+);
 
-export const SystemSettingsPage: React.FC = () => {
-  const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [edited, setEdited] = useState<SystemSettings | null>(null);
+const Toggle = ({ value, onChange }: { value: boolean, onChange: (v: boolean) => void }) => (
+  <button
+    onClick={() => onChange(!value)}
+    style={{
+      position: 'relative',
+      width: 44, height: 24,
+      borderRadius: 12,
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'background 0.25s',
+      background: value ? '#4F46E5' : '#E5E7EB',
+      flexShrink: 0,
+    }}
+  >
+    <span style={{
+      position: 'absolute',
+      top: 3, left: value ? 23 : 3,
+      width: 18, height: 18,
+      borderRadius: '50%',
+      background: '#fff',
+      transition: 'left 0.25s',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+    }} />
+  </button>
+);
+
+/* ─── Sections ─── */
+const GeneralSection = ({ edited, setEdited }: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Identité de l'instance</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Configurez les informations fondamentales de votre plateforme.</p>
+    </div>
+
+    <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <Field label="Nom de l'instance">
+        <input
+          value={edited.siteName ?? ''}
+          onChange={e => setEdited((f: any) => ({ ...f, siteName: e.target.value }))}
+          style={{
+            width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
+            border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
+            transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
+            boxSizing: 'border-box',
+          }}
+          onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
+          onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
+          placeholder="Nom du site"
+        />
+      </Field>
+
+      <Field label="Version logicielle" hint="Lecture seule">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F9FAFB', border: '1.5px solid #F3F4F6', borderRadius: 10 }}>
+          <Activity style={{ width: 15, height: 15, color: '#9CA3AF' }} />
+          <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>{edited.version}</span>
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: 6 }}>Stable</span>
+        </div>
+      </Field>
+    </div>
+
+    <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Quota collaborateurs</p>
+          <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>Capacité maximale de l'instance</p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#111827', lineHeight: 1 }}>{edited.currentUsers}</span>
+          <span style={{ fontSize: 14, color: '#9CA3AF' }}> / {edited.maxUsers}</span>
+        </div>
+      </div>
+
+      <div style={{ background: '#F3F4F6', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%',
+          width: `${Math.round(((edited.currentUsers || 0) / (edited.maxUsers || 1)) * 100)}%`,
+          background: (edited.currentUsers / edited.maxUsers) > 0.85 ? '#EF4444' : '#4F46E5',
+          borderRadius: 99,
+          transition: 'width 0.5s',
+        }} />
+      </div>
+
+      <Field label="Limite maximale">
+        <input
+          type="number"
+          value={edited.maxUsers ?? 0}
+          onChange={e => setEdited((f: any) => ({ ...f, maxUsers: parseInt(e.target.value) || 0 }))}
+          style={{
+            width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
+            border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
+            transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
+            boxSizing: 'border-box',
+          }}
+          onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
+          onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
+        />
+      </Field>
+    </div>
+  </div>
+);
+
+const AppearanceSection = ({ edited, setEdited }: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Expérience visuelle</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Définissez l'ambiance globale de travail.</p>
+    </div>
+
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      {[
+        { id: 'light', icon: Sun, label: 'Standard Light', desc: 'Contraste maximal.', bg: '#FFFFFF' },
+        { id: 'dark', icon: Moon, label: 'Aura Night', desc: 'Réduit la fatigue oculaire.', bg: '#111827' },
+      ].map(t => (
+        <button
+          key={t.id}
+          onClick={() => setEdited((f: any) => ({ ...f, theme: t.id }))}
+          style={{
+            padding: 20, borderRadius: 16, textAlign: 'left', cursor: 'pointer',
+            border: edited.theme === t.id ? '2px solid #4F46E5' : '2px solid #F3F4F6',
+            background: edited.theme === t.id ? '#EEF2FF' : '#FAFAFA',
+            transition: 'all 0.18s',
+            position: 'relative',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <t.icon style={{ width: 14, height: 14, color: edited.theme === t.id ? '#4F46E5' : '#9CA3AF' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: edited.theme === t.id ? '#4338CA' : '#374151' }}>{t.label}</span>
+          </div>
+          <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{t.desc}</p>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const SystemSection = ({ edited, setEdited }: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Pilotage du service</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Gérez l'état et l'accessibilité du noyau système.</p>
+    </div>
+
+    <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, overflow: 'hidden' }}>
+      <div style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F9FAFB' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: edited.maintenance ? '#FEF9C3' : '#F3F4F6' }}>
+            <Zap style={{ width: 18, height: 18, color: edited.maintenance ? '#CA8A04' : '#9CA3AF' }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Mode maintenance</p>
+          </div>
+        </div>
+        <Toggle value={!!edited.maintenance} onChange={v => setEdited((f: any) => ({ ...f, maintenance: v }))} />
+      </div>
+
+      <div style={{ padding: 24 }}>
+        <Field label="Message d'interruption">
+          <textarea
+            value={edited.maintenanceMessage ?? ''}
+            onChange={e => setEdited((f: any) => ({ ...f, maintenanceMessage: e.target.value }))}
+            rows={4}
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 13,
+              border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
+              transition: 'border 0.18s', background: '#FAFAFA', color: '#374151',
+              resize: 'none', boxSizing: 'border-box',
+            }}
+          />
+        </Field>
+      </div>
+    </div>
+  </div>
+);
+
+const AccessSection = ({ userCount }: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Gouvernance & Accès</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Pilotez votre capital humain.</p>
+    </div>
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {[
+        { href: '/admin/users', icon: Users, color: '#4F46E5', bg: '#EEF2FF', label: 'Annuaire des talents', desc: `${userCount} collaborateurs actifs` },
+        { href: '/admin/access', icon: ShieldAlert, color: '#7C3AED', bg: '#F5F3FF', label: 'Matrice de sécurité', desc: 'Droits RBAC granulaires' },
+      ].map(item => (
+        <a
+          key={item.href}
+          href={item.href}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px',
+            background: '#fff', border: '1px solid #F3F4F6', borderRadius: 14,
+            textDecoration: 'none',
+          }}
+        >
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <item.icon style={{ width: 20, height: 20, color: item.color }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{item.label}</p>
+            <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>{item.desc}</p>
+          </div>
+          <ChevronRight style={{ width: 14, height: 14, marginLeft: 'auto', color: '#D1D5DB' }} />
+        </a>
+      ))}
+    </div>
+  </div>
+);
+
+/* ─── Main Page ─── */
+export const SystemSettingsPage = () => {
+  const [edited, setEdited] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('general');
+  const [feedback, setFeedback] = useState<any>(null);
+  const { updateSettings: updateUiSettings, settings: uiSettings } = useUi();
 
   useEffect(() => {
-    adminApi
-      .getSettings()
-      .then((data) => {
-        setSettings(data);
-        setEdited(data);
-      })
-      .catch(console.error);
+    adminApi.getSettings().then(data => {
+      setEdited({
+        ...data,
+        theme: (data as any).theme ?? uiSettings.theme,
+        siteName: (data as any).siteName ?? uiSettings.siteName,
+      });
+    });
   }, []);
 
   const save = async () => {
@@ -32,356 +254,119 @@ export const SystemSettingsPage: React.FC = () => {
     setSaving(true);
     try {
       const updated = await adminApi.updateSettings(edited);
-      setSettings(updated);
       setEdited(updated);
-      // TODO: remplacer par un toast global si tu en as un
-      alert('Paramètres sauvegardés');
-    } catch (err) {
-      console.error(err);
-      alert('Échec lors de la sauvegarde');
+      updateUiSettings({
+        siteName: (updated as any).siteName ?? uiSettings.siteName,
+        maintenance: !!(updated as any).maintenance,
+        theme: (updated as any).theme as any,
+      });
+      setFeedback({ type: 'success', message: 'Instance synchronisée' });
+    } catch {
+      setFeedback({ type: 'error', message: 'Erreur système' });
     }
     setSaving(false);
+    setTimeout(() => setFeedback(null), 3000);
   };
 
-  const sections = [
-    { id: 'general', label: 'Général' },
-    { id: 'maintenance', label: 'Maintenance' },
-    { id: 'users', label: 'Utilisateurs & rôles' },
-    { id: 'integrations', label: 'Intégrations' },
+  if (!edited) return null;
+
+  const NAV = [
+    { id: 'general', label: 'Général', icon: Settings },
+    { id: 'appearance', label: 'Apparence', icon: Layers },
+    { id: 'system', label: 'Système', icon: Server },
+    { id: 'access', label: 'Accès & Rôles', icon: Lock },
   ];
 
-  const renderGeneral = () => {
-    if (!edited) return null;
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">
-            Identité de la plateforme
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Nom du site
-              </label>
-              <input
-                value={edited.siteName ?? ''}
-                onChange={(e) =>
-                  setEdited((prev) => ({
-                    ...(prev || {}),
-                    siteName: e.target.value,
-                  }))
-                }
-                className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Visible dans la barre de titre et les mails automatiques.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Version
-                </label>
-                <input
-                  value={edited.version ?? ''}
-                  readOnly
-                  className="mt-1 block w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-100 text-gray-600"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Utilisateurs actuels
-                </label>
-                <input
-                  value={edited.currentUsers ?? 0}
-                  readOnly
-                  className="mt-1 block w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-100 text-gray-600"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">
-            Capacité & limites
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Utilisateurs max
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={edited.maxUsers ?? 0}
-                onChange={(e) =>
-                  setEdited((prev) => ({
-                    ...(prev || {}),
-                    maxUsers: Number.parseInt(e.target.value || '0', 10),
-                  }))
-                }
-                className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Limite douce utilisée pour les alertes et projections.
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800 border border-indigo-100">
-              Pense à ajuster cette valeur lorsque tu ajoutes de nouveaux
-              collaborateurs pour garder une vue réaliste sur la capacité
-              globale.
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderMaintenance = () => {
-    if (!edited) return null;
-    const maintenance = !!edited.maintenance;
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
-          <div>
-            <p className="text-sm font-medium text-gray-800">
-              Mode maintenance
-            </p>
-            <p className="text-xs text-gray-500">
-              Lorsque le mode maintenance est activé, seuls les administrateurs
-              peuvent se connecter.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setEdited((prev) => ({
-                ...(prev || {}),
-                maintenance: !maintenance,
-              }))
-            }
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              maintenance ? 'bg-emerald-500' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                maintenance ? 'translate-x-5' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-800 mb-2">
-              Message affiché aux utilisateurs
-            </h3>
-            <p className="text-xs text-gray-500 mb-2">
-              Ce texte est informatif pour la roadmap, il sera connecté plus
-              tard au backend.
-            </p>
-            <textarea
-              value={
-                (edited as any).maintenanceMessage ??
-                "La plateforme est temporairement en maintenance. Merci de revenir dans quelques minutes."
-              }
-              onChange={(e) =>
-                setEdited((prev) => ({
-                  ...(prev || {}),
-                  maintenanceMessage: e.target.value,
-                }))
-              }
-              rows={4}
-              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-800 mb-2">
-              Bonnes pratiques
-            </h3>
-            <ul className="list-disc pl-5 space-y-1 text-xs text-gray-600">
-              <li>Planifier le créneau de maintenance en heures creuses.</li>
-              <li>Prévenir les équipes clientes à l’avance.</li>
-              <li>Limiter la durée de coupure autant que possible.</li>
-              <li>Valider les tests de non-régression avant de désactiver.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderUsers = () => {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-1">
-                Gestion des utilisateurs
-              </h3>
-              <p className="text-xs text-gray-500 mb-3">
-                Crée, désactive et met à jour les comptes utilisateurs de la
-                plateforme.
-              </p>
-            </div>
-            <a
-              href="/admin/users"
-              className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"
-            >
-              Ouvrir la gestion des utilisateurs
-            </a>
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800 mb-1">
-                Rôles & permissions
-              </h3>
-              <p className="text-xs text-gray-500 mb-3">
-                Configure les rôles (ADMIN, PROJECT_MANAGER, TEAM_MEMBER,
-                etc.) et leurs droits projet par projet.
-              </p>
-            </div>
-            <a
-              href="/admin/access"
-              className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"
-            >
-              Gérer les rôles & permissions
-            </a>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-4 text-xs text-gray-500">
-          Cette section centralise les liens vers les modules de gestion des
-          utilisateurs et des accès. Tu peux la faire évoluer ensuite vers un
-          vrai panneau de configuration (quotas par rôle, politiques de mot de
-          passe, etc.).
-        </div>
-      </div>
-    );
-  };
-
-  const renderIntegrations = () => {
-    return (
-      <div className="space-y-6">
-        <p className="text-sm text-gray-600">
-          Configure ici les intégrations clés de VAERDIA (synchronisation
-          calendrier, stockage de fichiers, outils de communication).
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-800 mb-1">Calendrier</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Synchronise les jalons de projet avec Google Calendar / Outlook.
-            </p>
-            <button
-              disabled
-              className="w-full px-3 py-2 text-xs rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed"
-            >
-              Bientôt disponible
-            </button>
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-800 mb-1">Stockage</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Connecte un bucket S3 / Azure Blob pour centraliser les documents
-              de projet.
-            </p>
-            <button
-              disabled
-              className="w-full px-3 py-2 text-xs rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed"
-            >
-              Bientôt disponible
-            </button>
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-xl p-4">
-            <h3 className="font-semibold text-gray-800 mb-1">Notifications</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Envoie des notifications vers Slack / Teams à chaque mise à jour
-              importante.
-            </p>
-            <button
-              disabled
-              className="w-full px-3 py-2 text-xs rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed"
-            >
-              Bientôt disponible
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <AppLayout
-      title="Configuration globale"
-      subtitle="Paramètres avancés de la plateforme"
-    >
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white flex shadow-sm rounded-2xl overflow-hidden border border-gray-100">
-          {/* sidebar */}
-          <div className="w-64 bg-gray-50 border-r border-gray-100">
-            <nav className="flex flex-col py-4">
-              {sections.map((sec) => (
+    <AppLayout title="Paramètres Système" subtitle={`Instance ${edited.siteName}`}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+      <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', gap: 32, alignItems: 'flex-start' }}>
+
+        {/* Internal Secondary Sidebar */}
+        <aside style={{ width: 220, flexShrink: 0, position: 'sticky', top: 92 }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {NAV.map(item => {
+              const active = activeTab === item.id;
+              return (
                 <button
-                  key={sec.id}
-                  onClick={() => setActiveSection(sec.id)}
-                  className={`text-left px-5 py-3 w-full text-sm flex items-center justify-between transition-colors ${
-                    activeSection === sec.id
-                      ? 'bg-white text-indigo-600 border-r-4 border-indigo-500 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px',
+                    borderRadius: 9, border: 'none', cursor: 'pointer', textAlign: 'left',
+                    background: active ? '#EEF2FF' : 'transparent',
+                    color: active ? '#4338CA' : '#6B7280',
+                    transition: 'all 0.15s', width: '100%',
+                  }}
                 >
-                  <span>{sec.label}</span>
+                  <item.icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: active ? 600 : 500 }}>{item.label}</span>
+                  {active && <div style={{ marginLeft: 'auto', width: 5, height: 5, borderRadius: '50%', background: '#4F46E5' }} />}
                 </button>
-              ))}
-            </nav>
+              );
+            })}
+          </nav>
+
+          <div style={{ marginTop: 24, padding: '14px 16px', background: '#F3F4F6', borderRadius: 12 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: '#9CA3AF' }}>Build</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>2026.03.31</p>
           </div>
 
-          {/* content area */}
-          <div className="flex-1 p-7 bg-gray-25">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {sections.find((s) => s.id === activeSection)?.label}
-              </h2>
-              {settings && (
-                <button
-                  onClick={save}
-                  disabled={saving}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {saving ? 'Enregistrement...' : 'Sauvegarder'}
-                </button>
-              )}
-            </div>
+          <button
+            onClick={save}
+            disabled={saving}
+            style={{
+              marginTop: 20, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px',
+              background: '#111827', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600
+            }}
+          >
+            {saving ? <div style={{ width: 14, height: 14, border: '2px solid #374151', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> : <Save style={{ width: 14, height: 14 }} />}
+            {saving ? 'Synchronisation...' : 'Synchroniser'}
+          </button>
+        </aside>
 
-            {!settings && (
-              <p className="text-sm text-gray-500">
-                Chargement des paramètres système...
-              </p>
-            )}
-
-            {settings && (
-              <>
-                {activeSection === 'general' && renderGeneral()}
-                {activeSection === 'maintenance' && renderMaintenance()}
-                {activeSection === 'users' && renderUsers()}
-                {activeSection === 'integrations' && renderIntegrations()}
-              </>
-            )}
-          </div>
-        </div>
+        {/* Content Area */}
+        <main style={{ flex: 1, minWidth: 0 }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18 }}
+            >
+              {activeTab === 'general' && <GeneralSection edited={edited} setEdited={setEdited} />}
+              {activeTab === 'appearance' && <AppearanceSection edited={edited} setEdited={setEdited} />}
+              {activeTab === 'system' && <SystemSection edited={edited} setEdited={setEdited} />}
+              {activeTab === 'access' && <AccessSection userCount={edited.currentUsers ?? 0} />}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
+
+      {/* Feedback Toast */}
+      <AnimatePresence>
+        {feedback && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            style={{
+              position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px',
+              background: '#fff', border: `1px solid ${feedback.type === 'success' ? '#10B981' : '#EF4444'}`,
+              borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.1)', zIndex: 100, fontSize: 13, fontWeight: 600,
+              color: feedback.type === 'success' ? '#059669' : '#DC2626',
+            }}
+          >
+            <Check style={{ width: 16, height: 16 }} />
+            {feedback.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AppLayout>
   );
 };
+
+export default SystemSettingsPage;

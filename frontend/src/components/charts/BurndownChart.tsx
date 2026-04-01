@@ -46,17 +46,16 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint, tasks }) =
             // If i >= daysPassed, it's future. If i < daysPassed, it's past.
             // Simplified: current remaining points for 'today', and a mock trend for previous days
             let actual: number | null = null;
-            if (i <= Math.min(daysPassed, totalDays - 1)) {
-                // Mock: steady progress for demo if no history is available
-                // In a real app, this would come from a 'sprint_history' table
-                const progressFactor = Math.min(1, i / (totalDays - 1));
-                const mockedCompleted = totalPoints * progressFactor * 0.8; // some progress but not perfect
-
-                // If it's "today", use real data
+            if (i <= daysPassed) {
                 if (i === daysPassed) {
+                    // Real data for today
                     actual = remainingPoints;
                 } else {
-                    actual = totalPoints - mockedCompleted;
+                    // For previous days, if no history, we interpolate slightly more realistically
+                    // based on current completion, but it remains an estimate for now
+                    const totalCompletedSoFar = totalPoints - remainingPoints;
+                    const completionRatio = daysPassed > 0 ? Math.min(1, i / daysPassed) : 0;
+                    actual = totalPoints - (totalCompletedSoFar * completionRatio);
                 }
             }
 

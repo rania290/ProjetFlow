@@ -25,17 +25,20 @@ export class AuthService implements OnModuleInit {
     const existingAdmin = await this.usersService.findByEmail(adminEmail);
     if (!existingAdmin) {
       console.log('✅ Création du compte admin fixe...');
-
       const admin = await this.usersService.create({
         email: adminEmail,
         password: adminPassword,
         fullName: 'Administrator',
         role: UserRole.ADMIN,
       });
-
-      console.log('✅ Compte admin créé avec succès:', admin.email);
+      console.log('✅ Compte admin créé:', admin.email, '| role:', admin.role);
+    } else if ((existingAdmin as any).role !== UserRole.ADMIN) {
+      // Force le bon rôle si l'admin existe avec un rôle incorrect (ex: après reset DB + re-register)
+      console.log('⚠️  Compte admin trouvé avec rôle incorrect, correction en cours...');
+      await this.usersService.update((existingAdmin as any).id, { role: UserRole.ADMIN } as any);
+      console.log('✅ Rôle admin corrigé pour:', adminEmail);
     } else {
-      console.log('✅ Compte admin existe déjà:', adminEmail);
+      console.log('✅ Compte admin OK:', adminEmail, '| role:', (existingAdmin as any).role);
     }
   }
 

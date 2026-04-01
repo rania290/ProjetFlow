@@ -1,8 +1,35 @@
 import type { User } from '../types/auth.types';
 import api from './api-client';
+import type { ThemeMode } from '../store/uiStore';
 
 // Note: the Axios instance in api-client already appends `/api` to the base URL,
 // so we don't need to manually prefix paths here.
+const SETTINGS_STORAGE_KEY = 'vaerdia.admin.settings.v1';
+
+type SystemSettings = {
+  siteName?: string;
+  version?: string;
+  maxUsers?: number;
+  currentUsers?: number;
+  maintenance?: boolean;
+  theme?: ThemeMode;
+  [key: string]: unknown;
+};
+
+function loadLocalSettings(): SystemSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as SystemSettings;
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalSettings(next: SystemSettings) {
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(next));
+}
+
 export const adminApi = {
     // Users Management
     getAllUsers: async (): Promise<User[]> => {
@@ -29,23 +56,43 @@ export const adminApi = {
         await api.delete(`/users/${id}`);
     },
 
-    // System Operations - Désactivés pour éviter les erreurs 404
-    getSettings: async () => {
-        // Données mock pour éviter les erreurs API
-        return {
-            siteName: 'VAERDIA ProjectFlow',
-            maintenance: false,
-            version: '1.0.0',
-            maxUsers: 100,
-            currentUsers: 4
-        };
+    // System Operations
+    // Fallback localStorage to stay functional even without backend endpoint.
+    getSettings: async (): Promise<SystemSettings> => {
+        const local = loadLocalSettings();
+        try {
+            const response = await api.get(`/system/settings`);
+            const remote = (response.data ?? {}) as SystemSettings;
+            const merged = { ...local, ...remote };
+            saveLocalSettings(merged);
+            return merged;
+        } catch {
+            return {
+                siteName: 'VAERDIA ProjectFlow',
+                maintenance: false,
+                version: '1.0.0',
+                maxUsers: 100,
+                currentUsers: 4,
+                theme: 'light',
+                ...local,
+            };
+        }
     },
 
-    updateSettings: async (newSettings: any) => {
-        // Mock update – in a real implementation this would POST/PATCH to the server
-        console.log('Updating settings on server:', newSettings);
-        // merge and return updated settings for demo purposes
-        return { ...newSettings };
+    updateSettings: async (newSettings: SystemSettings): Promise<SystemSettings> => {
+        const localPrev = loadLocalSettings();
+        const merged = { ...localPrev, ...newSettings };
+        saveLocalSettings(merged);
+
+        try {
+            const response = await api.patch(`/system/settings`, merged);
+            const remote = (response.data ?? {}) as SystemSettings;
+            const finalSettings = { ...merged, ...remote };
+            saveLocalSettings(finalSettings);
+            return finalSettings;
+        } catch {
+            return merged;
+        }
     },
 
     getLogs: async () => {

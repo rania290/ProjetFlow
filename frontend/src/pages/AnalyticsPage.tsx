@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
     TrendingUp, BarChart3, Users,
     CheckCircle2, Target, Printer,
-    CalendarOff
+    CalendarOff, AlertCircle
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useStore } from '../store/projectStore';
@@ -12,7 +12,7 @@ export const AnalyticsPage: React.FC = () => {
     const { state } = useStore();
     const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('month');
 
-    const totalBudget = state.projects.reduce((acc, p) => acc + p.budget, 0);
+    const totalBudget = state.projects.reduce((acc, p) => acc + (Number(p.budget) || 0), 0);
     const tasksByStatus = {
         TODO: state.tasks.filter(t => t.status === 'TODO').length,
         IN_PROGRESS: state.tasks.filter(t => t.status === 'IN_PROGRESS').length,
@@ -22,6 +22,36 @@ export const AnalyticsPage: React.FC = () => {
     const completionRate = Math.round((tasksByStatus.DONE / Math.max(state.tasks.length, 1)) * 100);
     const totalStoryPoints = state.tasks.reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
     const doneStoryPoints = state.tasks.filter(t => t.status === 'DONE').reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
+
+    const DEFAULT_TJM = 450;
+    let globalConsumedBudget = 0;
+    let globalEstimatedCost = 0;
+
+    state.tasks.forEach(task => {
+        const project = state.projects.find(p => p.id === task.projectId);
+        const member = project?.members?.find(m => m.id === task.assigneeId);
+        const tjm = member?.tjm || DEFAULT_TJM;
+
+        const taskEffort = task.storyPoints || (task.estimatedHours ? task.estimatedHours / 8 : 1);
+        const taskCost = taskEffort * tjm;
+        globalEstimatedCost += taskCost;
+
+        if (task.status === 'DONE') {
+            globalConsumedBudget += taskCost;
+        } else if (task.status === 'IN_TEST') {
+            globalConsumedBudget += taskCost * 0.9;
+        } else if (task.status === 'IN_PROGRESS') {
+            globalConsumedBudget += taskCost * 0.5;
+        }
+    });
+
+    state.projects.forEach(p => {
+        const hasTasks = state.tasks.some(t => t.projectId === p.id);
+        if (!hasTasks) {
+            globalConsumedBudget += (p.budget || 0) * ((p.progress || 0) / 100);
+            globalEstimatedCost += p.budget || 0;
+        }
+    });
 
     // Mock burndown data
     const burndownData = [
@@ -75,7 +105,7 @@ export const AnalyticsPage: React.FC = () => {
                 {/* KPI Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {[
-                        { label: 'Budget total', value: `${(totalBudget / 1000).toFixed(0)}k€`, sub: `${state.projects.length} projets`, icon: <Target className="w-5 h-5" />, color: 'from-amber-500 to-amber-600' },
+                        { label: 'Budget total', value: `${(totalBudget / 1000).toFixed(0)}kDT`, sub: `${state.projects.length} projets`, icon: <Target className="w-5 h-5" />, color: 'from-amber-500 to-amber-600' },
                         { label: 'Taux complétion', value: `${completionRate}%`, sub: `${tasksByStatus.DONE}/${state.tasks.length} tâches`, icon: <CheckCircle2 className="w-5 h-5" />, color: 'from-primary-500 to-primary-600' },
                         { label: 'Story Points', value: `${doneStoryPoints}`, sub: `sur ${totalStoryPoints} livrés`, icon: <TrendingUp className="w-5 h-5" />, color: 'from-violet-500 to-violet-600' },
                         { label: 'Performances RH', value: `94%`, sub: `Indice Productivité`, icon: <Users className="w-5 h-5" />, color: 'from-emerald-500 to-emerald-600' },
@@ -236,7 +266,14 @@ export const AnalyticsPage: React.FC = () => {
                                     <div key={p.id} className="space-y-1.5">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${p.type === 'SCRUM' ? 'bg-primary-100 text-primary-600' : 'bg-accent-100 text-accent-600'}`}>{p.type}</span>
+                                                <span
+                                                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${(p.type === 'WEB_APPLICATION' || p.type === 'MOBILE_APP')
+                                                        ? 'bg-primary-100 text-primary-600'
+                                                        : 'bg-accent-100 text-accent-600'
+                                                        }`}
+                                                >
+                                                    {p.type}
+                                                </span>
                                                 <span className="text-xs font-medium text-slate-700 truncate max-w-[150px]">{p.name}</span>
                                             </div>
                                             <span className="text-xs font-bold text-slate-600">{p.progress}%</span>
@@ -255,37 +292,99 @@ export const AnalyticsPage: React.FC = () => {
                         </div>
 
                         {/* Financial Report */}
-                        <div className="pt-5 border-t border-slate-100">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Target className="w-4 h-4 text-amber-500" />
-                                <h3 className="text-sm font-bold text-slate-800">Rapport financier Global</h3>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
-                                    <p className="text-[10px] text-amber-600 font-bold mb-1 uppercase tracking-wider">Budget Initial</p>
-                                    <p className="text-sm font-bold text-amber-900">{(totalBudget / 1000).toFixed(0)}k €</p>
+                        <div className="pt-6 border-t border-slate-100">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2">
+                                    <Target className="w-5 h-5 text-emerald-500" />
+                                    <h3 className="text-sm font-bold text-slate-800">Santé Financière du Portefeuille</h3>
                                 </div>
-                                <div className="bg-primary-50 rounded-xl p-3 border border-primary-100">
-                                    <p className="text-[10px] text-primary-600 font-bold mb-1 uppercase tracking-wider">Budget Consommé</p>
-                                    <p className="text-sm font-bold text-primary-900">{((totalBudget * 0.65) / 1000).toFixed(1)}k €</p>
-                                </div>
+                                <span className="text-[10px] font-bold px-2 py-1 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                                    Temps Réel
+                                </span>
                             </div>
 
-                            {/* Burn Rate Bar */}
-                            <div className="space-y-1.5">
-                                <div className="flex justify-between text-[10px] font-bold text-slate-500">
-                                    <span>Taux de combustion (Burn Rate)</span>
-                                    <span>65%</span>
-                                </div>
-                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `65%` }}
-                                        transition={{ duration: 1, delay: 0.5 }}
-                                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-red-400"
-                                    />
-                                </div>
-                            </div>
+                            {/* Dynamic Calculations */}
+                            {(() => {
+                                const consumedBudget = globalConsumedBudget || 0;
+                                const estimatedTotalCost = globalEstimatedCost || 0;
+                                let rawBurn = Math.round((consumedBudget / Math.max(totalBudget, 1)) * 100);
+                                const burnRate = isNaN(rawBurn) ? 0 : Math.min(100, rawBurn);
+                                const margin = totalBudget - (estimatedTotalCost || consumedBudget);
+                                const isOverBudget = margin < 0;
+
+                                return (
+                                    <div className="space-y-5">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {/* Budget Alloué */}
+                                            <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors">
+                                                <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full -z-10 group-hover:bg-emerald-100 transition-colors" />
+                                                <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-wider">Budget Alloué</p>
+                                                <p className="text-lg font-black text-slate-900">{(totalBudget / 1000).toFixed(0)}k <span className="text-sm font-semibold text-slate-400">DT</span></p>
+                                            </div>
+
+                                            {/* Dépensé */}
+                                            <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-amber-200 transition-colors">
+                                                <div className="absolute top-0 right-0 w-16 h-16 bg-amber-50 rounded-bl-full -z-10 group-hover:bg-amber-100 transition-colors" />
+                                                <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-wider">Consommé</p>
+                                                <p className="text-lg font-black text-slate-900">{(consumedBudget / 1000).toFixed(1)}k <span className="text-sm font-semibold text-slate-400">DT</span></p>
+                                            </div>
+
+                                            {/* Reste à allouer */}
+                                            <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors">
+                                                <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -z-10 group-hover:bg-blue-100 transition-colors" />
+                                                <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-wider">Reste (Disponible)</p>
+                                                <p className="text-lg font-black text-slate-900">{((totalBudget - consumedBudget) / 1000).toFixed(1)}k <span className="text-sm font-semibold text-slate-400">DT</span></p>
+                                            </div>
+
+                                            {/* Prévisionnel (Marge) */}
+                                            <div className={`bg-white rounded-xl p-3 border shadow-sm relative overflow-hidden group transition-colors ${isOverBudget ? 'border-red-200 hover:border-red-300' : 'border-slate-200 hover:border-purple-200'}`}>
+                                                <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full -z-10 transition-colors ${isOverBudget ? 'bg-red-50 group-hover:bg-red-100' : 'bg-purple-50 group-hover:bg-purple-100'}`} />
+                                                <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-wider">Marge Estimée</p>
+                                                <p className={`text-lg font-black ${isOverBudget ? 'text-red-600' : 'text-slate-900'}`}>{Math.abs(margin / 1000).toFixed(1)}k <span className="text-sm font-semibold opacity-50">DT</span></p>
+                                            </div>
+                                        </div>
+
+                                        {/* Burn Rate Bar */}
+                                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                            <div className="flex justify-between items-end mb-2">
+                                                <div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Burn Rate</div>
+                                                    <div className="text-xs font-semibold text-slate-700">Vitesse de consommation</div>
+                                                </div>
+                                                <div className={`text-lg font-black ${burnRate > 90 ? 'text-red-500' : burnRate > 75 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                                    {burnRate}%
+                                                </div>
+                                            </div>
+                                            <div className="h-3 bg-white border border-slate-200 rounded-full overflow-hidden p-0.5">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${burnRate}%` }}
+                                                    transition={{ duration: 1, delay: 0.5, type: 'spring' }}
+                                                    className={`h-full rounded-full ${
+                                                        burnRate > 90 ? 'bg-gradient-to-r from-red-400 to-red-600' : 
+                                                        burnRate > 75 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 
+                                                        'bg-gradient-to-r from-emerald-400 to-emerald-500'
+                                                    }`}
+                                                />
+                                            </div>
+                                            {isOverBudget && (
+                                                <div className="mt-3 flex items-start gap-2 text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100">
+                                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                                    <p className="text-[10px] font-semibold leading-relaxed">
+                                                        Attention : La projection actuelle dépasse le budget alloué d'environ {Math.abs(margin / 1000).toFixed(1)}k DT.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Cost Efficiency */}
+                                        <div className="flex items-center justify-between text-xs font-medium text-slate-500 px-1">
+                                            <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Moyenne TJM (Taux Journalier)</span>
+                                            <span className="font-bold text-slate-700">{DEFAULT_TJM} DT / Jour</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

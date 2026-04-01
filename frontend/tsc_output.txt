@@ -1,0 +1,4 @@
+src/pages/UserDashboard.tsx(142,11): error TS2353: Object literal may only specify known properties, and 'deadline' does not exist in type 'Task'.
+src/pages/UserDashboard.tsx(152,11): error TS2353: Object literal may only specify known properties, and 'type' does not exist in type 'Project'.
+src/pages/UserDashboard.tsx(283,76): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.

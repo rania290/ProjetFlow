@@ -10,7 +10,7 @@ import {
     ChevronLeft,
     Layout
 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/projectStore';
 

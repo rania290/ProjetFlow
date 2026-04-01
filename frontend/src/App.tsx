@@ -1,7 +1,8 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { StoreProvider } from './store/projectStore';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './store/authStore';
+import { UiProvider } from './store/uiStore';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Loader2, Construction } from 'lucide-react';
@@ -18,13 +19,19 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(mo
 const AdminUsersPage = lazy(() => import('./pages/admin/UsersManagementPage').then(module => ({ default: module.UsersManagementPage })));
 const AdminSettingsPage = lazy(() => import('./pages/admin/SystemSettingsPage').then(module => ({ default: module.SystemSettingsPage })));
 const AdminLogsPage = lazy(() => import('./pages/admin/ActivityLogsPage').then(module => ({ default: module.ActivityLogsPage })));
-const AdminExportPage = lazy(() => import('./pages/admin/DataExportPage').then(module => ({ default: module.DataExportPage })));
+
 const AdminRolesPage = lazy(() => import('./pages/admin/RoleManagementPage').then(module => ({ default: module.RoleManagementPage })));
 const SuperSimpleAccessManager = lazy(() => import('./components/admin/AccessManager').then(module => ({ default: module.SuperSimpleAccessManager })));
-const SimplePermissionsPage = lazy(() => import('./components/admin/SimplePermissionsPage').then(module => ({ default: module })));
-const TicketsPage = lazy(() => import('./pages/TicketsPage').then(module => ({ default: module.TicketsPage })));
-const ClientPortalPage = lazy(() => import('./pages/ClientPortalPage').then(module => ({ default: module.ClientPortalPage })));
-const ProfilePage = lazy(() => import('./pages/ProfilePage').then(module => ({ default: module.ProfilePage })));
+
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage').then(module => ({ default: module.UserProfilePage })));
+const MyTasksPageReal = lazy(() => import('./pages/MyTasksPage').then(module => ({ default: module.MyTasksPage })));
+const TeamPageReal = lazy(() => import('./pages/TeamPage').then(module => ({ default: module.TeamPage })));
+
+// Client Portal Pages
+const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard').then(module => ({ default: module.ClientDashboard })));
+const ClientProjectsPage = lazy(() => import('./pages/client/ClientProjectsPage').then(module => ({ default: module.ClientProjectsPage })));
+const ClientTicketsPage = lazy(() => import('./pages/client/ClientTicketsPage').then(module => ({ default: module.ClientTicketsPage })));
+const ClientDocumentsPage = lazy(() => import('./pages/client/ClientDocumentsPage').then(module => ({ default: module.ClientDocumentsPage })));
 
 // Loading Fallback
 const LoadingScreen = () => (
@@ -49,8 +56,8 @@ const PlaceholderPage = ({ title }: { title: string }) => (
 
 
 
-const MyTasksPage = () => <AppLayout title="Mes tâches"><PlaceholderPage title="Mes tâches" /></AppLayout>;
-const TeamPage = () => <AppLayout title="Équipe"><PlaceholderPage title="Gestion de l'équipe" /></AppLayout>;
+const MyTasksPage = () => <AppLayout title="Mes tâches"><MyTasksPageReal /></AppLayout>;
+const TeamPage = () => <AppLayout title="Équipe"><TeamPageReal /></AppLayout>;
 const DocumentsPage = () => <AppLayout title="Documents"><PlaceholderPage title="Gestion documentaire" /></AppLayout>;
 const MessagesPage = () => <AppLayout title="Messages"><PlaceholderPage title="Messagerie interne" /></AppLayout>;
 const CalendarPage = () => <AppLayout title="Calendrier"><PlaceholderPage title="Calendrier & congés" /></AppLayout>;
@@ -59,45 +66,197 @@ function App() {
   return (
     <StoreProvider>
       <AuthProvider>
-        <Router>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              {/* Public Auth Routes */}
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/login" element={<LoginPage />} />
+        <UiProvider>
+          <Router>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                {/* Public Auth Routes */}
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/login" element={<LoginPage />} />
 
-              {/* Protected Main App Routes */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><ProjectsListPage /></ProtectedRoute>} />
-              <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
-              <Route path="/my-tasks" element={<ProtectedRoute><MyTasksPage /></ProtectedRoute>} />
-              <Route path="/team" element={<ProtectedRoute><TeamPage /></ProtectedRoute>} />
-              <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
-              <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
-              <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-              <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-              <Route path="/client-portal" element={<ProtectedRoute><ClientPortalPage /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                {/* Protected Main App Routes */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/projects"
+                  element={
+                    <ProtectedRoute>
+                      <ProjectsListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/projects/:projectId"
+                  element={
+                    <ProtectedRoute>
+                      <ProjectDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/my-tasks"
+                  element={
+                    <ProtectedRoute>
+                      <MyTasksPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/team"
+                  element={
+                    <ProtectedRoute>
+                      <TeamPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/documents"
+                  element={
+                    <ProtectedRoute>
+                      <DocumentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/messages"
+                  element={
+                    <ProtectedRoute>
+                      <MessagesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/tickets" element={<Navigate to="/client-portal/tickets" replace />} />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <AnalyticsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/calendar"
+                  element={
+                    <ProtectedRoute>
+                      <CalendarPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client-portal"
+                  element={
+                    <ProtectedRoute>
+                      <ClientDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client-portal/projects"
+                  element={
+                    <ProtectedRoute>
+                      <ClientProjectsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client-portal/tickets"
+                  element={
+                    <ProtectedRoute>
+                      <ClientTicketsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/client-portal/documents"
+                  element={
+                    <ProtectedRoute>
+                      <ClientDocumentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <UserProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Protected Admin Routes */}
-              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/my-projects" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><UserProjectsPage /></ProtectedRoute>} />
-              <Route path="/admin/users" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><AdminUsersPage /></ProtectedRoute>} />
-              <Route path="/admin/roles" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><AdminRolesPage /></ProtectedRoute>} />
-              <Route path="/admin/settings" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><AdminSettingsPage /></ProtectedRoute>} />
-              <Route path="/admin/logs" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><AdminLogsPage /></ProtectedRoute>} />
-              <Route path="/admin/export" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><AdminExportPage /></ProtectedRoute>} />
-              {/* Permissions management page */}
-              <Route path="/admin/permissions" element={<ProtectedRoute requiredRole={['ADMIN', 'ROOT']}><SuperSimpleAccessManager /></ProtectedRoute>} />
+                {/* Protected Admin Routes */}
+                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/my-projects"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <UserProjectsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <AdminUsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/roles"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <AdminRolesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/settings"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <AdminSettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/logs"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <AdminLogsPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </Suspense>
-        </Router>
+                {/* Permissions management page */}
+                <Route
+                  path="/admin/permissions"
+                  element={
+                    <ProtectedRoute requiredRole={['ADMIN', 'ROOT']}>
+                      <SuperSimpleAccessManager />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </Routes>
+            </Suspense>
+          </Router>
+        </UiProvider>
       </AuthProvider>
     </StoreProvider>
   );

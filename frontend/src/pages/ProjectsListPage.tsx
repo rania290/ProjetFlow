@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, Search, FolderKanban, ArrowUpRight,
-    CalendarDays, Users, LayoutGrid, List
+    CalendarDays, Users, LayoutGrid, List, Sparkles, Filter
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useStore } from '../store/projectStore';
 import type { Project, ProjectStatus, ProjectType } from '../types/project.types';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
+import { Card } from '@/components/ui/card';
+import { FadeInView } from '../components/ui/FadeInView';
 
 
 // Re-export CreateProjectModal inline for this page
@@ -39,75 +41,79 @@ export const ProjectsListPage: React.FC = () => {
 
     return (
         <AppLayout title="Projets" subtitle={`${state.projects.length} projets au total`}>
-            <div className="p-4">
+            <FadeInView className="p-4 md:p-6 space-y-6">
 
-                {/* Toolbar */}
-                <div className="flex items-center gap-3 mb-4 flex-wrap">
-                    {/* Search */}
-                    <div className="relative flex-1 min-w-[220px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Rechercher un projet, client..."
-                            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 text-slate-700 placeholder:text-slate-400 shadow-sm"
-                        />
-                    </div>
+                {/* Premium Toolbar */}
+                <Card className="p-4 shadow-sm border-slate-100">
+                    <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-4">
+                        {/* Search */}
+                        <div className="relative flex-1 group">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                            <input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Rechercher un projet, client, tags..."
+                                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/50 border border-slate-200/60 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-slate-700 placeholder:text-slate-400 transition-all"
+                            />
+                        </div>
 
-                    {/* Filter Status */}
-                    <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {(['ALL', 'PLANNED', 'IN_PROGRESS', 'DELIVERED', 'SUSPENDED'] as const).map(s => (
-                            <button key={s}
-                                onClick={() => setFilterStatus(s)}
-                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterStatus === s ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                {s === 'ALL' ? 'Tous' : STATUS_LABELS[s]?.label}
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Filter Status */}
+                            <div className="flex gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
+                                {(['ALL', 'PLANNED', 'IN_PROGRESS', 'DELIVERED', 'SUSPENDED'] as const).map(s => (
+                                    <button key={s}
+                                        onClick={() => setFilterStatus(s)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterStatus === s ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                        {s === 'ALL' ? 'Tous' : STATUS_LABELS[s]?.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Filter Category */}
+                            <div className="flex gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
+                                {(['ALL', 'WEB_APPLICATION', 'MOBILE_APP', 'API_INTEGRATION'] as const).map(t => (
+                                    <button key={t}
+                                        onClick={() => setFilterCategory(t)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterCategory === t ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                        {t === 'ALL' ? 'Catégories' : t === 'WEB_APPLICATION' ? 'Web' : t === 'MOBILE_APP' ? 'Mobile' : 'API'}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* View toggle */}
+                            <div className="flex bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
+                                <button onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                    title="Vue grille">
+                                    <LayoutGrid className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                    title="Vue liste">
+                                    <List className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Create */}
+                            <button onClick={() => setShowCreate(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
+                                <Plus className="w-4 h-4" /> Nouveau
                             </button>
-                        ))}
+                        </div>
                     </div>
+                </Card>
 
-                    {/* Filter Category */}
-                    <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        {(['ALL', 'WEB_APPLICATION', 'MOBILE_APP', 'API_INTEGRATION'] as const).map(t => (
-                            <button key={t}
-                                onClick={() => setFilterCategory(t)}
-                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${filterCategory === t ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                {t === 'ALL' ? 'Toutes catégories' : t === 'WEB_APPLICATION' ? 'Web' : t === 'MOBILE_APP' ? 'Mobile' : 'API'}
-                            </button>
-                        ))}
+                {/* Results count & Clear */}
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">
+                            {filtered.length} projet{filtered.length > 1 ? 's' : ''} trouvé{filtered.length > 1 ? 's' : ''}
+                        </span>
                     </div>
-
-                    {/* View toggle */}
-                    <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                        <button onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-slate-700'}`}
-                            title="Vue grille">
-                            <LayoutGrid className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-slate-700'}`}
-                            title="Vue liste">
-                            <List className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                            className={`p-2 rounded-lg transition-all text-slate-400 hover:text-slate-700`}
-                            title="Vue tableau (bientôt)">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-
-                    {/* Create */}
-                    <button onClick={() => setShowCreate(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors shadow-md shadow-primary-500/20">
-                        <Plus className="w-4 h-4" /> Nouveau projet
-                    </button>
-                </div>
-
-                {/* Results count */}
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-slate-400 font-medium">{filtered.length} projet{filtered.length > 1 ? 's' : ''}</span>
                     {(search || filterStatus !== 'ALL' || filterCategory !== 'ALL') && (
                         <button onClick={() => { setSearch(''); setFilterStatus('ALL'); setFilterCategory('ALL'); }}
-                            className="text-xs text-primary-600 hover:underline font-medium">
+                            className="text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
                             Effacer les filtres
                         </button>
                     )}
@@ -115,7 +121,7 @@ export const ProjectsListPage: React.FC = () => {
 
                 {/* Grid view */}
                 {viewMode === 'grid' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {filtered.map((p, i) => (
                             <ProjectGridCard key={p.id} project={p} index={i} onOpen={() => {
                                 dispatch({ type: 'SELECT_PROJECT', id: p.id });
@@ -124,41 +130,50 @@ export const ProjectsListPage: React.FC = () => {
                         ))}
                         {/* Empty */}
                         {filtered.length === 0 && (
-                            <div className="col-span-3 text-center py-16">
-                                <FolderKanban className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                                <p className="text-sm text-slate-400 font-medium">Aucun projet trouvé</p>
+                            <Card className="col-span-full p-20 text-center shadow-sm border-slate-100">
+                                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                                    <FolderKanban className="w-10 h-10 text-slate-200" />
+                                </div>
+                                <h3 className="text-xl font-black text-slate-800 font-display uppercase tracking-tight">Aucun projet trouvé</h3>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 max-w-xs mx-auto">
+                                    Ajustez vos filtres ou créez une nouvelle roadmap pour commencer votre gestion.
+                                </p>
                                 <button onClick={() => setShowCreate(true)}
-                                    className="mt-4 text-sm text-primary-600 font-semibold hover:underline">
-                                    + Créer votre premier projet
+                                    className="mt-8 px-6 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-indigo-600 hover:bg-slate-50 transition-all shadow-sm">
+                                    + Créer un projet
                                 </button>
-                            </div>
+                            </Card>
                         )}
                     </div>
                 )}
 
                 {/* List view */}
                 {viewMode === 'list' && (
-                    <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
-                        <div className="grid grid-cols-12 gap-4 px-4 py-2 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            <div className="col-span-4">Nom</div>
-                            <div className="col-span-2">Catégorie</div>
+                    <Card className="overflow-hidden shadow-sm border-slate-100">
+                        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <div className="col-span-4">Information Projet</div>
+                            <div className="col-span-2">Configuration</div>
                             <div className="col-span-2">Statut</div>
                             <div className="col-span-2">Avancement</div>
-                            <div className="col-span-1">Membres</div>
-                            <div className="col-span-1">Budget</div>
+                            <div className="col-span-1">Équipe</div>
+                            <div className="col-span-1 text-right">Budget</div>
                         </div>
-                        {filtered.map((p, i) => (
-                            <ProjectListRow key={p.id} project={p} index={i} onOpen={() => {
-                                dispatch({ type: 'SELECT_PROJECT', id: p.id });
-                                navigate(`/projects/${p.id}`);
-                            }} />
-                        ))}
+                        <div className="divide-y divide-slate-50">
+                            {filtered.map((p, i) => (
+                                <ProjectListRow key={p.id} project={p} index={i} onOpen={() => {
+                                    dispatch({ type: 'SELECT_PROJECT', id: p.id });
+                                    navigate(`/projects/${p.id}`);
+                                }} />
+                            ))}
+                        </div>
                         {filtered.length === 0 && (
-                            <div className="py-12 text-center text-sm text-slate-400">Aucun projet trouvé</div>
+                            <div className="py-20 text-center">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Liste vide</p>
+                            </div>
                         )}
-                    </div>
+                    </Card>
                 )}
-            </div>
+            </FadeInView>
             {/* Real create project modal */}
             <AnimatePresence>
                 {showCreate && (
@@ -174,82 +189,88 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
     const st = STATUS_LABELS[project.status];
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+        <Card
             onClick={onOpen}
-            className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-primary-200 transition-all cursor-pointer group"
+            className="p-6 shadow-sm border-slate-100 hover:shadow-2xl hover:border-indigo-200/50 transition-all duration-500 cursor-pointer group relative overflow-hidden"
         >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+            
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-start justify-between gap-3 mb-5 relative">
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-slate-900 truncate group-hover:text-primary-700 transition-colors mb-1">
+                    <h3 className="text-lg font-black text-slate-800 font-display truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
                         {project.name}
                     </h3>
                     {project.clientName && (
-                        <p className="text-[11px] text-slate-400 font-medium">Client : {project.clientName}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">
+                            Client: <span className="text-slate-600">{project.clientName}</span>
+                        </p>
                     )}
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-slate-200 group-hover:text-primary-500 transition-colors flex-shrink-0 mt-1" />
+                <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-all shadow-sm border border-slate-100">
+                    <ArrowUpRight className="w-4 h-4" />
+                </div>
             </div>
 
             {/* Badges */}
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700`}>Vue {project.viewMode}</span>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-slate-600`}>{project.type === 'WEB_APPLICATION' ? 'Web' : project.type === 'MOBILE_APP' ? 'Mobile' : 'API'}</span>
-                <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${st.bg} ${st.color}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{st.label}
+            <div className="flex items-center gap-2 mb-6 flex-wrap relative">
+                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-tight shadow-sm`}>Vue {project.viewMode}</span>
+                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tight shadow-sm`}>{project.type === 'WEB_APPLICATION' ? 'Web' : project.type === 'MOBILE_APP' ? 'Mobile' : 'API'}</span>
+                <span className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
+                    <div className={`w-1 h-1 rounded-full ${st.dot} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} />{st.label}
                 </span>
             </div>
 
             {/* Description */}
-            <p className="text-xs text-slate-400 leading-relaxed mb-4 line-clamp-2">{project.description}</p>
+            <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-2 font-medium opacity-80 group-hover:opacity-100 transition-opacity">{project.description}</p>
 
             {/* Progress */}
-            <div className="mb-4">
-                <div className="flex justify-between text-[10px] text-slate-400 mb-1.5">
-                    <span>Progression</span>
-                    <span className="font-bold text-slate-600">{project.progress}%</span>
+            <div className="mb-6 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/50">
+                <div className="flex justify-between text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">
+                    <span>Avancement Global</span>
+                    <span className="text-slate-900">{project.progress}%</span>
                 </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${project.progress}%` }}
-                        transition={{ duration: 0.8, delay: index * 0.05 + 0.2 }}
-                        className={`h-full rounded-full ${project.progress === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-primary-500 to-accent-500'}`}
+                        transition={{ duration: 1, delay: index * 0.05 + 0.3 }}
+                        className={`h-full rounded-full shadow-[0_0_12px_rgba(99,102,241,0.3)] ${project.progress === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400'}`}
                     />
                 </div>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                <div className="flex -space-x-1.5">
-                    {(project.members || []).slice(0, 4).map(m => (
-                        <div key={m.id} title={m.fullName}
-                            className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-400 to-accent-400 border-2 border-white flex items-center justify-center text-white text-[9px] font-bold">
-                            {m.avatar}
-                        </div>
-                    ))}
-                    {(!project.members || project.members.length === 0) && <span className="text-[10px] text-slate-300 flex items-center gap-1"><Users className="w-3 h-3" /> 0 membre</span>}
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100/50">
+                <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                        {(project.members || []).slice(0, 3).map((m, idx) => (
+                            <div key={m.id} title={m.fullName}
+                                className="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm ring-1 ring-slate-100 group-hover:ring-indigo-100 transition-all"
+                                style={{ zIndex: 3 - idx }}>
+                                <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-[9px] font-black border border-white">
+                                    {m.avatar || m.fullName[0].toUpperCase()}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {(!project.members || project.members.length === 0) ? (
+                        <span className="text-[10px] text-slate-300 font-black uppercase tracking-tight">Aucun membre</span>
+                    ) : project.members.length > 3 && (
+                        <span className="text-[10px] text-slate-400 font-black">+{project.members.length - 3}</span>
+                    )}
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                    <span className="flex items-center gap-1">
-                        <CalendarDays className="w-3 h-3" />
-                        {new Date(project.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                
+                <div className="flex items-center gap-4 text-[10px] font-black text-slate-600 uppercase tracking-tight">
+                    <span className="flex items-center gap-1.5 text-slate-400">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        {new Date(project.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
                     </span>
-                    <span className="font-semibold text-slate-600">{project.budget.toLocaleString()} €</span>
+                    <div className="w-1 h-1 rounded-full bg-slate-200" />
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">{project.budget.toLocaleString()} DT</span>
                 </div>
             </div>
-
-            {/* Tags */}
-            {project.tags && project.tags.length > 0 && (
-                <div className="flex gap-1 mt-3 flex-wrap">
-                    {project.tags.map(tag => (
-                        <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-slate-50 border border-slate-100 text-slate-400 rounded-md font-medium">{tag}</span>
-                    ))}
-                </div>
-            )}
-        </motion.div>
+        </Card>
     );
 };
 
@@ -259,50 +280,54 @@ const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => 
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.04 }}
+            initial={{ opacity: 0, x: -10 }} 
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.03, duration: 0.4 }}
             onClick={onOpen}
-            className="grid grid-cols-12 gap-4 px-4 py-3 items-center border-b border-slate-50 last:border-0 hover:bg-slate-50/70 transition-colors cursor-pointer group"
+            className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-indigo-50/30 transition-all cursor-pointer group"
         >
-            <div className="col-span-4 flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-100 to-accent-100 flex items-center justify-center flex-shrink-0">
-                    <FolderKanban className="w-4 h-4 text-primary-600" />
+            <div className="col-span-4 flex items-center gap-4 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-100 group-hover:scale-110 group-hover:border-indigo-100 transition-all">
+                    <FolderKanban className="w-5 h-5 text-indigo-500" />
                 </div>
                 <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-primary-700 transition-colors">{project.name}</p>
-                    {project.clientName && <p className="text-[10px] text-slate-400 truncate">{project.clientName}</p>}
+                    <p className="text-sm font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{project.name}</p>
+                    {project.clientName && <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{project.clientName}</p>}
                 </div>
             </div>
-            <div className="col-span-2">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700`}>Vue {project.viewMode}</span>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-slate-600 ml-1`}>{project.type === 'WEB_APPLICATION' ? 'Web' : project.type === 'MOBILE_APP' ? 'Mobile' : 'API'}</span>
+            <div className="col-span-2 flex flex-wrap gap-1.5">
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100/50 uppercase tracking-tighter`}>{project.viewMode}</span>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tighter`}>{project.type === 'WEB_APPLICATION' ? 'Web' : project.type === 'MOBILE_APP' ? 'Mobile' : 'API'}</span>
             </div>
             <div className="col-span-2">
-                <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit ${st.bg} ${st.color}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />{st.label}
+                <span className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg w-fit border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
+                    <div className={`w-1 h-1 rounded-full ${st.dot}`} />{st.label}
                 </span>
             </div>
             <div className="col-span-2">
-                <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full" style={{ width: `${project.progress}%` }} />
+                <div className="flex items-center gap-3 pr-4">
+                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                        <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: `${project.progress}%` }} />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-600 w-8">{project.progress}%</span>
+                    <span className="text-[10px] font-black text-slate-700 w-8">{project.progress}%</span>
                 </div>
             </div>
             <div className="col-span-1">
-                <div className="flex -space-x-1">
-                    {project.members.slice(0, 3).map(m => (
+                <div className="flex -space-x-1.5 hover:-space-x-0.5 transition-all">
+                    {(project.members || []).slice(0, 3).map((m, idx) => (
                         <div key={m.id} title={m.fullName}
-                            className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-accent-400 border border-white flex items-center justify-center text-white text-[8px] font-bold">
-                            {m.avatar}
+                            className="w-6 h-6 rounded-full bg-white p-0.5 shadow-sm ring-1 ring-slate-100"
+                            style={{ zIndex: 3 - idx }}>
+                            <div className="w-full h-full rounded-full bg-slate-50 flex items-center justify-center text-slate-600 text-[8px] font-black border border-white">
+                                {m.avatar || m.fullName[0]}
+                            </div>
                         </div>
                     ))}
-                    {project.members.length === 0 && <span className="text-[10px] text-slate-300">–</span>}
+                    {project.members.length === 0 && <span className="text-[10px] text-slate-300 font-black uppercase">0</span>}
                 </div>
             </div>
-            <div className="col-span-1">
-                <span className="text-[10px] font-semibold text-slate-600">{(project.budget / 1000).toFixed(0)}k€</span>
+            <div className="col-span-1 text-right pr-2">
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm uppercase">{(project.budget / 1000).toFixed(0)}k DT</span>
             </div>
         </motion.div>
     );

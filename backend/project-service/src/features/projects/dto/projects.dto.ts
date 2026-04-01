@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsEnum, IsUUID } from 'class-validator';
-import { ProjectStatus } from '../constants/projects.constants';
+import { ProjectStatus, ProjectViewMode } from '../constants/projects.constants';
 
 export class CreateProjectDto {
   @IsString()
@@ -36,6 +36,10 @@ export class CreateProjectDto {
   @IsOptional()
   @IsUUID()
   managerId?: string;
+
+  @IsOptional()
+  @IsEnum(ProjectViewMode)
+  viewMode?: ProjectViewMode;
 }
 
 export class UpdateProjectDto {
@@ -74,6 +78,10 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsUUID()
   managerId?: string;
+
+  @IsOptional()
+  @IsEnum(ProjectViewMode)
+  viewMode?: ProjectViewMode;
 }
 
 export class UpdateProjectStatusDto {

@@ -23,7 +23,7 @@ import {
     GanttChart,
     MessageSquare,
 } from 'lucide-react';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { FadeInView } from '../components/ui/FadeInView';
 import { AnimatedCounter } from '../components/ui/AnimatedCounter';
 

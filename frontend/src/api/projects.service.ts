@@ -21,6 +21,11 @@ export const projectsService = {
         return response.data;
     },
 
+    async update(id: string, data: any): Promise<any> {
+        const response = await api.patch(`/projects/${id}`, data);
+        return response.data;
+    },
+
     async delete(id: string): Promise<void> {
         await api.delete(`/projects/${id}`);
     },

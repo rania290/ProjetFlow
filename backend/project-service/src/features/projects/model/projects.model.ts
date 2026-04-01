@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ProjectStatus } from '../constants/projects.constants';
+import { ProjectStatus, ProjectViewMode } from '../constants/projects.constants';
 
 @Entity('projects')
 export class Project {
@@ -45,6 +45,13 @@ export class Project {
 
   @Column({ nullable: true })
   managerId: string;
+
+  @Column({
+    type: 'enum',
+    enum: ProjectViewMode,
+    default: ProjectViewMode.BOARD,
+  })
+  viewMode: ProjectViewMode;
 
   @CreateDateColumn()
   createdAt: Date;

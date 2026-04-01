@@ -13,7 +13,8 @@ import {
   Trash2,
   MessageSquare,
   AlertCircle,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 
 interface User {
@@ -135,14 +136,12 @@ export const RoleManager: React.FC<{ projectId: string; projectName: string }> =
     }
   };
 
-  const handleRemoveMember = async (userId: string, reason?: string) => {
+  const handleRemoveMember = async (memberId: string, reason?: string) => {
     try {
-      await api.delete('/role-assignments/remove', {
-        data: { userId, projectId, reason }
-      });
+      await api.delete(`/role-assignments/${memberId}`);
       fetchProjectMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      setError(err instanceof Error ? err.message : 'Erreur lors de la suppression du membre');
     }
   };
 
@@ -281,7 +280,7 @@ export const RoleManager: React.FC<{ projectId: string; projectName: string }> =
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleRemoveMember(member.user.id)}
+                          onClick={() => handleRemoveMember(member.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -298,6 +297,16 @@ export const RoleManager: React.FC<{ projectId: string; projectName: string }> =
                       </div>
                     </div>
                   )}
+
+                  {/* Project Assignment Info */}
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                      <Calendar className="w-4 h-4" />
+                      <span className="font-medium">
+                        {projectName || member.project?.name || 'Projet'} • Assigné le {new Date(member.createdAt).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  </div>
                 </motion.div>
               );
             })}

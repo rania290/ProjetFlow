@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
-import api from '../api/api-client';
+import { useStore } from '../store/projectStore';
+import { useAuth } from '../hooks/useAuth';
+import { ProjectSettingsModal } from '../components/projects/ProjectSettingsModal';
+import type { Project as GlobalProject } from '../types/project.types';
 import {
   Briefcase,
   Crown,
@@ -13,8 +17,11 @@ import {
   Grid,
   List,
   Eye,
-  Settings
+  Settings,
+  ArrowUpRight
 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { FadeInView } from '../components/ui/FadeInView';
 
 interface Project {
   id: string;
@@ -23,14 +30,7 @@ interface Project {
   isActive: boolean;
   assignedAt: string;
   expiresAt?: string;
-}
-
-interface UserProjectRolesResponse {
-  userId: string;
-  userFullName: string;
-  userEmail: string;
-  projects: Project[];
-  totalProjects: number;
+  _source: GlobalProject;
 }
 
 const ROLE_CONFIG = {
@@ -61,34 +61,46 @@ const ROLE_CONFIG = {
 };
 
 export const UserProjectsPage: React.FC = () => {
-  const [userProjects, setUserProjects] = useState<UserProjectRolesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { state, dispatch } = useStore();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedProjectForSettings, setSelectedProjectForSettings] = useState<GlobalProject | null>(null);
 
-  useEffect(() => {
-    fetchUserProjects();
-  }, [roleFilter, statusFilter]);
+  const mappedProjects = useMemo(() => {
+    return state.projects.map((p): Project => {
+      let role: Project['role'] = 'TEAM_MEMBER';
+      if (p.managerId === user?.id) role = 'PROJECT_MANAGER';
+      if (user?.role === 'ADMIN' || user?.role === 'ROOT') role = 'ADMIN';
 
-  const fetchUserProjects = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/role-assignments/me/projects', {
-        params: {
-          role: roleFilter !== 'all' ? roleFilter : undefined,
-          activeOnly: statusFilter !== 'all' ? (statusFilter === 'active' ? 'true' : 'false') : undefined,
-        }
-      });
-      setUserProjects(response.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        id: p.id,
+        name: p.name,
+        role,
+        isActive: p.status === 'IN_PROGRESS',
+        assignedAt: p.startDate || p.createdAt || new Date().toISOString(),
+        expiresAt: p.endDate || undefined,
+        _source: p
+      };
+    });
+  }, [state.projects, user]);
+
+  const userProjects = useMemo(() => {
+    return {
+      userId: user?.id || 'u1',
+      userFullName: user?.fullName || 'Utilisateur',
+      userEmail: user?.email || '',
+      projects: mappedProjects,
+      totalProjects: mappedProjects.length
+    };
+  }, [mappedProjects, user]);
+
+  const loading = false;
+  const error = null;
 
   const filteredProjects = userProjects?.projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -101,15 +113,6 @@ export const UserProjectsPage: React.FC = () => {
   }) || [];
 
   const getRoleStats = () => {
-    if (!userProjects) return {
-      ADMIN: 0,
-      PROJECT_MANAGER: 0,
-      TEAM_MEMBER: 0,
-      CLIENT: 0,
-      active: 0,
-      expired: 0
-    };
-
     const stats = {
       ADMIN: 0,
       PROJECT_MANAGER: 0,
@@ -161,150 +164,111 @@ export const UserProjectsPage: React.FC = () => {
   const roleStats = getRoleStats();
 
   return (
-    <AppLayout title="Mes Projets" subtitle="Gérez vos projets et vos rôles">
-      <div className="p-4 md:p-6 space-y-4">
-        {/* Header & Filters Combined */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-slate-900">Mes Projets</h1>
-              <p className="text-sm text-slate-600 mt-0.5">
-                {userProjects?.userFullName} • {userProjects?.totalProjects || 0} projet(s)
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid'
-                  ? 'bg-indigo-100 text-indigo-600'
-                  : 'text-slate-400 hover:text-slate-600'
-                  }`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'list'
-                  ? 'bg-indigo-100 text-indigo-600'
-                  : 'text-slate-400 hover:text-slate-600'
-                  }`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+    <AppLayout title="Mes Projets" subtitle="Accès et rôles administratifs">
+      <FadeInView className="p-4 md:p-6 space-y-6">
+        {/* Glass Header & Actions */}
+        <Card className="p-6 shadow-sm border-slate-100">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
 
-          <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="flex-1 relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Rechercher un projet..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              />
-            </div>
-
-            <div className="flex w-full md:w-auto gap-3">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="flex-1 md:flex-none px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="all">Tous les rôles</option>
-                {Object.entries(ROLE_CONFIG).map(([role, config]) => (
-                  <option key={role} value={role}>{config.label}</option>
-                ))}
-              </select>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="flex-1 md:flex-none px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="active">Actifs</option>
-                <option value="inactive">Inactifs</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-3">
-              <Briefcase className="w-5 h-5 text-indigo-600" />
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total</p>
-                <p className="text-2xl font-bold text-slate-900">{userProjects?.totalProjects || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-5 h-5 bg-green-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium text-slate-600">Actifs</p>
-                <p className="text-2xl font-bold text-slate-900">{roleStats.active || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-lg border border-slate-200">
-            <div className="flex items-center gap-3">
-              <div className="w-5 h-5 bg-red-500 rounded-full"></div>
-              <div>
-                <p className="text-sm font-medium text-slate-600">Expirés</p>
-                <p className="text-2xl font-bold text-slate-900">{roleStats.expired || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          {Object.entries(ROLE_CONFIG).map(([role, config]) => {
-            const Icon = config.icon;
-            const count = roleStats[role as keyof typeof roleStats] || 0;
-            return (
-              <div key={role} className="bg-white p-4 rounded-lg border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className={`p-1 rounded ${config.color.split(' ')[0]}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">{config.label}</p>
-                    <p className="text-2xl font-bold text-slate-900">{count}</p>
-                  </div>
+                <div>
+                  <h1 className="text-xl font-black text-slate-900 font-display flex items-center gap-2 uppercase tracking-tight">
+                    Mes Projets
+                  </h1>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                    {userProjects?.userFullName} • GESTION DES ACCÈS
+                  </p>
                 </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-full md:w-64 group">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-500 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un projet..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-sm transition-all placeholder:text-slate-400/70"
+                />
               </div>
-            );
-          })}
-        </div>
-
-
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 text-red-700">
-            <span>{error}</span>
+              
+              <div className="flex bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+        </Card>
+
+        {/* Filters & Quick Stats */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-xl text-[10px] font-black text-emerald-700 border border-emerald-100 shadow-sm uppercase tracking-tighter">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Actifs : {roleStats.active || 0}</span>
+                </div>
+                
+                {Object.entries(ROLE_CONFIG).map(([role, config]) => {
+                    const count = roleStats[role as keyof typeof roleStats] || 0;
+                    if (count === 0) return null;
+                    const Icon = config.icon;
+                    return (
+                        <div key={role} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border shadow-sm uppercase tracking-tighter transition-transform hover:-translate-y-0.5 cursor-default ${config.color}`}>
+                            <span>{config.label}: {count}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="flex items-center gap-2">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="py-1.5 pl-3 pr-8 bg-white/50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                >
+                  <option value="all">Tous les rôles</option>
+                  {Object.entries(ROLE_CONFIG).map(([role, config]) => (
+                    <option key={role} value={role}>{config.label}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="py-1.5 pl-3 pr-8 bg-white/50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="active">Actifs</option>
+                  <option value="inactive">Inactifs</option>
+                </select>
+            </div>
+        </div>
 
         {/* Projects Grid/List */}
         {filteredProjects.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center border border-slate-200">
+          <Card className="p-12 text-center shadow-sm border-slate-100">
             <Briefcase className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Aucun projet trouvé</h3>
-            <p className="text-slate-600">
+            <h3 className="text-lg font-black text-slate-800 font-display uppercase tracking-tight">Aucun projet trouvé</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 font-black">
               {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
                 ? 'Essayez de modifier vos filtres'
                 : 'Vous n\'êtes assigné à aucun projet pour le moment'}
             </p>
-          </div>
+          </Card>
         ) : (
           <div className={viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
             : 'space-y-4'
           }>
             {filteredProjects.map((project, index) => {
@@ -313,54 +277,52 @@ export const UserProjectsPage: React.FC = () => {
               const daysUntilExpiry = getDaysUntilExpiry(project.expiresAt);
 
               return (
-                <motion.div
+                <Card
                   key={project.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`bg-white rounded-xl p-6 shadow-sm border ${expired ? 'border-red-200 bg-red-50' : 'border-slate-200'
-                    } ${viewMode === 'list' ? 'flex items-center justify-between' : ''}`}
+                  className={`p-6 shadow-sm border-slate-100 group hover:shadow-xl transition-all duration-500 ${expired ? 'ring-2 ring-red-100 bg-red-50/10' : ''} ${viewMode === 'list' ? 'flex items-center justify-between' : ''}`}
                 >
-                  <div className={viewMode === 'list' ? 'flex items-center gap-4 flex-1' : ''}>
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${ROLE_CONFIG[project.role].color.split(' ')[0]
-                      }`}>
-                      <RoleIcon className="w-6 h-6" />
-                    </div>
+                  <div className={viewMode === 'list' ? 'flex items-center gap-6 flex-1' : ''}>
+
 
                     <div className={viewMode === 'list' ? 'flex-1' : ''}>
-                      <h3 className="text-lg font-semibold text-slate-900 mb-1">{project.name}</h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-black text-slate-800 font-display group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                            {project.name}
+                        </h3>
+                        <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                      </div>
 
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${expired
-                          ? 'bg-red-100 text-red-800 border-red-200'
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-tight border shadow-sm ${expired
+                          ? 'bg-red-50 text-red-600 border-red-100'
                           : ROLE_CONFIG[project.role].color
                           }`}>
-                          <RoleIcon className="w-3 h-3 inline mr-1" />
-                          {expired ? 'Expiré' : ROLE_CONFIG[project.role].label}
+                          {expired ? 'ACCÈS EXPIRÉ' : ROLE_CONFIG[project.role].label}
                         </span>
 
                         {project.isActive && !expired && (
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                            Actif
-                          </span>
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-tight">
+                            <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                            ACTIF
+                          </div>
                         )}
                       </div>
 
-                      <div className="space-y-1 text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-[11px] font-bold text-slate-400">
+                          <Calendar className="w-4 h-4 text-slate-300" />
                           <span>Assigné le {formatDate(project.assignedAt)}</span>
                         </div>
 
                         {project.expiresAt && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span className={expired ? 'text-red-600 font-medium' : ''}>
+                          <div className={`flex items-center gap-3 text-[11px] font-bold ${expired ? 'text-red-500' : 'text-slate-400'}`}>
+                            <Clock className="w-4 h-4 opacity-70" />
+                            <span>
                               {expired
                                 ? `Expiré le ${formatDate(project.expiresAt)}`
                                 : daysUntilExpiry !== null && daysUntilExpiry <= 7
                                   ? `Expire dans ${daysUntilExpiry} jour(s)`
-                                  : `Expire le ${formatDate(project.expiresAt)}`
+                                  : `Echéance : ${formatDate(project.expiresAt)}`
                               }
                             </span>
                           </div>
@@ -368,21 +330,41 @@ export const UserProjectsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className={`flex items-center gap-2 ${viewMode === 'list' ? '' : 'mt-4'}`}>
-                      <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                    <div className={`flex items-center gap-3 ${viewMode === 'list' ? '' : 'mt-8 pt-4 border-t border-slate-100/50'}`}>
+                      <button 
+                        onClick={() => {
+                          dispatch({ type: 'SELECT_PROJECT', id: project.id });
+                          navigate(`/projects/${project.id}`);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest border border-slate-100 hover:border-indigo-100 shadow-sm"
+                      >
                         <Eye className="w-4 h-4" />
+                        Aperçu
                       </button>
-                      <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => setSelectedProjectForSettings(project._source)}
+                        className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-800 rounded-xl transition-all border border-slate-100 shadow-sm"
+                        title="Paramètres"
+                      >
                         <Settings className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                </motion.div>
+                </Card>
               );
             })}
           </div>
         )}
-      </div>
+      </FadeInView>
+
+      <AnimatePresence>
+        {selectedProjectForSettings && (
+          <ProjectSettingsModal 
+            project={selectedProjectForSettings} 
+            onClose={() => setSelectedProjectForSettings(null)} 
+          />
+        )}
+      </AnimatePresence>
     </AppLayout>
   );
 };

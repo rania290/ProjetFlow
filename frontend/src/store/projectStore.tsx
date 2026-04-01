@@ -10,7 +10,7 @@ const MOCK_SPRINTS: Sprint[] = [];
 const MOCK_TICKETS: Ticket[] = [
     {
         id: 'TKT-001',
-        projectId: 'P1',
+        projectId: '11111111-1111-1111-1111-111111111111',
         title: 'Erreur 500 sur le module de paiement',
         description: 'Lors de la validation du panier, une erreur 500 apparait systématiquement depuis la mise à jour.',
         status: 'OPEN',
@@ -25,7 +25,7 @@ const MOCK_TICKETS: Ticket[] = [
     },
     {
         id: 'TKT-002',
-        projectId: 'P1',
+        projectId: '11111111-1111-1111-1111-111111111111',
         title: 'Demande d\'ajout d\'un champ TVA',
         description: 'Serait-il possible de rajouter un champ TVA dans le formulaire d\'inscription B2B ?',
         status: 'IN_PROGRESS',
@@ -62,20 +62,36 @@ type Action =
     | { type: 'SELECT_SPRINT'; id: string | null }
     | { type: 'TOGGLE_SIDEBAR' }
     | { type: 'ADD_PROJECT'; project: Project }
+    | { type: 'UPDATE_PROJECT'; project: Project }
     | { type: 'UPDATE_PROJECT_STATUS'; id: string; status: ProjectStatus }
     | { type: 'ADD_TASK'; task: Task }
+    | { type: 'UPDATE_TASK'; task: Task }
+    | { type: 'DELETE_TASK'; id: string }
     | { type: 'UPDATE_TASK_STATUS'; id: string; status: TaskStatus }
     | { type: 'MOVE_TASK_TO_SPRINT'; taskId: string; sprintId: string }
     | { type: 'ADD_SPRINT'; sprint: Sprint }
+    | { type: 'UPDATE_SPRINT'; sprint: Sprint }
     | { type: 'UPDATE_SPRINT_STATUS'; id: string; status: 'PLANNED' | 'ACTIVE' | 'COMPLETED' }
     | { type: 'UPDATE_WORKSPACE'; name: string }
     | { type: 'REORDER_BACKLOG'; projectTasks: Task[] }
     | { type: 'ADD_TICKET'; ticket: Ticket }
     | { type: 'UPDATE_TICKET_STATUS'; id: string; status: TicketStatus }
     | { type: 'ADD_TICKET_MESSAGE'; ticketId: string; message: TicketMessage }
-    | { type: 'ADD_TICKET_MESSAGE'; ticketId: string; message: TicketMessage }
     | { type: 'ADD_PROJECT_MEMBER'; projectId: string; member: any }
     | { type: 'SET_PROJECTS'; projects: Project[] };
+
+// Helper for project progress
+const recalculateProgress = (projects: Project[], tasks: Task[]): Project[] => {
+    return projects.map(project => {
+        const projectTasks = tasks.filter(t => t.projectId === project.id);
+        if (projectTasks.length === 0) return { ...project, progress: 0 };
+
+        const doneTasks = projectTasks.filter(t => t.status === 'DONE');
+        const progress = Math.round((doneTasks.length / projectTasks.length) * 100);
+
+        return { ...project, progress };
+    });
+};
 
 function reducer(state: StoreState, action: Action): StoreState {
     switch (action.type) {
@@ -87,18 +103,51 @@ function reducer(state: StoreState, action: Action): StoreState {
             return { ...state, sidebarOpen: !state.sidebarOpen };
         case 'ADD_PROJECT':
             return { ...state, projects: [...state.projects, action.project] };
+        case 'UPDATE_PROJECT':
+            return { ...state, projects: state.projects.map(p => p.id === action.project.id ? action.project : p) };
         case 'UPDATE_PROJECT_STATUS':
             return { ...state, projects: state.projects.map(p => p.id === action.id ? { ...p, status: action.status } : p) };
-        case 'ADD_TASK':
-            return { ...state, tasks: [...state.tasks, action.task] };
-        case 'UPDATE_TASK_STATUS':
+        case 'ADD_TASK': {
+            const nextTasks = [...state.tasks, action.task];
             return {
                 ...state,
-                tasks: state.tasks.map(t => t.id === action.id ? { ...t, status: action.status } : t),
+                tasks: nextTasks,
+                projects: recalculateProgress(state.projects, nextTasks)
+            };
+        }
+        case 'UPDATE_TASK': {
+            const nextTasks = state.tasks.map(t => t.id === action.task.id ? action.task : t);
+            return {
+                ...state,
+                tasks: nextTasks,
+                projects: recalculateProgress(state.projects, nextTasks),
+                sprints: state.sprints.map(s => ({
+                    ...s, tasks: s.tasks.map(t => t.id === action.task.id ? action.task : t)
+                }))
+            };
+        }
+        case 'DELETE_TASK': {
+            const nextTasks = state.tasks.filter(t => t.id !== action.id);
+            return {
+                ...state,
+                tasks: nextTasks,
+                projects: recalculateProgress(state.projects, nextTasks),
+                sprints: state.sprints.map(s => ({
+                    ...s, tasks: s.tasks.filter(t => t.id !== action.id)
+                }))
+            };
+        }
+        case 'UPDATE_TASK_STATUS': {
+            const nextTasks = state.tasks.map(t => t.id === action.id ? { ...t, status: action.status } : t);
+            return {
+                ...state,
+                tasks: nextTasks,
+                projects: recalculateProgress(state.projects, nextTasks),
                 sprints: state.sprints.map(s => ({
                     ...s, tasks: s.tasks.map(t => t.id === action.id ? { ...t, status: action.status } : t)
                 }))
             };
+        }
         case 'MOVE_TASK_TO_SPRINT':
             return {
                 ...state,
@@ -115,21 +164,33 @@ function reducer(state: StoreState, action: Action): StoreState {
             };
         case 'ADD_SPRINT':
             return { ...state, sprints: [...state.sprints, action.sprint] };
-        case 'UPDATE_SPRINT_STATUS':
-            return { ...state, sprints: state.sprints.map(s => s.id === action.id ? { ...s, status: action.status } : s) };
-        case 'UPDATE_WORKSPACE':
-            return { ...state, workspaceName: action.name };
-        case 'REORDER_BACKLOG':
-            // action.projectTasks contains the reordered subset of tasks.
-            // We need to update the main tasks array by replacing the tasks that have matching IDs.
-            const updatedTaskIds = new Set(action.projectTasks.map(t => t.id));
+        case 'UPDATE_SPRINT':
+            return { ...state, sprints: state.sprints.map(s => s.id === action.sprint.id ? action.sprint : s) };
+        case 'UPDATE_SPRINT_STATUS': {
+            const isClosing = action.status === 'COMPLETED';
             return {
                 ...state,
-                tasks: [
-                    ...state.tasks.filter(t => !updatedTaskIds.has(t.id)),
-                    ...action.projectTasks
-                ]
+                sprints: state.sprints.map(s => s.id === action.id ? { ...s, status: action.status } : s),
+                tasks: isClosing
+                    ? state.tasks.map(t => (t.sprintId === action.id && t.status !== 'DONE') ? { ...t, sprintId: undefined } : t)
+                    : state.tasks
             };
+        }
+        case 'UPDATE_WORKSPACE':
+            return { ...state, workspaceName: action.name };
+        case 'REORDER_BACKLOG': {
+            // action.projectTasks contains the reordered subset of tasks.
+            const updatedTaskIds = new Set(action.projectTasks.map(t => t.id));
+            const nextTasks = [
+                ...state.tasks.filter(t => !updatedTaskIds.has(t.id)),
+                ...action.projectTasks
+            ];
+            return {
+                ...state,
+                tasks: nextTasks,
+                projects: recalculateProgress(state.projects, nextTasks)
+            };
+        }
         case 'ADD_TICKET':
             return { ...state, tickets: [action.ticket, ...state.tickets] };
         case 'UPDATE_TICKET_STATUS':
@@ -148,11 +209,11 @@ function reducer(state: StoreState, action: Action): StoreState {
                 ...state,
                 projects: state.projects.map(p => p.id === action.projectId ? {
                     ...p,
-                    members: [...p.members, action.member]
+                    members: [...(p.members || []), action.member]
                 } : p)
             };
         case 'SET_PROJECTS':
-            return { ...state, projects: action.projects };
+            return { ...state, projects: recalculateProgress(action.projects, state.tasks) };
         default:
             return state;
     }
@@ -175,9 +236,33 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
+const INITIAL_MOCK_PROJECTS: Project[] = [
+    {
+        id: '11111111-1111-1111-1111-111111111111',
+        name: 'VAERDIA Website',
+        description: 'Refonte complète du site web',
+        status: 'IN_PROGRESS' as ProjectStatus,
+        type: 'WEB_APPLICATION',
+        viewMode: 'BOARD',
+        managerId: 'u1',
+        managerName: 'Alice Chen',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString().split('T')[0],
+        budget: 25000,
+        clientName: 'Client Principal',
+        members: [
+            { id: 'u1', fullName: 'Alice Chen', role: 'Développeur Senior', avatar: 'AC', tjm: 450 },
+            { id: 'u2', fullName: 'Bob Martin', role: 'UI/UX Designer', avatar: 'BM', tjm: 380 }
+        ],
+        tags: ['Web', 'React', 'TypeScript'],
+        progress: 65,
+        createdAt: new Date().toISOString()
+    }
+];
+
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(reducer, {
-        projects: [],
+        projects: INITIAL_MOCK_PROJECTS,
         tasks: MOCK_TASKS,
         sprints: MOCK_SPRINTS,
         tickets: MOCK_TICKETS,
@@ -186,42 +271,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         sidebarOpen: true,
         workspaceName: 'Mon Espace de Travail',
     });
-
-    // Fetch projects on mount - Désactivé pour éviter les erreurs 401
-    React.useEffect(() => {
-        const loadProjects = async () => {
-            try {
-                // Utilisation des données mock pour éviter les erreurs API
-                const mockProjects: Project[] = [
-                    {
-                        id: 'P1',
-                        name: 'VAERDIA Website',
-                        description: 'Refonte complète du site web',
-                        status: 'IN_PROGRESS' as ProjectStatus,
-                        type: 'WEB_APPLICATION', // Type réel du projet
-                        viewMode: 'BOARD', // Mode d'affichage (peut être changé dynamiquement)
-                        managerId: 'u1',
-                        managerName: 'Alice Chen',
-                        startDate: '2024-01-15',
-                        endDate: '2024-12-15',
-                        budget: 25000,
-                        clientName: 'Client Principal',
-                        members: [
-                            { id: 'u1', fullName: 'Alice Chen', role: 'Développeur Senior', avatar: 'AC', tjm: 450 },
-                            { id: 'u2', fullName: 'Bob Martin', role: 'UI/UX Designer', avatar: 'BM', tjm: 380 }
-                        ],
-                        tags: ['Web', 'React', 'TypeScript'],
-                        progress: 65,
-                        createdAt: new Date().toISOString()
-                    }
-                ];
-                dispatch({ type: 'SET_PROJECTS', projects: mockProjects });
-            } catch (error) {
-                console.error('Failed to load projects:', error);
-            }
-        };
-        loadProjects();
-    }, []);
 
     const selectedProject = state.selectedProjectId
         ? state.projects.find(p => p.id === state.selectedProjectId) ?? null

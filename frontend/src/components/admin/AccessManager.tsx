@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Shield, Eye, Edit, Trash2, Users, BarChart3, Download, MessageSquare, Upload, CheckSquare, Settings, X, Plus, Search, Filter, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, Eye, Edit, Trash2, Users, BarChart3, Download, MessageSquare, Upload, CheckSquare, Settings, X, Plus, Search, Filter, Lock, AlertCircle, CheckCircle, Calendar, BookOpen, Layers, GitBranch } from 'lucide-react';
 import { AppLayout } from '../layout/AppLayout';
 import api from '../../api/api-client';
 
 interface Permission {
+  // Général
   canView: boolean;
   canEdit: boolean;
   canDelete: boolean;
@@ -14,6 +15,28 @@ interface Permission {
   canUploadFiles: boolean;
   canManageTasks: boolean;
   canAccessSettings: boolean;
+  // Congés (RH)
+  canModifierConges: boolean;
+  canSupprimerConges: boolean;
+  canGererConges: boolean;
+  // User Story
+  canCreerUserStory: boolean;
+  canVoirUserStory: boolean;
+  canModifierUserStory: boolean;
+  canSupprimerUserStory: boolean;
+  canGererUserStory: boolean;
+  // Sprint
+  canCreerSprint: boolean;
+  canVoirSprint: boolean;
+  canModifierSprint: boolean;
+  canSupprimerSprint: boolean;
+  canGererSprint: boolean;
+  // Backlog
+  canCreerBacklog: boolean;
+  canVoirBacklog: boolean;
+  canModifierBacklog: boolean;
+  canSupprimerBacklog: boolean;
+  canGererBacklog: boolean;
 }
 
 interface ProjectPermission {
@@ -59,7 +82,25 @@ export const SuperSimpleAccessManager: React.FC = () => {
     canComment: false,
     canUploadFiles: false,
     canManageTasks: false,
-    canAccessSettings: false
+    canAccessSettings: false,
+    canModifierConges: false,
+    canSupprimerConges: false,
+    canGererConges: false,
+    canCreerUserStory: false,
+    canVoirUserStory: false,
+    canModifierUserStory: false,
+    canSupprimerUserStory: false,
+    canGererUserStory: false,
+    canCreerSprint: false,
+    canVoirSprint: false,
+    canModifierSprint: false,
+    canSupprimerSprint: false,
+    canGererSprint: false,
+    canCreerBacklog: false,
+    canVoirBacklog: false,
+    canModifierBacklog: false,
+    canSupprimerBacklog: false,
+    canGererBacklog: false,
   });
 
   useEffect(() => {
@@ -173,7 +214,25 @@ export const SuperSimpleAccessManager: React.FC = () => {
         canComment: false,
         canUploadFiles: false,
         canManageTasks: false,
-        canAccessSettings: false
+        canAccessSettings: false,
+        canModifierConges: false,
+        canSupprimerConges: false,
+        canGererConges: false,
+        canCreerUserStory: false,
+        canVoirUserStory: false,
+        canModifierUserStory: false,
+        canSupprimerUserStory: false,
+        canGererUserStory: false,
+        canCreerSprint: false,
+        canVoirSprint: false,
+        canModifierSprint: false,
+        canSupprimerSprint: false,
+        canGererSprint: false,
+        canCreerBacklog: false,
+        canVoirBacklog: false,
+        canModifierBacklog: false,
+        canSupprimerBacklog: false,
+        canGererBacklog: false,
       });
     } catch (error: any) {
       console.error('Erreur permission:', error);
@@ -216,12 +275,13 @@ export const SuperSimpleAccessManager: React.FC = () => {
     p.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const roleColors = {
+  const roleColors: Record<string, { bg: string; text: string; icon: string }> = {
     'ADMIN': { bg: '#fee2e2', text: '#dc2626', icon: '👑' },
     'PROJECT_MANAGER': { bg: '#fef3c7', text: '#d97706', icon: '📋' },
     'DEVELOPER': { bg: '#dbeafe', text: '#2563eb', icon: '💻' },
     'TEAM_MEMBER': { bg: '#e0e7ff', text: '#6366f1', icon: '👥' },
-    'CLIENT': { bg: '#f0fdf4', text: '#16a34a', icon: '🤝' }
+    'CLIENT': { bg: '#f0fdf4', text: '#16a34a', icon: '🤝' },
+    'RH': { bg: '#fdf4ff', text: '#9333ea', icon: '🗓️' },
   };
 
   return (
@@ -440,6 +500,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
                         </td>
                         <td style={{ padding: '16px' }}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {/* Général */}
                             {permission.permissions.canView && <PermissionBadge icon={<Eye size={10} />} label="Vue" />}
                             {permission.permissions.canEdit && <PermissionBadge icon={<Edit size={10} />} label="Édition" />}
                             {permission.permissions.canDelete && <PermissionBadge icon={<Trash2 size={10} />} label="Suppression" />}
@@ -450,6 +511,26 @@ export const SuperSimpleAccessManager: React.FC = () => {
                             {permission.permissions.canUploadFiles && <PermissionBadge icon={<Upload size={10} />} label="Upload" />}
                             {permission.permissions.canManageTasks && <PermissionBadge icon={<CheckSquare size={10} />} label="Tâches" />}
                             {permission.permissions.canAccessSettings && <PermissionBadge icon={<Settings size={10} />} label="Settings" />}
+                            
+                            {/* RH Congés */}
+                            {permission.permissions.canModifierConges && <PermissionBadge icon={<Edit size={10} />} label="Modifier Congés" />}
+                            {permission.permissions.canSupprimerConges && <PermissionBadge icon={<Trash2 size={10} />} label="Supprimer Congés" />}
+                            {permission.permissions.canGererConges && <PermissionBadge icon={<Settings size={10} />} label="Gérer Congés" />}
+                            
+                            {/* User Story */}
+                            {(permission.permissions.canCreerUserStory || permission.permissions.canVoirUserStory || permission.permissions.canModifierUserStory || permission.permissions.canSupprimerUserStory || permission.permissions.canGererUserStory) && (
+                              <PermissionBadge icon={<BookOpen size={10} />} label="User Story" />
+                            )}
+
+                            {/* Sprint */}
+                            {(permission.permissions.canCreerSprint || permission.permissions.canVoirSprint || permission.permissions.canModifierSprint || permission.permissions.canSupprimerSprint || permission.permissions.canGererSprint) && (
+                              <PermissionBadge icon={<GitBranch size={10} />} label="Sprint" />
+                            )}
+
+                            {/* Backlog */}
+                            {(permission.permissions.canCreerBacklog || permission.permissions.canVoirBacklog || permission.permissions.canModifierBacklog || permission.permissions.canSupprimerBacklog || permission.permissions.canGererBacklog) && (
+                              <PermissionBadge icon={<Layers size={10} />} label="Backlog" />
+                            )}
                           </div>
                         </td>
                         <td style={{ padding: '16px', textAlign: 'center' }}>
@@ -645,53 +726,98 @@ export const SuperSimpleAccessManager: React.FC = () => {
                       <option value="ADMIN">Administrateur</option>
                       <option value="TEAM_MEMBER">Membre d'équipe</option>
                       <option value="CLIENT">Client</option>
+                      <option value="RH">RH (Ressources Humaines)</option>
                     </select>
                   </div>
 
                   <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
-                      Permissions
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                      {Object.entries({
-                        canView: { icon: <Eye size={14} />, label: 'Vue' },
-                        canEdit: { icon: <Edit size={14} />, label: 'Édition' },
-                        canDelete: { icon: <Trash2 size={14} />, label: 'Suppression' },
-                        canManageUsers: { icon: <Users size={14} />, label: 'Utilisateurs' },
-                        canViewReports: { icon: <BarChart3 size={14} />, label: 'Rapports' },
-                        canExport: { icon: <Download size={14} />, label: 'Export' },
-                        canComment: { icon: <MessageSquare size={14} />, label: 'Commentaires' },
-                        canUploadFiles: { icon: <Upload size={14} />, label: 'Upload' },
-                        canManageTasks: { icon: <CheckSquare size={14} />, label: 'Tâches' },
-                        canAccessSettings: { icon: <Settings size={14} />, label: 'Settings' }
-                      }).map(([key, { icon, label }]) => (
-                        <label key={key} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 12px',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          transition: 'all 0.2s',
-                          backgroundColor: newPermissions[key as keyof Permission] ? '#eff6ff' : 'white'
-                        }}>
-                          <input
-                            type="checkbox"
-                            checked={newPermissions[key as keyof Permission]}
-                            onChange={(e) => setNewPermissions(prev => ({
-                              ...prev,
-                              [key]: e.target.checked
-                            }))}
-                            style={{ margin: 0 }}
-                          />
-                          {icon}
-                          {label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+                     <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+                       Permissions
+                     </label>
+
+                     {/* Général */}
+                     <PermissionGroup
+                       title="Général"
+                       icon={<Shield size={14} />}
+                       color="#3b82f6"
+                       fields={[
+                         { key: 'canView', icon: <Eye size={13} />, label: 'Vue' },
+                         { key: 'canEdit', icon: <Edit size={13} />, label: 'Édition' },
+                         { key: 'canDelete', icon: <Trash2 size={13} />, label: 'Suppression' },
+                         { key: 'canManageUsers', icon: <Users size={13} />, label: 'Utilisateurs' },
+                         { key: 'canViewReports', icon: <BarChart3 size={13} />, label: 'Rapports' },
+                         { key: 'canExport', icon: <Download size={13} />, label: 'Export' },
+                         { key: 'canComment', icon: <MessageSquare size={13} />, label: 'Commentaires' },
+                         { key: 'canUploadFiles', icon: <Upload size={13} />, label: 'Upload' },
+                         { key: 'canManageTasks', icon: <CheckSquare size={13} />, label: 'Tâches' },
+                         { key: 'canAccessSettings', icon: <Settings size={13} />, label: 'Settings' },
+                       ]}
+                       permissions={newPermissions}
+                       onChange={(key, val) => setNewPermissions(prev => ({ ...prev, [key]: val }))}
+                     />
+
+                     {/* Congés (RH) */}
+                     <PermissionGroup
+                       title="Congés"
+                       icon={<Calendar size={14} />}
+                       color="#9333ea"
+                       fields={[
+                         { key: 'canModifierConges', icon: <Edit size={13} />, label: 'Modifier Congés' },
+                         { key: 'canSupprimerConges', icon: <Trash2 size={13} />, label: 'Supprimer Congés' },
+                         { key: 'canGererConges', icon: <Settings size={13} />, label: 'Gérer Congés' },
+                       ]}
+                       permissions={newPermissions}
+                       onChange={(key, val) => setNewPermissions(prev => ({ ...prev, [key]: val }))}
+                     />
+
+                     {/* User Story */}
+                     <PermissionGroup
+                       title="User Story"
+                       icon={<BookOpen size={14} />}
+                       color="#0891b2"
+                       fields={[
+                         { key: 'canCreerUserStory', icon: <Plus size={13} />, label: 'Créer' },
+                         { key: 'canVoirUserStory', icon: <Eye size={13} />, label: 'Voir' },
+                         { key: 'canModifierUserStory', icon: <Edit size={13} />, label: 'Modifier' },
+                         { key: 'canSupprimerUserStory', icon: <Trash2 size={13} />, label: 'Supprimer' },
+                         { key: 'canGererUserStory', icon: <Settings size={13} />, label: 'Gérer' },
+                       ]}
+                       permissions={newPermissions}
+                       onChange={(key, val) => setNewPermissions(prev => ({ ...prev, [key]: val }))}
+                     />
+
+                     {/* Sprint */}
+                     <PermissionGroup
+                       title="Sprint"
+                       icon={<GitBranch size={14} />}
+                       color="#059669"
+                       fields={[
+                         { key: 'canCreerSprint', icon: <Plus size={13} />, label: 'Créer' },
+                         { key: 'canVoirSprint', icon: <Eye size={13} />, label: 'Voir' },
+                         { key: 'canModifierSprint', icon: <Edit size={13} />, label: 'Modifier' },
+                         { key: 'canSupprimerSprint', icon: <Trash2 size={13} />, label: 'Supprimer' },
+                         { key: 'canGererSprint', icon: <Settings size={13} />, label: 'Gérer' },
+                       ]}
+                       permissions={newPermissions}
+                       onChange={(key, val) => setNewPermissions(prev => ({ ...prev, [key]: val }))}
+                     />
+
+                     {/* Backlog */}
+                     <PermissionGroup
+                       title="Backlog"
+                       icon={<Layers size={14} />}
+                       color="#d97706"
+                       fields={[
+                         { key: 'canCreerBacklog', icon: <Plus size={13} />, label: 'Créer' },
+                         { key: 'canVoirBacklog', icon: <Eye size={13} />, label: 'Voir' },
+                         { key: 'canModifierBacklog', icon: <Edit size={13} />, label: 'Modifier' },
+                         { key: 'canSupprimerBacklog', icon: <Trash2 size={13} />, label: 'Supprimer' },
+                         { key: 'canGererBacklog', icon: <Settings size={13} />, label: 'Gérer' },
+                       ]}
+                       permissions={newPermissions}
+                       onChange={(key, val) => setNewPermissions(prev => ({ ...prev, [key]: val }))}
+                     />
+                   </div>
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                     <button
@@ -749,7 +875,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
@@ -773,5 +899,54 @@ const PermissionBadge: React.FC<{ icon: React.ReactNode; label: string }> = ({ i
   }}>
     {icon}
     {label}
+  </div>
+);
+
+// Permission Group Component
+const PermissionGroup: React.FC<{
+  title: string;
+  icon: React.ReactNode;
+  color: string;
+  fields: { key: keyof Permission; icon: React.ReactNode; label: string }[];
+  permissions: Permission;
+  onChange: (key: string, val: boolean) => void;
+}> = ({ title, icon, color, fields, permissions, onChange }) => (
+  <div style={{ marginBottom: '16px' }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      marginBottom: '8px',
+      paddingBottom: '6px',
+      borderBottom: `2px solid ${color}22`
+    }}>
+      <span style={{ color }}>{icon}</span>
+      <span style={{ fontSize: '12px', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</span>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+      {fields.map(({ key, icon: fieldIcon, label }) => (
+        <label key={key} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '7px 10px',
+          border: `1px solid ${permissions[key] ? color + '55' : '#e5e7eb'}`,
+          borderRadius: '7px',
+          cursor: 'pointer',
+          fontSize: '13px',
+          transition: 'all 0.15s',
+          backgroundColor: permissions[key] ? color + '11' : 'white'
+        }}>
+          <input
+            type="checkbox"
+            checked={!!permissions[key]}
+            onChange={(e) => onChange(key as string, e.target.checked)}
+            style={{ margin: 0, accentColor: color }}
+          />
+          <span style={{ color: permissions[key] ? color : '#6b7280' }}>{fieldIcon}</span>
+          <span style={{ color: permissions[key] ? '#111827' : '#374151', fontWeight: permissions[key] ? '600' : '400' }}>{label}</span>
+        </label>
+      ))}
+    </div>
   </div>
 );

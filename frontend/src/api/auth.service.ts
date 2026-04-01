@@ -21,6 +21,11 @@ export const authService = {
         return response.data;
     },
 
+    async updateProfile(data: Partial<User>): Promise<User> {
+        const response = await api.patch<User>('/users/profile', data);
+        return response.data;
+    },
+
     async logout(): Promise<void> {
         await api.post('/auth/logout');
     },

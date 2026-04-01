@@ -12,8 +12,23 @@ export class User {
   @Column()
   password: string;
 
-  @Column()
+  @Column({ nullable: true })
   fullName: string;
+
+  @Column({ nullable: true })
+  phone: string;
+
+  @Column({ nullable: true, type: 'text' })
+  bio: string;
+
+  @Column({ nullable: true })
+  department: string;
+
+  @Column({ nullable: true, type: 'text' })
+  profilePhoto: string;
+
+  @Column({ default: 'fr' })
+  preferredLanguage: string;
 
   @Column({
     type: 'enum',

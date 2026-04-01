@@ -5,8 +5,11 @@ import { AdvancedRoleManager } from '../../components/ui/AdvancedRoleManager';
 
 export const RoleManagementPage: React.FC = () => {
   return (
-    <AppLayout title="Gestion des Permissions" subtitle="Gérez les accès et les rôles par profil">
-      <div className="max-w-7xl mx-auto">
+    <AppLayout 
+      title="Autorisations & Rôles" 
+      subtitle="Gestion centralisée du système RBAC et des accès multi-projets"
+    >
+      <div className="max-w-7xl mx-auto py-8">
         <AdvancedRoleManager />
       </div>
     </AppLayout>

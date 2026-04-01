@@ -62,6 +62,8 @@ export interface Task {
     createdAt: string;
     dueDate?: string;
     comments: TaskComment[];
+    subTasks?: Task[];
+    parentTaskId?: string;
 }
 
 export interface TaskComment {
@@ -89,6 +91,7 @@ export interface Sprint {
     endDate: string;
     tasks: Task[];
     velocity?: number;
+    capacity?: number;
 }
 
 // ==============================

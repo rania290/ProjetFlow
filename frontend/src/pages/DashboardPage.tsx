@@ -4,12 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FolderKanban, Plus, Users, CheckCircle2,
     Clock, AlertTriangle, Zap, Bot, ArrowUpRight,
-    CalendarDays, Target, Activity
+    CalendarDays, Target, Activity, Sparkles
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useStore } from '../store/projectStore';
 import type { Project } from '../types/project.types';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
     PLANNED: { label: 'Planifié', color: 'text-slate-500', bg: 'bg-slate-100' },
@@ -40,25 +43,32 @@ export const DashboardPage: React.FC = () => {
                 {/* ===== KPI CARDS ===== */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {[
-                        { label: 'Projets total', value: dashboardStats.totalProjects, icon: <FolderKanban className="w-5 h-5" />, color: 'text-indigo-600', bg: 'from-indigo-500 to-primary-600', lightBg: 'bg-indigo-50', border: 'border-indigo-100', shadow: 'shadow-indigo-100' },
-                        { label: 'En cours', value: dashboardStats.activeProjects, icon: <Activity className="w-5 h-5" />, color: 'text-blue-600', bg: 'from-blue-500 to-cyan-500', lightBg: 'bg-blue-50', border: 'border-blue-100', shadow: 'shadow-blue-100' },
-                        { label: 'Tâches', value: dashboardStats.totalTasks, icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-slate-600', bg: 'from-slate-500 to-slate-600', lightBg: 'bg-slate-50', border: 'border-slate-200', shadow: 'shadow-slate-100' },
-                        { label: 'Terminées', value: dashboardStats.completedTasks, icon: <Target className="w-5 h-5" />, color: 'text-emerald-600', bg: 'from-emerald-500 to-teal-500', lightBg: 'bg-emerald-50', border: 'border-emerald-100', shadow: 'shadow-emerald-100' },
-                        { label: 'Membres', value: dashboardStats.teamMembers, icon: <Users className="w-5 h-5" />, color: 'text-violet-600', bg: 'from-violet-500 to-purple-600', lightBg: 'bg-violet-50', border: 'border-violet-100', shadow: 'shadow-violet-100' },
-                        { label: 'Échéances', value: dashboardStats.upcomingDeadlines, icon: <Clock className="w-5 h-5" />, color: 'text-amber-600', bg: 'from-amber-400 to-orange-500', lightBg: 'bg-amber-50', border: 'border-amber-100', shadow: 'shadow-amber-100' },
+                        { label: 'Projets total', value: dashboardStats.totalProjects, icon: <FolderKanban />, color: 'text-indigo-600' },
+                        { label: 'En cours', value: dashboardStats.activeProjects, icon: <Activity />, color: 'text-blue-600' },
+                        { label: 'Tâches', value: dashboardStats.totalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
+                        { label: 'Terminées', value: dashboardStats.completedTasks, icon: <Target />, color: 'text-emerald-600' },
+                        { label: 'Membres', value: dashboardStats.teamMembers, icon: <Users />, color: 'text-violet-600' },
+                        { label: 'Échéances', value: dashboardStats.upcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
                     ].map((kpi, i) => (
                         <motion.div
                             key={kpi.label}
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.06 }}
-                            className={`bg-white rounded-2xl p-4 border ${kpi.border} shadow-sm ${kpi.shadow} hover:shadow-lg transition-all group`}
                         >
-                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${kpi.bg} flex items-center justify-center mb-3 shadow-sm text-white group-hover:scale-110 transition-transform`}>
-                                {kpi.icon}
-                            </div>
-                            <div className={`text-2xl font-bold font-display ${kpi.color}`}>{kpi.value}</div>
-                            <div className="text-xs text-slate-400 mt-0.5 font-medium">{kpi.label}</div>
+                            <Card className="hover:shadow-md transition-all h-full">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                        {kpi.label}
+                                    </CardTitle>
+                                    <div className={`p-1.5 rounded-md bg-slate-50 ${kpi.color}`}>
+                                        {React.cloneElement(kpi.icon as React.ReactElement<any>, { className: "w-4 h-4" })}
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-slate-900">{kpi.value}</div>
+                                </CardContent>
+                            </Card>
                         </motion.div>
                     ))}
                 </div>
@@ -69,12 +79,9 @@ export const DashboardPage: React.FC = () => {
                     <div className="lg:col-span-2 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-base font-bold text-slate-800">Mes projets</h2>
-                            <button
-                                onClick={() => setShowCreateModal(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors shadow-md shadow-primary-500/20"
-                            >
-                                <Plus className="w-3.5 h-3.5" /> Nouveau projet
-                            </button>
+                            <Button onClick={() => setShowCreateModal(true)} size="sm" className="gap-2">
+                                <Plus className="w-4 h-4" /> Nouveau projet
+                            </Button>
                         </div>
 
                         <div className="space-y-3">
@@ -91,28 +98,43 @@ export const DashboardPage: React.FC = () => {
                     <div className="space-y-4">
 
                         {/* Aura AI */}
-                        <div className="bg-gradient-to-br from-primary-600 to-accent-500 rounded-2xl p-5 text-white">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                                    <Bot className="w-4 h-4" />
+                        <Card className="bg-slate-900 text-white overflow-hidden shadow-md">
+                            <CardHeader className="pb-3 flex flex-row items-center justify-between border-b border-white/10">
+                                <div className="flex items-center gap-2">
+                                   <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                                       <Bot className="w-4 h-4 text-indigo-400" />
+                                   </div>
+                                   <CardTitle className="text-sm">Aura IA</CardTitle>
                                 </div>
-                                <span className="font-bold text-sm">Aura IA</span>
-                                <span className="ml-auto text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">En ligne</span>
-                            </div>
-                            <div className="space-y-2">
+                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20">En ligne</Badge>
+                            </CardHeader>
+                            <CardContent className="pt-4 space-y-2">
                                 {[
                                     'Sprint 1 se termine dans 4 jours — 2 tâches non assignées',
                                     'Portail Client à 62% — en avance sur le planning',
                                     'Bug critique non assigné depuis 2 jours',
                                 ].map((msg, i) => (
-                                    <div key={i} className="text-[11px] text-white/85 bg-white/10 rounded-xl px-3 py-2 leading-relaxed">
+                                    <div key={i} className="text-xs text-slate-300 bg-white/5 rounded-lg px-3 py-2 leading-relaxed border border-white/5">
                                         {msg}
                                     </div>
                                 ))}
+                                <Button className="w-full mt-2" variant="secondary" size="sm">Ouvrir Aura &rarr;</Button>
+                            </CardContent>
+                        </Card>
+
+                        {/* Portail Client Shortcut */}
+                        <div className="bg-white rounded-2xl border border-indigo-100 p-5 shadow-sm shadow-indigo-50 group hover:border-indigo-300 transition-all cursor-pointer"
+                            onClick={() => navigate('/client-portal')}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-4 h-4" />
+                                </div>
+                                <span className="font-bold text-sm text-slate-800">Portail Client</span>
+                                <ArrowUpRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                             </div>
-                            <button className="mt-3 w-full py-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors text-xs font-semibold">
-                                Ouvrir Aura →
-                            </button>
+                            <p className="text-[11px] text-slate-500 leading-relaxed">
+                                Accédez à l'interface dédiée pour vos clients. Validez les livrables et gérez le support.
+                            </p>
                         </div>
 
                         {/* Tâches urgentes */}
@@ -251,7 +273,7 @@ const ProjectRow: React.FC<{ project: Project; index: number; onOpen: () => void
                         </div>
                         <div className="text-right">
                             <p className="text-[10px] text-slate-400">Budget</p>
-                            <p className="text-xs font-bold text-slate-700">{project.budget.toLocaleString()} €</p>
+                            <p className="text-xs font-bold text-slate-700">{project.budget.toLocaleString()} DT</p>
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                     </div>

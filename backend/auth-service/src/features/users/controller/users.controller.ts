@@ -11,7 +11,7 @@ import { User } from '../model/users.model';
 @ApiSecurity('access_token')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,6 +40,21 @@ export class UsersController {
       fullName: body.fullName ?? '',
       role: body.role,
     });
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update current user profile' })
+  updateProfile(@Request() req: any, @Body() body: Partial<User>) {
+    const userId = req.user.id;
+    // Prevent self-role-change or password change here if desired
+    // For now, we allow general updates as per frontend needs
+    delete body.role; // Security: don't let user change their own role
+    if (body.password) {
+      // In a real app, handle password change via separate logic with bcrypt
+      delete body.password;
+    }
+    return this.usersService.update(userId, body);
   }
 
   @Patch(':id')

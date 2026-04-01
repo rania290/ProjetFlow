@@ -53,13 +53,13 @@ export const CreateProjectModal: React.FC<Props> = ({ onClose }) => {
     const [form, setForm] = useState({
         name: '',
         description: '',
-        type: 'WEB_APPLICATION' as ProjectType,
-        status: 'PLANNED' as ProjectStatus,
+        type: 'WEB_APPLICATION',
+        status: 'PLANNED' as const,
         clientName: '',
         managerName: 'Moi',
         budget: '',
-        startDate: '',
-        endDate: '',
+        startDate: new Date().toISOString().split('T')[0], // Date actuelle par défaut
+        endDate: '', // Laisser vide pour que l'utilisateur choisisse
         tags: '',
     });
     const [tagInput, setTagInput] = useState('');
@@ -94,7 +94,8 @@ export const CreateProjectModal: React.FC<Props> = ({ onClose }) => {
         if (!form.endDate) e.endDate = 'Date de fin requise.';
         if (form.startDate && form.endDate && form.startDate > form.endDate)
             e.endDate = 'La date de fin doit être après la date de début.';
-        if (!form.budget || isNaN(Number(form.budget))) e.budget = 'Budget invalide.';
+        // Le budget n'est plus requis
+        if (form.budget && isNaN(Number(form.budget))) e.budget = 'Budget invalide.';
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -114,7 +115,7 @@ export const CreateProjectModal: React.FC<Props> = ({ onClose }) => {
                 viewMode: 'BOARD' as const, // Mode d'affichage par défaut
                 status: form.status,
                 clientName: form.clientName.trim() || undefined,
-                budget: Number(form.budget) || 0,
+                budget: form.budget ? Number(form.budget) : 0, // Budget optionnel, 0 si non renseigné
                 startDate: form.startDate,
                 endDate: form.endDate,
                 progress: 0,
@@ -355,17 +356,16 @@ export const CreateProjectModal: React.FC<Props> = ({ onClose }) => {
                                 {/* Budget */}
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                                        <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> Budget (€) *</span>
+                                        <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /> Budget (DT)</span>
                                     </label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">€</span>
                                         <input
                                             type="number"
                                             value={form.budget}
                                             onChange={e => set('budget', e.target.value)}
-                                            placeholder="50000"
+                                            placeholder="150000 DT"
                                             min={0}
-                                            className={`w-full pl-8 pr-4 py-2.5 text-sm bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all placeholder:text-slate-400 ${errors.budget ? 'border-red-300' : 'border-slate-200'}`}
+                                            className={`w-full px-4 py-2.5 text-sm bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all placeholder:text-slate-400 ${errors.budget ? 'border-red-300' : 'border-slate-200'}`}
                                         />
                                     </div>
                                     {errors.budget && <p className="mt-1 text-xs text-red-500">{errors.budget}</p>}
@@ -428,7 +428,7 @@ export const CreateProjectModal: React.FC<Props> = ({ onClose }) => {
                                         { label: 'Client', value: form.clientName || '—' },
                                         { label: 'Début', value: form.startDate || '—' },
                                         { label: 'Fin', value: form.endDate || '—' },
-                                        { label: 'Budget', value: form.budget ? `€ ${Number(form.budget).toLocaleString()}` : '—' },
+                                        { label: 'Budget', value: form.budget ? `DT ${Number(form.budget).toLocaleString()}` : '—' },
                                     ].map(item => (
                                         <div key={item.label} className="flex flex-col gap-0.5">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{item.label}</span>

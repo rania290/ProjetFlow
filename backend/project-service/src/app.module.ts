@@ -7,5 +7,5 @@ import { RoleAssignmentsModule } from './features/role-assignments/role-assignme
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, ProjectsModule, RoleAssignmentsModule],
 })
-export class AppModule {}
+export class AppModule { }
 

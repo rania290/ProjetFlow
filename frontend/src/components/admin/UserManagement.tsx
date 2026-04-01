@@ -170,6 +170,7 @@ export const UserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [pendingToggle, setPendingToggle] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -253,14 +254,14 @@ export const UserManagement: React.FC = () => {
   const createUser = async (userData: CreateUserDto) => {
     try {
       setLoading(true);
-      const response = await api.post('/users', userData).catch(() => ({ 
-        data: { 
-          ...userData, 
-          id: Date.now().toString(), 
-          isActive: true, 
-          createdAt: new Date().toISOString(), 
-          updatedAt: new Date().toISOString() 
-        } 
+      const response = await api.post('/users', userData).catch(() => ({
+        data: {
+          ...userData,
+          id: Date.now().toString(),
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
       }));
       const newUser = response.data;
       setUsers([...users, newUser]);
@@ -278,8 +279,8 @@ export const UserManagement: React.FC = () => {
   const updateUser = async (userId: string, updateData: Partial<User>) => {
     try {
       setLoading(true);
-      const response = await api.patch(`/users/${userId}`, updateData).catch(() => ({ 
-        data: { ...updateData, id: userId } 
+      const response = await api.patch(`/users/${userId}`, updateData).catch(() => ({
+        data: { ...updateData, id: userId }
       }));
       const updatedUser = response.data;
       setUsers(users.map(u => u.id === userId ? { ...u, ...updatedUser } : u));
@@ -299,7 +300,7 @@ export const UserManagement: React.FC = () => {
 
     try {
       setLoading(true);
-      await api.delete(`/users/${userId}`).catch(() => {});
+      await api.delete(`/users/${userId}`).catch(() => { });
       setUsers(users.filter(u => u.id !== userId));
       setSuccess('Utilisateur supprimé avec succès !');
     } catch (err: any) {
@@ -312,12 +313,18 @@ export const UserManagement: React.FC = () => {
   };
 
   const toggleUserStatus = async (userId: string, isActive: boolean) => {
+    if (pendingToggle !== userId) {
+      setPendingToggle(userId);
+      setTimeout(() => setPendingToggle(prev => prev === userId ? null : prev), 4000);
+      return;
+    }
     await updateUser(userId, { isActive });
+    setPendingToggle(null);
   };
 
   const toggleUserSelection = (userId: string) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
+    setSelectedUsers(prev =>
+      prev.includes(userId)
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     );
@@ -355,8 +362,8 @@ export const UserManagement: React.FC = () => {
 
   return (
     <AppLayout title="Gestion des Utilisateurs" subtitle="Administration des comptes et rôles">
-      <div style={{ 
-        padding: '24px', 
+      <div style={{
+        padding: '24px',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
         minHeight: '100vh',
         position: 'relative',
@@ -378,7 +385,7 @@ export const UserManagement: React.FC = () => {
         }} />
 
         <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          
+
           {/* Header Premium */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.95)',
@@ -391,12 +398,12 @@ export const UserManagement: React.FC = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h1 style={{ 
-                  fontSize: '36px', 
-                  fontWeight: '800', 
-                  marginBottom: '12px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <h1 style={{
+                  fontSize: '36px',
+                  fontWeight: '800',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: '16px',
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   WebkitBackgroundClip: 'text',
@@ -481,496 +488,505 @@ export const UserManagement: React.FC = () => {
               </div>
             </div>
 
-          {/* Role Cards Premium */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-            gap: '20px', 
-            marginBottom: '32px' 
-          }}>
-            {Object.entries(ROLE_CONFIG).map(([role, config]) => {
-              const Icon = config.icon;
-              const count = roleStats[role] || 0;
-              const isSelected = roleFilter === role;
-              return (
-                <div 
-                  key={role} 
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    padding: '24px',
-                    borderRadius: '20px',
-                    border: isSelected ? `2px solid ${config.color}` : '1px solid rgba(255, 255, 255, 0.2)',
-                    boxShadow: isSelected ? config.shadow : '0 8px 32px rgba(0, 0, 0, 0.1)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  onMouseOver={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.boxShadow = config.shadow;
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
-                    }
-                  }}
-                  onClick={() => setRoleFilter(roleFilter === role ? 'all' : role)}
-                >
-                  {/* Background Pattern */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: config.pattern,
-                    pointerEvents: 'none'
-                  }} />
+            {/* Role Cards Premium */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '20px',
+              marginBottom: '32px'
+            }}>
+              {Object.entries(ROLE_CONFIG).map(([role, config]) => {
+                const Icon = config.icon;
+                const count = roleStats[role] || 0;
+                const isSelected = roleFilter === role;
+                return (
+                  <div
+                    key={role}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(20px)',
+                      padding: '24px',
+                      borderRadius: '20px',
+                      border: isSelected ? `2px solid ${config.color}` : '1px solid rgba(255, 255, 255, 0.2)',
+                      boxShadow: isSelected ? config.shadow : '0 8px 32px rgba(0, 0, 0, 0.1)',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                    onMouseOver={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = config.shadow;
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                      }
+                    }}
+                    onClick={() => setRoleFilter(roleFilter === role ? 'all' : role)}
+                  >
+                    {/* Background Pattern */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: config.pattern,
+                      pointerEvents: 'none'
+                    }} />
 
-                  <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                      <div style={{
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '16px',
-                        background: config.gradient,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        boxShadow: config.shadow
-                      }}>
-                        <Icon size={28} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '28px', fontWeight: '800', color: '#1f2937' }}>{count}</div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          {config.label}
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '16px',
+                          background: config.gradient,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          boxShadow: config.shadow
+                        }}>
+                          <Icon size={28} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '28px', fontWeight: '800', color: '#1f2937' }}>{count}</div>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {config.label}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
-                      {config.description}
+                      <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
+                        {config.description}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Filters Premium */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            padding: '24px',
-            borderRadius: '16px',
-            marginBottom: '24px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-                <Search size={20} style={{ position: 'absolute', left: '16px', top: '14px', color: '#9ca3af' }} />
-                <input
-                  type="text"
-                  placeholder="Rechercher par nom, email, département ou localisation..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+            {/* Filters Premium */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              padding: '24px',
+              borderRadius: '16px',
+              marginBottom: '24px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
+                  <Search size={20} style={{ position: 'absolute', left: '16px', top: '14px', color: '#9ca3af' }} />
+                  <input
+                    type="text"
+                    placeholder="Rechercher par nom, email, département ou localisation..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px 12px 48px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      fontSize: '15px',
+                      outline: 'none',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      transition: 'all 0.2s'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#667eea';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
                   style={{
-                    width: '100%',
-                    padding: '12px 16px 12px 48px',
+                    padding: '12px 16px',
                     border: '1px solid #e5e7eb',
                     borderRadius: '12px',
                     fontSize: '15px',
                     outline: 'none',
                     background: 'rgba(255, 255, 255, 0.8)',
+                    cursor: 'pointer',
+                    minWidth: '150px'
+                  }}
+                >
+                  <option value="all">Tous les rôles</option>
+                  {Object.entries(ROLE_CONFIG).map(([role, config]) => (
+                    <option key={role} value={role}>{config.label}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{
+                    padding: '12px 16px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    outline: 'none',
+                    background: 'rgba(255, 255, 255, 0.8)',
+                    cursor: 'pointer',
+                    minWidth: '150px'
+                  }}
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="active">Actifs</option>
+                  <option value="inactive">Inactifs</option>
+                </select>
+
+                <button
+                  onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+                  style={{
+                    padding: '12px 16px',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    background: viewMode === 'list' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255, 255, 255, 0.8)',
+                    color: viewMode === 'list' ? 'white' : '#374151',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    minWidth: '120px',
                     transition: 'all 0.2s'
                   }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#667eea';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e5e7eb';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                />
+                >
+                  <Filter size={18} />
+                  {viewMode === 'list' ? 'Liste' : 'Grille'}
+                </button>
               </div>
-
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                style={{
-                  padding: '12px 16px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  fontSize: '15px',
-                  outline: 'none',
-                  background: 'rgba(255, 255, 255, 0.8)',
-                  cursor: 'pointer',
-                  minWidth: '150px'
-                }}
-              >
-                <option value="all">Tous les rôles</option>
-                {Object.entries(ROLE_CONFIG).map(([role, config]) => (
-                  <option key={role} value={role}>{config.label}</option>
-                ))}
-              </select>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                style={{
-                  padding: '12px 16px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  fontSize: '15px',
-                  outline: 'none',
-                  background: 'rgba(255, 255, 255, 0.8)',
-                  cursor: 'pointer',
-                  minWidth: '150px'
-                }}
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="active">Actifs</option>
-                <option value="inactive">Inactifs</option>
-              </select>
-
-              <button
-                onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-                style={{
-                  padding: '12px 16px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  background: viewMode === 'list' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(255, 255, 255, 0.8)',
-                  color: viewMode === 'list' ? 'white' : '#374151',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '15px',
-                  fontWeight: '500',
-                  minWidth: '120px',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <Filter size={18} />
-                {viewMode === 'list' ? 'Liste' : 'Grille'}
-              </button>
             </div>
-          </div>
 
-          {/* Success/Error Messages */}
-          {error && (
-            <div style={{
-              padding: '16px 20px',
-              borderRadius: '12px',
-              marginBottom: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              fontSize: '15px',
-              fontWeight: '500',
-              backgroundColor: 'rgba(254, 242, 242, 0.95)',
-              color: '#dc2626',
-              border: '1px solid rgba(254, 202, 202, 0.5)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <AlertCircle size={20} />
-              {error}
-              <button 
-                onClick={() => setError(null)} 
-                style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-          )}
-
-          {success && (
-            <div style={{
-              padding: '16px 20px',
-              borderRadius: '12px',
-              marginBottom: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              fontSize: '15px',
-              fontWeight: '500',
-              backgroundColor: 'rgba(240, 253, 244, 0.95)',
-              color: '#166534',
-              border: '1px solid rgba(187, 247, 208, 0.5)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <CheckCircle size={20} />
-              {success}
-              <button 
-                onClick={() => setSuccess(null)} 
-                style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#166534' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-          )}
-
-          {/* Users List Premium */}
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '20px',
-            overflow: 'hidden',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}>
-            {loading ? (
-              <div style={{ padding: '80px', textAlign: 'center' }}>
-                <div style={{ display: 'inline-block', width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                <p style={{ marginTop: '20px', color: '#6b7280', fontSize: '16px', fontWeight: '500' }}>Chargement des utilisateurs...</p>
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div style={{ padding: '80px', textAlign: 'center' }}>
-                <div style={{ width: '120px', height: '120px', backgroundColor: '#f8fafc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                  <Users size={48} style={{ color: '#cbd5e1' }} />
-                </div>
-                <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>
-                  Aucun utilisateur trouvé
-                </h3>
-                <p style={{ color: '#6b7280', marginBottom: '24px', fontSize: '16px' }}>
-                  {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' 
-                    ? 'Aucun résultat pour vos filtres' 
-                    : 'Commencez par créer votre premier utilisateur'
-                  }
-                </p>
-                {!searchTerm && roleFilter === 'all' && statusFilter === 'all' && (
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      padding: '14px 24px',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '15px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      margin: '0 auto',
-                      boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
-                    }}
-                  >
-                    <UserPlus size={20} />
-                    Créer un utilisateur
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead style={{ background: 'rgba(248, 250, 252, 0.8)' }}>
-                    <tr>
-                      <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Utilisateur
-                      </th>
-                      <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Rôle
-                      </th>
-                      <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Département
-                      </th>
-                      <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Statut
-                      </th>
-                      <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Projets
-                      </th>
-                      <th style={{ padding: '20px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map((user, index) => {
-                      const RoleIcon = ROLE_CONFIG[user.role]?.icon || UserCheck;
-                      return (
-                        <tr key={user.id} style={{ 
-                          borderBottom: '1px solid rgba(241, 245, 249, 0.8)',
-                          backgroundColor: index % 2 === 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(248, 250, 252, 0.5)',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(248, 250, 252, 0.5)';
-                        }}>
-                          <td style={{ padding: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                              <div style={{ 
-                                width: '48px', 
-                                height: '48px', 
-                                borderRadius: '12px', 
-                                background: ROLE_CONFIG[user.role]?.gradient || '#e5e7eb',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '16px',
-                                fontWeight: '700',
-                                color: 'white',
-                                boxShadow: ROLE_CONFIG[user.role]?.shadow || '0 4px 20px rgba(0, 0, 0, 0.1)'
-                              }}>
-                                {user.fullName.split(' ').map(n => n[0]).join('')}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>
-                                  {user.fullName}
-                                </div>
-                                <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                                  <Mail size={14} />
-                                  {user.email}
-                                </div>
-                                <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <MapPin size={12} />
-                                  {user.location}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{ padding: '20px' }}>
-                            <div style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              padding: '6px 12px',
-                              borderRadius: '12px',
-                              fontSize: '13px',
-                              fontWeight: '600',
-                              backgroundColor: ROLE_CONFIG[user.role]?.bgColor || '#f8fafc',
-                              color: ROLE_CONFIG[user.role]?.color || '#475569',
-                              border: `1px solid ${ROLE_CONFIG[user.role]?.borderColor || '#e2e8f0'}`
-                            }}>
-                              <RoleIcon size={14} />
-                              {ROLE_CONFIG[user.role]?.label || user.role}
-                            </div>
-                          </td>
-                          <td style={{ padding: '20px' }}>
-                            <div style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>
-                              {user.department}
-                            </div>
-                          </td>
-                          <td style={{ padding: '20px' }}>
-                            <button
-                              onClick={() => toggleUserStatus(user.id, !user.isActive)}
-                              style={{
-                                padding: '6px 12px',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                border: 'none',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                backgroundColor: user.isActive ? '#dcfce7' : '#fee2e2',
-                                color: user.isActive ? '#166534' : '#dc2626'
-                              }}
-                              onMouseOver={(e) => {
-                                e.currentTarget.style.backgroundColor = user.isActive ? '#bbf7d0' : '#fecaca';
-                              }}
-                              onMouseOut={(e) => {
-                                e.currentTarget.style.backgroundColor = user.isActive ? '#dcfce7' : '#fee2e2';
-                              }}
-                            >
-                              {user.isActive ? '✓ Actif' : '✗ Inactif'}
-                            </button>
-                          </td>
-                          <td style={{ padding: '20px' }}>
-                            <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
-                              {user.projectCount || 0}
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                              projet(s)
-                            </div>
-                          </td>
-                          <td style={{ padding: '20px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setShowEditModal(true);
-                                }}
-                                style={{
-                                  padding: '8px 12px',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: '8px',
-                                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                                  color: '#475569',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  fontSize: '13px',
-                                  fontWeight: '500',
-                                  transition: 'all 0.2s'
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#f8fafc';
-                                  e.currentTarget.style.borderColor = '#cbd5e1';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-                                  e.currentTarget.style.borderColor = '#e2e8f0';
-                                }}
-                              >
-                                <Edit size={14} />
-                                Modifier
-                              </button>
-                              <button
-                                onClick={() => deleteUser(user.id)}
-                                style={{
-                                  padding: '8px 12px',
-                                  border: '1px solid #fecaca',
-                                  borderRadius: '8px',
-                                  backgroundColor: 'rgba(254, 242, 242, 0.8)',
-                                  color: '#dc2626',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  fontSize: '13px',
-                                  fontWeight: '500',
-                                  transition: 'all 0.2s'
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#fee2e2';
-                                  e.currentTarget.style.borderColor = '#fca5a5';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'rgba(254, 242, 242, 0.8)';
-                                  e.currentTarget.style.borderColor = '#fecaca';
-                                }}
-                              >
-                                <Trash2 size={14} />
-                                Supprimer
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            {/* Success/Error Messages */}
+            {error && (
+              <div style={{
+                padding: '16px 20px',
+                borderRadius: '12px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '15px',
+                fontWeight: '500',
+                backgroundColor: 'rgba(254, 242, 242, 0.95)',
+                color: '#dc2626',
+                border: '1px solid rgba(254, 202, 202, 0.5)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <AlertCircle size={20} />
+                {error}
+                <button
+                  onClick={() => setError(null)}
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}
+                >
+                  <X size={20} />
+                </button>
               </div>
             )}
+
+            {success && (
+              <div style={{
+                padding: '16px 20px',
+                borderRadius: '12px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '15px',
+                fontWeight: '500',
+                backgroundColor: 'rgba(240, 253, 244, 0.95)',
+                color: '#166534',
+                border: '1px solid rgba(187, 247, 208, 0.5)',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <CheckCircle size={20} />
+                {success}
+                <button
+                  onClick={() => setSuccess(null)}
+                  style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#166534' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            )}
+
+            {/* Users List Premium */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              {loading ? (
+                <div style={{ padding: '80px', textAlign: 'center' }}>
+                  <div style={{ display: 'inline-block', width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTop: '4px solid #667eea', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                  <p style={{ marginTop: '20px', color: '#6b7280', fontSize: '16px', fontWeight: '500' }}>Chargement des utilisateurs...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div style={{ padding: '80px', textAlign: 'center' }}>
+                  <div style={{ width: '120px', height: '120px', backgroundColor: '#f8fafc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                    <Users size={48} style={{ color: '#cbd5e1' }} />
+                  </div>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1f2937', marginBottom: '12px' }}>
+                    Aucun utilisateur trouvé
+                  </h3>
+                  <p style={{ color: '#6b7280', marginBottom: '24px', fontSize: '16px' }}>
+                    {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
+                      ? 'Aucun résultat pour vos filtres'
+                      : 'Commencez par créer votre premier utilisateur'
+                    }
+                  </p>
+                  {!searchTerm && roleFilter === 'all' && statusFilter === 'all' && (
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        padding: '14px 24px',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        margin: '0 auto',
+                        boxShadow: '0 8px 32px rgba(102, 126, 234, 0.3)'
+                      }}
+                    >
+                      <UserPlus size={20} />
+                      Créer un utilisateur
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead style={{ background: 'rgba(248, 250, 252, 0.8)' }}>
+                      <tr>
+                        <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Utilisateur
+                        </th>
+                        <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Rôle
+                        </th>
+                        <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Département
+                        </th>
+                        <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Statut
+                        </th>
+                        <th style={{ padding: '20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Projets
+                        </th>
+                        <th style={{ padding: '20px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map((user, index) => {
+                        const RoleIcon = ROLE_CONFIG[user.role]?.icon || UserCheck;
+                        return (
+                          <tr key={user.id} style={{
+                            borderBottom: '1px solid rgba(241, 245, 249, 0.8)',
+                            backgroundColor: index % 2 === 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(248, 250, 252, 0.5)',
+                            transition: 'all 0.2s'
+                          }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(248, 250, 252, 0.5)';
+                            }}>
+                            <td style={{ padding: '20px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{
+                                  width: '48px',
+                                  height: '48px',
+                                  borderRadius: '12px',
+                                  background: ROLE_CONFIG[user.role]?.gradient || '#e5e7eb',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '16px',
+                                  fontWeight: '700',
+                                  color: 'white',
+                                  boxShadow: ROLE_CONFIG[user.role]?.shadow || '0 4px 20px rgba(0, 0, 0, 0.1)'
+                                }}>
+                                  {user.fullName.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>
+                                    {user.fullName}
+                                  </div>
+                                  <div style={{ fontSize: '13px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                    <Mail size={14} />
+                                    {user.email}
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <MapPin size={12} />
+                                    {user.location}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ padding: '20px' }}>
+                              <div style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '6px 12px',
+                                borderRadius: '12px',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                backgroundColor: ROLE_CONFIG[user.role]?.bgColor || '#f8fafc',
+                                color: ROLE_CONFIG[user.role]?.color || '#475569',
+                                border: `1px solid ${ROLE_CONFIG[user.role]?.borderColor || '#e2e8f0'}`
+                              }}>
+                                <RoleIcon size={14} />
+                                {ROLE_CONFIG[user.role]?.label || user.role}
+                              </div>
+                            </td>
+                            <td style={{ padding: '20px' }}>
+                              <div style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>
+                                {user.department}
+                              </div>
+                            </td>
+                            <td style={{ padding: '20px' }}>
+                              <button
+                                onClick={() => toggleUserStatus(user.id, !user.isActive)}
+                                style={{
+                                  padding: '6px 16px',
+                                  borderRadius: '12px',
+                                  fontSize: '12px',
+                                  fontWeight: '700',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  backgroundColor: pendingToggle === user.id ? '#f59e0b' : (user.isActive ? '#dcfce7' : '#fee2e2'),
+                                  color: (pendingToggle === user.id || !user.isActive) ? 'white' : '#166534',
+                                  boxShadow: pendingToggle === user.id ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none',
+                                  animation: pendingToggle === user.id ? 'pulse 1.5s infinite' : 'none'
+                                }}
+                                onMouseOver={(e) => {
+                                  if (pendingToggle !== user.id) {
+                                    e.currentTarget.style.backgroundColor = user.isActive ? '#bbf7d0' : '#fecaca';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                  }
+                                }}
+                                onMouseOut={(e) => {
+                                  if (pendingToggle !== user.id) {
+                                    e.currentTarget.style.backgroundColor = user.isActive ? '#dcfce7' : '#fee2e2';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                  }
+                                }}
+                              >
+                                {pendingToggle === user.id ? '⁉ Confirmer ?' : (user.isActive ? '✓ Actif' : '✗ Inactif')}
+                              </button>
+                            </td>
+                            <td style={{ padding: '20px' }}>
+                              <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600' }}>
+                                {user.projectCount || 0}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                projet(s)
+                              </div>
+                            </td>
+                            <td style={{ padding: '20px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setShowEditModal(true);
+                                  }}
+                                  style={{
+                                    padding: '8px 12px',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                    color: '#475569',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                                    e.currentTarget.style.borderColor = '#e2e8f0';
+                                  }}
+                                >
+                                  <Edit size={14} />
+                                  Modifier
+                                </button>
+                                <button
+                                  onClick={() => deleteUser(user.id)}
+                                  style={{
+                                    padding: '8px 12px',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'rgba(254, 242, 242, 0.8)',
+                                    color: '#dc2626',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                                    e.currentTarget.style.borderColor = '#fca5a5';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.backgroundColor = 'rgba(254, 242, 242, 0.8)';
+                                    e.currentTarget.style.borderColor = '#fecaca';
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                  Supprimer
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
@@ -1063,12 +1079,12 @@ const CreateUserModal: React.FC<{
             borderRadius: '8px',
             transition: 'all 0.2s'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#e2e8f0';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(241, 245, 249, 0.8)';
-          }}>
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#e2e8f0';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(241, 245, 249, 0.8)';
+            }}>
             <X size={20} />
           </button>
         </div>
@@ -1334,12 +1350,12 @@ const EditUserModal: React.FC<{
             borderRadius: '8px',
             transition: 'all 0.2s'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#e2e8f0';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(241, 245, 249, 0.8)';
-          }}>
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#e2e8f0';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(241, 245, 249, 0.8)';
+            }}>
             <X size={20} />
           </button>
         </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { projectsService, type ProjectDashboard } from '../api/projects.service';
 import { useAuth } from '../hooks/useAuth';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 export const ProjectsDashboardPage: React.FC = () => {
@@ -66,18 +66,18 @@ export const ProjectsDashboardPage: React.FC = () => {
                                     </span>
                                 </div>
                                 <p className="text-sm text-slate-500">
-                                    Budget : <span className="font-medium text-slate-800">{p.budget} €</span>
+                                    Budget : <span className="font-medium text-slate-800">{p.budget} DT</span>
                                 </p>
                                 <p className="text-sm text-slate-500">
                                     Coût planifié :{' '}
                                     <span className="font-medium text-slate-800">
-                                        {p.totalPlannedCost} €
+                                        {p.totalPlannedCost} DT
                                     </span>
                                 </p>
                                 <p className="text-sm text-slate-500">
                                     Coût actuel (simulé) :{' '}
                                     <span className="font-medium text-slate-800">
-                                        {p.totalActualCost} €
+                                        {p.totalActualCost} DT
                                     </span>
                                 </p>
                                 <p className="text-sm text-slate-500">
