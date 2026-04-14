@@ -60,6 +60,13 @@ const ROLE_CONFIG = {
   }
 };
 
+const STATUS_CONFIG: Record<string, { label: string, color: string }> = {
+  PLANNED: { label: 'PLANIFIÉ', color: 'bg-slate-100 text-slate-600 border-slate-200' },
+  IN_PROGRESS: { label: 'EN COURS', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  DELIVERED: { label: 'LIVRÉ', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  SUSPENDED: { label: 'SUSPENDU', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+};
+
 export const UserProjectsPage: React.FC = () => {
   const { state, dispatch } = useStore();
   const { user } = useAuth();
@@ -75,7 +82,7 @@ export const UserProjectsPage: React.FC = () => {
     return state.projects.map((p): Project => {
       let role: Project['role'] = 'TEAM_MEMBER';
       if (p.managerId === user?.id) role = 'PROJECT_MANAGER';
-      if (user?.role === 'ADMIN' || user?.role === 'ROOT') role = 'ADMIN';
+      if (user?.role === 'ADMIN') role = 'ADMIN';
 
       return {
         id: p.id,
@@ -268,7 +275,7 @@ export const UserProjectsPage: React.FC = () => {
           </Card>
         ) : (
           <div className={viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start'
             : 'space-y-4'
           }>
             {filteredProjects.map((project, index) => {
@@ -286,7 +293,7 @@ export const UserProjectsPage: React.FC = () => {
 
                     <div className={viewMode === 'list' ? 'flex-1' : ''}>
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-black text-slate-800 font-display group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                        <h3 className="text-xl font-black text-slate-800 font-display group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
                             {project.name}
                         </h3>
                         <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
@@ -306,6 +313,10 @@ export const UserProjectsPage: React.FC = () => {
                             ACTIF
                           </div>
                         )}
+
+                        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-tight border shadow-sm ${STATUS_CONFIG[project._source.status]?.color || 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+                          {STATUS_CONFIG[project._source.status]?.label || project._source.status}
+                        </span>
                       </div>
 
                       <div className="space-y-2">

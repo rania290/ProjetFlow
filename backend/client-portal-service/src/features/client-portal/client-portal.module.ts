@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
-import { UtilsModule } from '../../utils/utils.module';
 import { ClientController } from './controller/client.controller';
 import { ProjectController } from './controller/project.controller';
 import { TicketController } from './controller/ticket.controller';
@@ -14,35 +13,46 @@ import { ClientEntity } from './model/client.entity';
 import { ProjectEntity } from './model/project.entity';
 import { TicketEntity } from './model/ticket.entity';
 import { InvoiceEntity } from './model/invoice.entity';
+import { DocumentEntity } from './model/document.entity';
+import { DocumentsService } from './service/documents.service';
+import { DocumentsController } from './controller/documents.controller';
+import { UtilsModule } from '../../utils/utils.module';
 
 @Module({
   imports: [
-    UtilsModule,
-    JwtModule,
     TypeOrmModule.forFeature([
       ClientEntity,
       ProjectEntity,
       TicketEntity,
       InvoiceEntity,
+      DocumentEntity,
     ]),
+    UtilsModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'default-secret',
+      signOptions: { expiresIn: '24h' },
+    }),
   ],
   controllers: [
     ClientController,
     ProjectController,
     TicketController,
     InvoiceController,
+    DocumentsController,
   ],
   providers: [
     ClientService,
     ProjectService,
     TicketService,
     InvoiceService,
+    DocumentsService,
   ],
   exports: [
     ClientService,
     ProjectService,
     TicketService,
     InvoiceService,
+    DocumentsService,
   ],
 })
-export class ClientPortalModule {}
+export class ClientPortalModule { }

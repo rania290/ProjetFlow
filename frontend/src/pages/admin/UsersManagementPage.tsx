@@ -97,17 +97,6 @@ const PERMISSIONS_BY_CATEGORY = Object.entries(PERMISSIONS_CONFIG).reduce((acc, 
 
 // Configuration des rôles avec permissions par défaut
 const ROLE_PERMISSIONS_CONFIG = {
-    ROOT: {
-        label: 'Root',
-        color: '#8b5cf6',
-        bgColor: '#f3f0ff',
-        borderColor: '#c4b5fd',
-        icon: Crown,
-        description: 'Accès complet au système',
-        gradient: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%)',
-        shadow: '0 4px 20px rgba(139, 92, 246, 0.3)',
-        defaultPermissions: Object.keys(PERMISSIONS_CONFIG)
-    },
     ADMIN: {
         label: 'Admin',
         color: '#ef4444',
@@ -209,7 +198,6 @@ const ROLE_PERMISSIONS_CONFIG = {
 };
 
 const roleConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
-    ROOT: { label: 'Root', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-200' },
     ADMIN: { label: 'Admin', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
     PROJECT_MANAGER: { label: 'Chef de Projet', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
     DEVELOPER: { label: 'Développeur', color: 'text-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
@@ -223,7 +211,6 @@ const initials = (name?: string) =>
 
 const avatarColor = (role: string) => {
     const map: Record<string, string> = {
-        ROOT: 'from-purple-500 to-purple-700',
         ADMIN: 'from-red-500 to-red-700',
         PROJECT_MANAGER: 'from-blue-500 to-blue-700',
         DESIGNER: 'from-pink-500 to-pink-700',
@@ -557,7 +544,7 @@ export const UsersManagementPage: React.FC = () => {
                                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-sm transition-all placeholder:text-slate-400/70"
                                     />
                                 </div>
-                                
+
 
 
                                 <button
@@ -578,7 +565,7 @@ export const UsersManagementPage: React.FC = () => {
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 <span>Actifs : {stats.active}</span>
                             </div>
-                            
+
                             {stats.inactive > 0 && (
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 border border-slate-200 shadow-sm uppercase tracking-tighter transition-transform hover:-translate-y-0.5 cursor-default">
                                     <X className="w-3.5 h-3.5 opacity-60" />
@@ -606,137 +593,143 @@ export const UsersManagementPage: React.FC = () => {
                         </div>
                     </div>
 
-                {/* ── User cards grid ── */}
-                {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[...Array(6)].map((_, i) => (
-                            <GlassCard key={i} className="p-6 animate-pulse">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-100" />
-                                    <div className="flex-1 space-y-3">
-                                        <div className="h-4 bg-slate-100 rounded-full w-3/4" />
-                                        <div className="h-3 bg-slate-50 rounded-full w-1/2" />
+                    {/* ── User cards grid ── */}
+                    {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => (
+                                <GlassCard key={i} className="p-6 animate-pulse">
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-100" />
+                                        <div className="flex-1 space-y-3">
+                                            <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+                                            <div className="h-3 bg-slate-50 rounded-full w-1/2" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="h-8 bg-slate-50 rounded-xl w-full" />
-                                    <div className="h-10 bg-slate-100 rounded-xl w-full" />
-                                </div>
-                            </GlassCard>
-                        ))}
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <GlassCard className="py-24 text-center">
-                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-                            <Users className="w-10 h-10" />
+                                    <div className="space-y-3">
+                                        <div className="h-8 bg-slate-50 rounded-xl w-full" />
+                                        <div className="h-10 bg-slate-100 rounded-xl w-full" />
+                                    </div>
+                                </GlassCard>
+                            ))}
                         </div>
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Aucun profil détecté</h3>
-                        <p className="text-xs text-slate-400 mt-2 font-medium">Ajustez vos filtres ou effectuez une nouvelle recherche.</p>
-                    </GlassCard>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filtered.map((user, idx) => {
-                            const cfg = roleConfig[user.role];
-                            const isActive = user.isActive !== false;
-                            return (
-                                <motion.div
-                                    key={user.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                >
-                                    <GlassCard className="group relative overflow-hidden h-full flex flex-col hover:border-indigo-500/30 transition-all duration-300">
-                                        {/* Card top accent line */}
-                                        <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    ) : filtered.length === 0 ? (
+                        <GlassCard className="py-24 text-center">
+                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                                <Users className="w-10 h-10" />
+                            </div>
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Aucun profil détecté</h3>
+                            <p className="text-xs text-slate-400 mt-2 font-medium">Ajustez vos filtres ou effectuez une nouvelle recherche.</p>
+                        </GlassCard>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filtered.map((user, idx) => {
+                                const cfg = roleConfig[user.role];
+                                const isActive = user.isActive !== false;
+                                return (
+                                    <motion.div
+                                        key={user.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                    >
+                                        <GlassCard className="group relative overflow-hidden h-full flex flex-col hover:border-indigo-500/30 transition-all duration-300">
+                                            {/* Card top accent line */}
+                                            <div className="h-1 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                                        <div className="p-6 flex-1 flex flex-col">
-                                            {/* Avatar + info */}
-                                            <div className="flex items-start gap-4 mb-6">
-                                                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(user.role)} flex items-center justify-center text-white font-black text-lg flex-shrink-0 shadow-lg ring-4 ring-indigo-500/5 transition-transform group-hover:scale-110 duration-300`}>
-                                                    {initials(user.fullName)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-black text-slate-900 truncate tracking-tight text-base">{user.fullName ?? 'Utilisateur Anonyme'}</p>
-                                                    <p className="text-[11px] text-slate-500 truncate font-semibold lowercase mt-0.5 opacity-80">{user.email}</p>
-                                                    {user.createdAt && (
-                                                        <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 mt-2 uppercase tracking-widest">
-                                                            <Calendar className="w-3 h-3" />
-                                                            Inscrit le {new Date(user.createdAt).toLocaleDateString('fr-FR')}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Badges Section */}
-                                            <div className="flex items-center gap-2 flex-wrap mb-6">
-                                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${cfg?.color || 'text-slate-500'}`}>
-                                                    <Shield className="w-3 h-3" />
-                                                    {cfg?.label || user.role}
-                                                </div>
-                                                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all
-                                                    ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm shadow-emerald-500/5' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                                                    {isActive ? 'Actif' : 'Désactivé'}
-                                                </div>
-                                            </div>
-
-                                            {/* Actions Footer */}
-                                            <div className="mt-auto pt-5 border-t border-slate-100/50 flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5">
-                                                    <button
-                                                        onClick={() => openEdit(user)}
-                                                        title="Modifier le profil"
-                                                        className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100 active:scale-90"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openPermissionsModal(user)}
-                                                        title="Gestion des accès"
-                                                        className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all border border-transparent hover:border-purple-100 active:scale-90"
-                                                    >
-                                                        <Lock className="w-4 h-4" />
-                                                    </button>
-                                                    <div className="relative">
-                                                        {pendingToggle === user.id ? (
-                                                            <motion.button
-                                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                                animate={{ opacity: 1, scale: 1 }}
-                                                                onClick={(e) => { e.stopPropagation(); toggleActive(user); }}
-                                                                className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all animate-pulse border-2 active:scale-95
-                                                                    ${isActive ? 'bg-red-500 text-white border-red-400' : 'bg-emerald-500 text-white border-emerald-400'}`}
-                                                            >
-                                                                Confirmer ?
-                                                            </motion.button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => toggleActive(user)}
-                                                                title={isActive ? 'Bloquer l\'accès' : 'Autoriser l\'accès'}
-                                                                className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all border border-transparent active:scale-90
-                                                                    ${isActive ? 'text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 hover:border-emerald-100'}`}
-                                                            >
-                                                                {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                                                            </button>
+                                            <div className="p-6 flex-1 flex flex-col">
+                                                {/* Avatar + info */}
+                                                <div className="flex items-start gap-4 mb-6">
+                                                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor(user.role)} flex items-center justify-center text-white font-black text-lg flex-shrink-0 shadow-lg ring-4 ring-indigo-500/5 transition-transform group-hover:scale-110 duration-300`}>
+                                                        {initials(user.fullName)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-black text-slate-900 truncate tracking-tight text-base">{user.fullName ?? 'Utilisateur Anonyme'}</p>
+                                                        <p className="text-[11px] text-slate-500 truncate font-semibold lowercase mt-0.5 opacity-80">{user.email}</p>
+                                                        {user.createdAt && (
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 mt-2 uppercase tracking-widest">
+                                                                <Calendar className="w-3 h-3" />
+                                                                Inscrit le {new Date(user.createdAt).toLocaleDateString('fr-FR')}
+                                                            </div>
+                                                        )}
+                                                        {user.managerId && (
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-indigo-500 mt-1 uppercase tracking-widest">
+                                                                <Users className="w-3 h-3" />
+                                                                Manager: {users.find(u => u.id === user.managerId)?.fullName || 'N/A'}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                <button
-                                                    onClick={() => handleDelete(user)}
-                                                    title="Supprimer définitivement"
-                                                    className="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent active:scale-90"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {/* Badges Section */}
+                                                <div className="flex items-center gap-2 flex-wrap mb-6">
+                                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${cfg?.color || 'text-slate-500'}`}>
+                                                        <Shield className="w-3 h-3" />
+                                                        {cfg?.label || user.role}
+                                                    </div>
+                                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all
+                                                    ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm shadow-emerald-500/5' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                                                        {isActive ? 'Actif' : 'Désactivé'}
+                                                    </div>
+                                                </div>
+
+                                                {/* Actions Footer */}
+                                                <div className="mt-auto pt-5 border-t border-slate-100/50 flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <button
+                                                            onClick={() => openEdit(user)}
+                                                            title="Modifier le profil"
+                                                            className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100 active:scale-90"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openPermissionsModal(user)}
+                                                            title="Gestion des accès"
+                                                            className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all border border-transparent hover:border-purple-100 active:scale-90"
+                                                        >
+                                                            <Lock className="w-4 h-4" />
+                                                        </button>
+                                                        <div className="relative">
+                                                            {pendingToggle === user.id ? (
+                                                                <motion.button
+                                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                                    animate={{ opacity: 1, scale: 1 }}
+                                                                    onClick={(e) => { e.stopPropagation(); toggleActive(user); }}
+                                                                    className={`px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg transition-all animate-pulse border-2 active:scale-95
+                                                                    ${isActive ? 'bg-red-500 text-white border-red-400' : 'bg-emerald-500 text-white border-emerald-400'}`}
+                                                                >
+                                                                    Confirmer ?
+                                                                </motion.button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => toggleActive(user)}
+                                                                    title={isActive ? 'Bloquer l\'accès' : 'Autoriser l\'accès'}
+                                                                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all border border-transparent active:scale-90
+                                                                    ${isActive ? 'text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 hover:border-emerald-100'}`}
+                                                                >
+                                                                    {isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => handleDelete(user)}
+                                                        title="Supprimer définitivement"
+                                                        className="w-9 h-9 flex items-center justify-center text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent active:scale-90"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </GlassCard>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                                        </GlassCard>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </FadeInView>
 
             {/* ────────────── Create / Edit Modal (Ultra-Professional Identity Header) ────────────── */}
@@ -755,16 +748,16 @@ export const UsersManagementPage: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.99, y: 15 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.99, y: 15 }}
-                            className="relative bg-white rounded-[32px] shadow-[0_30px_80px_rgba(0,0,0,0.15)] w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-100"
+                            className="relative bg-white rounded-[32px] shadow-[0_30px_80px_rgba(0,0,0,0.15)] w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden border border-slate-100"
                         >
                             {/* VISUAL ACCENT HEADER */}
                             <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500" />
 
                             {/* MODAL HEADER */}
-                            <div className="px-10 py-6 border-b border-slate-100 flex items-center justify-between bg-white z-20">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
-                                        <Users className="w-5 h-5" />
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white z-20">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
+                                        <Users className="w-4 h-4" />
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-slate-950 uppercase tracking-widest">
@@ -783,26 +776,26 @@ export const UsersManagementPage: React.FC = () => {
 
                             {/* BODY CONTENT */}
                             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                                
+
                                 {/* 1. IDENTITY HEADER BLOCK */}
-                                <div className="px-10 py-10 bg-slate-50/30 border-b border-slate-100">
-                                    <div className="flex items-center gap-10">
+                                <div className="px-6 py-6 bg-slate-50/30 border-b border-slate-100">
+                                    <div className="flex items-center gap-5">
                                         {/* Avatar circular on the left */}
                                         <div className="relative shrink-0 group">
-                                            <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${form.role ? avatarColor(form.role) : 'from-slate-100 to-slate-200'} flex items-center justify-center text-white font-black text-5xl shadow-2xl border-4 border-white ring-1 ring-slate-100 transition-transform group-hover:scale-[1.02] duration-300`}>
-                                                {form.fullName ? initials(form.fullName) : <UserIcon className="w-14 h-14 opacity-40" />}
+                                            <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${form.role ? avatarColor(form.role) : 'from-slate-100 to-slate-200'} flex items-center justify-center text-white font-black text-3xl shadow-xl border-2 border-white ring-1 ring-slate-100 transition-transform group-hover:scale-[1.02] duration-300`}>
+                                                {form.fullName ? initials(form.fullName) : <UserIcon className="w-8 h-8 opacity-40" />}
                                             </div>
-                                            <button className="absolute bottom-1 right-1 bg-white text-slate-900 rounded-full w-10 h-10 flex items-center justify-center shadow-lg border border-slate-100 hover:bg-slate-50 transition-all">
-                                                <Camera className="w-4 h-4" />
+                                            <button className="absolute bottom-0 right-0 bg-white text-slate-900 rounded-full w-7 h-7 flex items-center justify-center shadow-lg border border-slate-100 hover:bg-slate-50 transition-all">
+                                                <Camera className="w-3 h-3" />
                                             </button>
                                         </div>
 
                                         {/* Identity Data on the right */}
-                                        <div className="flex-1">
-                                            <h4 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-3">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2 truncate">
                                                 {form.fullName || 'Nouvelle Identité'}
                                             </h4>
-                                            <div className="space-y-1.5 font-display">
+                                            <div className="space-y-1 font-display">
                                                 <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.3em]">
                                                     {form.role || 'Profil à définir'}
                                                 </p>
@@ -816,8 +809,8 @@ export const UsersManagementPage: React.FC = () => {
                                 </div>
 
                                 {/* 2. CONFIGURATION FIELDS SECTION */}
-                                <div className="px-10 py-12 space-y-10">
-                                    <div className="grid grid-cols-2 gap-10">
+                                <div className="px-6 py-6 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-3">
                                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-indigo-500 pl-3">Identité Nominale</label>
                                             <input
@@ -843,7 +836,7 @@ export const UsersManagementPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-3">
                                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-indigo-500 pl-3">Accréditation Système</label>
                                             <div className="relative">
@@ -875,11 +868,32 @@ export const UsersManagementPage: React.FC = () => {
                                         </div>
                                     </div>
 
+                                    <div className="space-y-3">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Supérieur Hiérarchique (Manager)</label>
+                                        <div className="relative">
+                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                                            <select
+                                                value={form.managerId ?? ''}
+                                                onChange={e => setForm(f => ({ ...f, managerId: e.target.value }))}
+                                                className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl pl-11 pr-10 py-3.5 text-[11px] font-black uppercase tracking-widest text-slate-700 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
+                                            >
+                                                <option value="">Aucun manager (Niveau 0)</option>
+                                                {users
+                                                    .filter(u => u.id !== form.id && (u.role === 'ADMIN' || u.role === 'PROJECT_MANAGER' || u.role === 'RH'))
+                                                    .map(u => (
+                                                        <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
+                                                    ))
+                                                }
+                                            </select>
+                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                                        </div>
+                                    </div>
+
                                     {/* STATUS BLOCK (PURE LIGHT VERSION) */}
-                                    <div className="p-8 bg-slate-50/60 rounded-[32px] border border-slate-100 flex items-center justify-between group">
-                                        <div className="flex items-center gap-6">
-                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all bg-white shadow-sm border ${form.isActive !== false ? 'text-emerald-500 border-emerald-100' : 'text-slate-300 border-slate-200'}`}>
-                                                {form.isActive !== false ? <UserCheck className="w-7 h-7" /> : <UserX className="w-7 h-7" />}
+                                    <div className="p-5 bg-slate-50/60 rounded-3xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-white shadow-sm border shrink-0 ${form.isActive !== false ? 'text-emerald-500 border-emerald-100' : 'text-slate-300 border-slate-200'}`}>
+                                                {form.isActive !== false ? <UserCheck className="w-5 h-5" /> : <UserX className="w-5 h-5" />}
                                             </div>
                                             <div>
                                                 <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Accès Portail Professionnel</p>
@@ -900,16 +914,16 @@ export const UsersManagementPage: React.FC = () => {
                             </div>
 
                             {/* FOOTER ACTIONS */}
-                            <div className="px-10 py-8 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between">
+                            <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between">
                                 <button
                                     onClick={closeModal}
-                                    className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-950 transition-colors"
+                                    className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-950 transition-colors"
                                 >
                                     Annuler
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="flex items-center gap-3 px-12 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-black transition-all active:scale-95"
+                                    className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-black transition-all active:scale-95"
                                 >
                                     {modalMode === 'create' ? <PlusCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                                     <span>{modalMode === 'create' ? 'Certifier & Créer' : 'Sauvegarder'}</span>
@@ -936,51 +950,51 @@ export const UsersManagementPage: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.98, y: 30 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.98, y: 30 }}
-                            className="relative bg-white rounded-[3rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.5)] w-full max-w-[1400px] h-[90vh] flex flex-col overflow-hidden border border-white/20"
+                            className="relative bg-white rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.5)] w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden border border-white/20"
                         >
                             {/* Matrix Header */}
-                            <div className="flex-none flex items-center justify-between px-12 py-8 border-b border-slate-100 bg-white/80 backdrop-blur-md z-10">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-16 h-16 rounded-[1.5rem] bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-purple-500/20">
-                                        <ShieldCheck className="w-8 h-8" />
+                            <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white/80 backdrop-blur-md z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-purple-500/20">
+                                        <ShieldCheck className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
                                             Matrice de Contrôle RBAC
                                         </h3>
-                                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">
+                                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">
                                             Privilèges granulaires pour <span className="text-slate-900">{selectedUserForPermissions.fullName}</span>
                                         </p>
                                     </div>
                                 </div>
-                                <button onClick={closePermissionsModal} className="w-12 h-12 rounded-full border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-all">
-                                    <X className="w-6 h-6" />
+                                <button onClick={closePermissionsModal} className="w-10 h-10 rounded-full border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-all">
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
 
                             <div className="flex-1 flex min-h-0 bg-slate-50/50">
                                 {/* Left Panel: Control Center */}
-                                <div className="w-[380px] flex-none border-r border-slate-100 bg-white p-10 space-y-10 overflow-y-auto custom-scrollbar">
+                                <div className="w-[240px] flex-none border-r border-slate-100 bg-white p-5 space-y-6 overflow-y-auto custom-scrollbar">
                                     <div className="space-y-4">
-                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Profil Cible</h4>
-                                        <GlassCard className="p-6 flex flex-col items-center text-center gap-4 border-none shadow-xl shadow-slate-200/50">
-                                            <div className={`w-20 h-20 rounded-[1.5rem] bg-gradient-to-br ${avatarColor(selectedUserForPermissions.role)} flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-white`}>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Profil Cible</h4>
+                                        <GlassCard className="p-4 flex flex-col items-center text-center gap-3 border-none shadow-xl shadow-slate-200/50">
+                                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarColor(selectedUserForPermissions.role)} flex items-center justify-center text-white font-black text-lg shadow-xl ring-4 ring-white`}>
                                                 {initials(selectedUserForPermissions.fullName)}
                                             </div>
                                             <div>
-                                                <div className="font-black text-slate-900 text-lg tracking-tight">{selectedUserForPermissions.fullName}</div>
-                                                <div className="text-[11px] text-slate-500 font-semibold lowercase opacity-70">{selectedUserForPermissions.email}</div>
+                                                <div className="font-black text-slate-900 text-sm tracking-tight leading-tight">{selectedUserForPermissions.fullName}</div>
+                                                <div className="text-[10px] text-slate-500 font-semibold lowercase opacity-70 mt-0.5 max-w-[180px] truncate">{selectedUserForPermissions.email}</div>
                                             </div>
                                         </GlassCard>
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Modèle de Rôle</h4>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Modèle de Rôle</h4>
                                         <div className="relative group">
                                             <select
                                                 value={selectedRole}
                                                 onChange={(e) => handleRoleChange(e.target.value)}
-                                                className="w-full appearance-none bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-700 shadow-sm focus:ring-4 focus:ring-purple-500/10 focus:border-purple-400 transition-all cursor-pointer"
+                                                className="w-full appearance-none bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 shadow-sm focus:ring-4 focus:ring-purple-500/10 focus:border-purple-400 transition-all cursor-pointer"
                                             >
                                                 <option value="" disabled>Sélectionner un profil...</option>
                                                 {Object.entries(ROLE_PERMISSIONS_CONFIG).map(([role, config]) => (
@@ -990,8 +1004,8 @@ export const UsersManagementPage: React.FC = () => {
                                             <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-hover:text-purple-500" />
                                         </div>
                                         {selectedRole && isRoleKey(selectedRole) && (
-                                            <div className="p-5 bg-purple-50 border border-purple-100 rounded-[1.5rem]">
-                                                <p className="text-[11px] leading-relaxed text-purple-700 font-bold uppercase tracking-wider opacity-80">
+                                            <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
+                                                <p className="text-[10px] leading-relaxed text-purple-700 font-bold uppercase tracking-wider opacity-80">
                                                     {ROLE_PERMISSIONS_CONFIG[selectedRole].description}
                                                 </p>
                                             </div>
@@ -999,90 +1013,88 @@ export const UsersManagementPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-4 pt-4 border-t border-slate-100">
-                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Résumé des Droits</h4>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-6 rounded-[1.5rem] bg-indigo-900 text-white shadow-xl shadow-indigo-900/20">
-                                                <div className="text-3xl font-black">{selectedPermissions.length}</div>
-                                                <div className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-60">Actives</div>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Résumé des Droits</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-4 rounded-xl bg-indigo-900 text-white shadow-xl shadow-indigo-900/20">
+                                                <div className="text-2xl font-black">{selectedPermissions.length}</div>
+                                                <div className="text-[8px] font-black uppercase tracking-widest mt-1 opacity-60">Actives</div>
                                             </div>
-                                            <div className="p-6 rounded-[1.5rem] bg-slate-50 border border-slate-100">
-                                                <div className="text-3xl font-black text-slate-900">{Object.keys(PERMISSIONS_CONFIG).length}</div>
-                                                <div className="text-[9px] font-black uppercase tracking-widest mt-1 text-slate-400">Total</div>
+                                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                                <div className="text-2xl font-black text-slate-900">{Object.keys(PERMISSIONS_CONFIG).length}</div>
+                                                <div className="text-[8px] font-black uppercase tracking-widest mt-1 text-slate-400">Total</div>
                                             </div>
                                         </div>
                                         <button
                                             onClick={resetToDefaults}
-                                            className="w-full flex items-center justify-center gap-3 px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                                         >
-                                            <RotateCcw className="w-4 h-4" />
+                                            <RotateCcw className="w-3 h-3" />
                                             Reset au Modèle
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Right Panel: Matrix Grid */}
-                                <div className="flex-1 p-12 overflow-y-auto custom-scrollbar relative">
-                                    <div className="max-w-6xl mx-auto space-y-16 pb-12">
+                                <div className="flex-1 p-6 overflow-y-auto custom-scrollbar relative">
+                                    <div className="max-w-6xl mx-auto space-y-10 pb-8">
                                         {Object.entries(PERMISSIONS_BY_CATEGORY).map(([category, permissions]) => {
                                             const categoryCodes = permissions.map(p => p.key);
                                             const allSelected = categoryCodes.every(key => selectedPermissions.includes(key));
-                                            
+
                                             return (
-                                                <div key={category} className="space-y-8">
-                                                    <div className="flex items-end justify-between border-b-2 border-slate-100 pb-5">
-                                                        <div className="flex items-center gap-5">
-                                                            <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-xl shadow-slate-200/50 text-2xl">
+                                                <div key={category} className="space-y-6">
+                                                    <div className="flex items-end justify-between border-b-2 border-slate-100 pb-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-lg shadow-slate-200/50 text-xl">
                                                                 {permissions[0]?.icon}
                                                             </div>
                                                             <div>
-                                                                <h5 className="text-xl font-black text-slate-900 uppercase tracking-tight">{category}</h5>
-                                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{permissions.length} Modules de Sécurité</p>
+                                                                <h5 className="text-lg font-black text-slate-900 uppercase tracking-tight">{category}</h5>
+                                                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{permissions.length} Modules de Sécurité</p>
                                                             </div>
                                                         </div>
                                                         <button
                                                             onClick={() => handleCategoryToggle(category, permissions)}
-                                                            className={`text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all border shadow-sm ${
-                                                                allSelected 
-                                                                ? 'bg-slate-900 text-white border-black' 
+                                                            className={`text-[9px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-all border shadow-sm ${allSelected
+                                                                ? 'bg-slate-900 text-white border-black'
                                                                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {allSelected ? 'Batch: Désactiver' : 'Batch: Activer Tout'}
                                                         </button>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                                         {permissions.map((permission) => {
                                                             const isChecked = selectedPermissions.includes(permission.key);
                                                             return (
                                                                 <label
                                                                     key={permission.key}
-                                                                    className={`relative flex flex-col gap-4 p-6 rounded-[1.5rem] border-2 transition-all cursor-pointer group select-none ${
-                                                                        isChecked
-                                                                            ? 'bg-indigo-50/30 border-indigo-500 shadow-xl shadow-indigo-500/5'
-                                                                            : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-lg'
-                                                                    }`}
+                                                                    className={`relative flex flex-col gap-3 p-4 rounded-2xl border-2 transition-all cursor-pointer group select-none ${isChecked
+                                                                        ? 'bg-indigo-50/30 border-indigo-500 shadow-xl shadow-indigo-500/5'
+                                                                        : 'bg-white border-slate-100 hover:border-slate-300 hover:shadow-md'
+                                                                        }`}
                                                                 >
                                                                     <div className="flex items-center justify-between">
-                                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${isChecked ? 'bg-indigo-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${isChecked ? 'bg-indigo-500 text-white' : 'bg-slate-50 text-slate-400'}`}>
                                                                             {permission.icon}
                                                                         </div>
-                                                                        <div className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ${isChecked ? 'bg-indigo-600 shadow-[0_0_12px_rgba(79,70,229,0.3)]' : 'bg-slate-200'}`}>
+                                                                        <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ${isChecked ? 'bg-indigo-600 shadow-[0_0_12px_rgba(79,70,229,0.3)]' : 'bg-slate-200'}`}>
                                                                             <input
                                                                                 type="checkbox"
                                                                                 className="sr-only"
                                                                                 checked={isChecked}
                                                                                 onChange={() => handlePermissionToggle(permission.key)}
                                                                             />
-                                                                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xl transition-transform duration-300 ${isChecked ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xl transition-transform duration-300 ${isChecked ? 'translate-x-4' : 'translate-x-0.5'}`} />
                                                                         </div>
                                                                     </div>
 
                                                                     <div className="flex-1">
-                                                                        <div className={`text-sm font-black uppercase tracking-tight mb-1 ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
+                                                                        <div className={`text-xs font-black uppercase tracking-tight mb-0.5 ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
                                                                             {permission.label}
                                                                         </div>
-                                                                        <p className={`text-[10px] font-bold leading-relaxed transition-colors ${isChecked ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                                                        <p className={`text-[9px] font-bold leading-relaxed transition-colors ${isChecked ? 'text-indigo-600' : 'text-slate-400'}`}>
                                                                             {permission.description}
                                                                         </p>
                                                                     </div>
@@ -1098,7 +1110,7 @@ export const UsersManagementPage: React.FC = () => {
                             </div>
 
                             {/* Sticky Matrix Footer */}
-                            <div className="flex-none flex items-center justify-between px-12 py-8 border-t border-slate-100 bg-white/80 backdrop-blur-md z-10">
+                            <div className="flex-none flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white/80 backdrop-blur-md z-10">
                                 <div className="flex items-center gap-4">
                                     <AnimatePresence>
                                         {hasPermissionChanges && (
@@ -1114,26 +1126,26 @@ export const UsersManagementPage: React.FC = () => {
                                         )}
                                     </AnimatePresence>
                                 </div>
-                                <div className="flex items-center gap-5">
+                                <div className="flex items-center gap-4">
                                     <button
                                         onClick={closePermissionsModal}
-                                        className="px-8 py-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-900 transition-colors"
+                                        className="px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-900 transition-colors"
                                     >
                                         Annuler
                                     </button>
                                     <button
                                         onClick={savePermissions}
                                         disabled={!hasPermissionChanges || isLoadingPermissions}
-                                        className="flex items-center gap-3 px-10 py-5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[1.25rem] shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-30 disabled:shadow-none transition-all active:scale-95"
+                                        className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-30 disabled:shadow-none transition-all active:scale-95"
                                     >
                                         {isLoadingPermissions ? (
                                             <>
-                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                 <span>Synchronisation...</span>
                                             </>
                                         ) : (
                                             <>
-                                                <Save className="w-4 h-4" />
+                                                <Save className="w-3 h-3" />
                                                 <span>Appliquer la Sécurité</span>
                                             </>
                                         )}

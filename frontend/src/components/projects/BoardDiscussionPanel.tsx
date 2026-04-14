@@ -1,259 +1,72 @@
-import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import {
-    X, Paperclip, Smile, Image as ImageIcon, Send, AtSign,
-    CheckCircle2, List as ListIcon, Bold, Italic, Underline,
-    Strikethrough, Type, Highlighter, ListOrdered, Outdent,
-    Indent, Quote, Link, Minus, CheckSquare, Pilcrow,
-    ChevronDown, Pencil, Gift as GifIcon, FileIcon, Trash2,
-    MessageCircle, Clock, MoreHorizontal
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
+import { 
+    X, Send, Paperclip, SmilePlus, Image as ImageIcon, 
+    MoreVertical, Info, Users, Circle, Loader2, Sparkles, Search, MessageSquare,
+    Heart, CornerUpLeft, Pin, Reply, Edit2, Trash2, AtSign
+} from 'lucide-react';
+import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import UnderlineExtension from '@tiptap/extension-underline';
-import LinkExtension from '@tiptap/extension-link';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Mention from '@tiptap/extension-mention';
 import Highlight from '@tiptap/extension-highlight';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import tippy from 'tippy.js';
+import TiptapImage from '@tiptap/extension-image';
 import { useAuth } from '../../hooks/useAuth';
+import { useChat } from '../../hooks/useChat';
+import { toast } from 'sonner';
+import { Sheet, SheetContent } from '../ui/sheet';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Dialog, DialogContent } from '../ui/dialog';
+import { Separator } from '../ui/separator';
+import type { ChatMessage } from '@/api/communication.service';
 
-export interface Member {
-    id: string;
-    fullName: string;
-    avatar?: string;
-}
-
-const renderAvatar = (avatar: string | undefined, fullName: string) => {
-    if (avatar && avatar.length > 5) {
-        const src = avatar.startsWith('http') || avatar.startsWith('data:') || avatar.startsWith('/')
-            ? avatar
-            : `data:image/jpeg;base64,${avatar}`;
-        return <img src={src} alt={fullName} className="w-full h-full object-cover rounded-full" />;
-    }
-    return avatar || fullName.charAt(0);
-};
-
-export interface UpdateReply {
-    id: string;
-    content: string;
-    author: Member;
-    createdAt: Date;
-    likes: string[];
-}
-
-export interface BoardUpdate {
-    id: string;
-    content: string;
-    author: Member;
-    createdAt: Date;
-    attachments: { name: string; url?: string; type?: string }[];
-    likes: string[];
-    replies: UpdateReply[];
-}
-
-interface BoardDiscussionPanelProps {
+export interface BoardDiscussionPanelProps {
     isOpen: boolean;
     onClose: () => void;
+    projectId: string;
     projectName: string;
-    members?: Member[];
+    members?: { id: string; fullName: string; }[];
 }
 
-// Mention List Component for Tiptap
-const MentionList = forwardRef((props: any, ref) => {
-    const [selectedIndex, setSelectedIndex] = useState(0);
-
-    const selectItem = (index: number) => {
-        const item = props.items[index];
-        if (item) {
-            props.command({ id: item.id, label: item.fullName });
-        }
-    };
-
-    const upHandler = () => {
-        setSelectedIndex(((selectedIndex + props.items.length - 1) % props.items.length));
-    };
-
-    const downHandler = () => {
-        setSelectedIndex(((selectedIndex + 1) % props.items.length));
-    };
-
-    const enterHandler = () => {
-        selectItem(selectedIndex);
-    };
-
-    useEffect(() => setSelectedIndex(0), [props.items]);
-
-    useImperativeHandle(ref, () => ({
-        onKeyDown: ({ event }: any) => {
-            if (event.key === 'ArrowUp') {
-                upHandler();
-                return true;
-            }
-            if (event.key === 'ArrowDown') {
-                downHandler();
-                return true;
-            }
-            if (event.key === 'Enter') {
-                enterHandler();
-                return true;
-            }
-            return false;
-        },
-    }));
-
-    return (
-        <div className="bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden min-w-[200px] z-[1000]">
-            {props.items.length ? (
-                props.items.map((item: Member, index: number) => (
-                    <button
-                        key={item.id}
-                        className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-blue-50 transition-colors ${index === selectedIndex ? 'bg-blue-50' : ''}`}
-                        onClick={() => selectItem(index)}
-                    >
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm overflow-hidden">
-                            {renderAvatar(item.avatar, item.fullName)}
-                        </div>
-                        <div className="flex-1">
-                            <p className="text-sm font-semibold text-slate-800">{item.fullName}</p>
-                        </div>
-                    </button>
-                ))
-            ) : (
-                <div className="px-4 py-2 text-sm text-slate-400 font-medium italic">Aucun membre trouvé</div>
-            )}
-        </div>
-    );
-});
-
-MentionList.displayName = 'MentionList';
-
-export const BoardDiscussionPanel: React.FC<BoardDiscussionPanelProps> = ({
-    isOpen,
-    onClose,
-    projectName,
-    members = []
-}) => {
-    const [attachments, setAttachments] = useState<File[]>([]);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [updates, setUpdates] = useState<BoardUpdate[]>([]);
-    const [isEditorExpanded, setIsEditorExpanded] = useState(false);
-    const [selectedAttachment, setSelectedAttachment] = useState<{ name: string, url?: string, type?: string } | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+export const BoardDiscussionPanel: React.FC<BoardDiscussionPanelProps> = ({ isOpen, onClose, projectId, projectName, members = [] }) => {
+    const [search, setSearch] = useState('');
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
     const { user } = useAuth();
+    const { 
+        messages, isLoading, isConnected, 
+        onlineUsers, typingUsers,
+        replyTo, setReplyTo, handleLocalTyping, sendMessage, 
+        editMessage, deleteMessage,
+        toggleLike, togglePin 
+    } = useChat(projectId);
+    
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const currentUser: Member = user
-        ? {
-            id: user.id || 'u1',
-            fullName: user.fullName || (user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Utilisateur Actuel'),
-            avatar: user.profilePhoto || user.avatar || undefined
-        }
-        : (members[0] || { id: 'u1', fullName: 'Utilisateur Actuel', avatar: 'UA' });
-
-    const toggleLike = (updateId: string) => {
-        setUpdates(updates.map(u => {
-            if (u.id === updateId) {
-                const hasLiked = u.likes.includes(currentUser.id);
-                return {
-                    ...u,
-                    likes: hasLiked ? u.likes.filter(id => id !== currentUser.id) : [...u.likes, currentUser.id]
-                };
-            }
-            return u;
-        }));
-    };
-
-    const handleAddReply = (updateId: string, replyContent: string) => {
-        const newReply: UpdateReply = {
-            id: Date.now().toString(),
-            content: replyContent,
-            author: currentUser,
-            createdAt: new Date(),
-            likes: []
-        };
-        setUpdates(updates.map(u => {
-            if (u.id === updateId) {
-                return { ...u, replies: [...u.replies, newReply] };
-            }
-            return u;
-        }));
-    };
+    const emojiList = ['😀', '😁', '😂', '🤣', '😊', '😍', '😎', '🤔', '🙌', '👏', '🔥', '✅', '👍', '👀', '🎯', '🚀', '💡', '🛠️'];
 
     const editor = useEditor({
         extensions: [
             StarterKit,
-            Placeholder.configure({
-                placeholder: 'Écrivez une mise à jour...',
-            }),
+            Placeholder.configure({ placeholder: `Écrire dans ${projectName}...` }),
             Highlight,
             TaskList,
-            TaskItem.configure({
-                nested: true,
-            }),
+            TaskItem.configure({ nested: true }),
+            TiptapImage.configure({ inline: true, allowBase64: true }),
             Mention.configure({
-                HTMLAttributes: {
-                    class: 'mention bg-blue-100 text-blue-700 px-1 rounded font-bold',
-                },
                 suggestion: {
                     items: ({ query }) => {
-                        return members
-                            .filter(item => item.fullName.toLowerCase().startsWith(query.toLowerCase()))
+                        return (members || [])
+                            .filter(m => m.fullName.toLowerCase().startsWith(query.toLowerCase()))
                             .slice(0, 5);
-                    },
-                    render: () => {
-                        let component: ReactRenderer;
-                        let popup: any;
-
-                        return {
-                            onStart: (props) => {
-                                component = new ReactRenderer(MentionList, {
-                                    props,
-                                    editor: props.editor,
-                                });
-
-                                if (!props.clientRect) {
-                                    return;
-                                }
-
-                                popup = tippy('body', {
-                                    getReferenceClientRect: props.clientRect as any,
-                                    appendTo: () => document.body,
-                                    content: component.element,
-                                    showOnCreate: true,
-                                    interactive: true,
-                                    trigger: 'manual',
-                                    placement: 'bottom-start',
-                                })[0];
-                            },
-
-                            onUpdate(props) {
-                                component.updateProps(props);
-
-                                if (!props.clientRect) {
-                                    return;
-                                }
-
-                                popup.setProps({
-                                    getReferenceClientRect: props.clientRect as any,
-                                });
-                            },
-
-                            onKeyDown(props) {
-                                if (props.event.key === 'Escape') {
-                                    popup.hide();
-                                    return true;
-                                }
-
-                                return (component.ref as any)?.onKeyDown(props);
-                            },
-
-                            onExit() {
-                                popup.destroy();
-                                component.destroy();
-                            },
-                        };
                     },
                 },
             }),
@@ -261,483 +74,373 @@ export const BoardDiscussionPanel: React.FC<BoardDiscussionPanelProps> = ({
         content: '',
     });
 
+    useEffect(() => {
+        if (!editor || !isConnected) return;
+        
+        const handleUpdate = () => {
+            if (!editor.isEmpty) {
+                console.log('[Board] Editor update detected, calling handleLocalTyping');
+                handleLocalTyping();
+            }
+        };
+
+        editor.on('update', handleUpdate);
+        return () => {
+            editor.off('update', handleUpdate);
+        };
+    }, [editor, isConnected, handleLocalTyping]);
+
+    useEffect(() => { 
+        if (isOpen) { 
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+    }, [isOpen, messages]);
+
+    const handleSend = () => {
+        if (!editor) return;
+        const html = editor.getHTML();
+        if (editor.isEmpty && !html.includes('href') && !html.includes('img')) return;
+        
+        if (editingMessage) {
+            editMessage(editingMessage.id, html);
+            setEditingMessage(null);
+        } else {
+            sendMessage(html, replyTo?.id);
+        }
+        editor.commands.clearContent();
+        setReplyTo(null);
+        toast.success(editingMessage ? 'Message modifié' : 'Message envoyé');
+    };
+
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            setAttachments([...attachments, ...Array.from(e.target.files)]);
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error("Le fichier est trop volumineux (max 10MB)");
+                return;
+            }
+            toast.loading("Préparation du fichier...");
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64 = event.target?.result as string;
+                editor?.chain().focus().insertContent([
+                    {
+                        type: 'text',
+                        marks: [{ type: 'link', attrs: { href: '#' + base64 } }],
+                        text: `📎 ${file.name}`
+                    },
+                    { type: 'text', text: ' ' }
+                ]).run();
+                toast.dismiss();
+                toast.success("Fichier joint prêt !");
+            };
+            reader.readAsDataURL(file);
         }
     };
 
-    const removeAttachment = (index: number) => {
-        setAttachments(attachments.filter((_, i) => i !== index));
-    };
-
-    const addEmoji = (emoji: string) => {
-        editor?.chain().focus().insertContent(emoji).run();
-        setShowEmojiPicker(false);
-    };
-
-    const handleSubmit = () => {
-        if (!editor || (editor.isEmpty && attachments.length === 0)) return;
-
-        const content = editor.getHTML();
-
-        const newUpdate: BoardUpdate = {
-            id: Date.now().toString(),
-            content,
-            author: currentUser,
-            createdAt: new Date(),
-            attachments: attachments.map(f => ({ name: f.name, url: URL.createObjectURL(f), type: f.type })),
-            likes: [],
-            replies: []
-        };
-
-        setUpdates([newUpdate, ...updates]);
-
-        // Reset
-        editor.commands.clearContent();
-        setAttachments([]);
-        setIsEditorExpanded(false);
-    };
-
-    // Common emojis for the quick picker
-    const commonEmojis = ['😊', '👍', '🔥', '🚀', '✅', '💡', '🎉', '❤️', '🤔', '🙌'];
+    const filteredMessages = messages.filter(m => {
+        const searchable = (m.content + m.authorName).toLowerCase();
+        return search ? searchable.includes(search.toLowerCase()) : true;
+    });
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <>
-                    <AnimatePresence>
-                        {selectedAttachment && selectedAttachment.url && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4"
-                                onClick={() => setSelectedAttachment(null)}
-                            >
-                                <button
-                                    className="absolute top-6 right-6 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-[201]"
-                                    onClick={() => setSelectedAttachment(null)}
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
+        <Sheet open={isOpen} onOpenChange={val => !val && onClose()}>
+            <SheetContent side="right" showCloseButton={false} className="w-full sm:max-w-[800px] p-0 border-l border-slate-100 shadow-[0_0_120px_rgba(37,99,235,0.08)] bg-white flex min-h-0 flex-col rounded-l-[32px] overflow-hidden">
+                
+                {/* Header */}
+                <div className="px-8 pt-10 pb-6 bg-white border-b border-slate-50 shrink-0">
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                            <h2 className="text-[20px] font-black text-slate-900 tracking-tight leading-none uppercase">Discussion : {projectName}</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{members.length} membres actifs</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button onClick={onClose} className="p-2 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-slate-900 transition-all">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                                <div
-                                    className="relative max-w-5xl max-h-[90vh] flex flex-col items-center"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {selectedAttachment.type?.startsWith('image/') || selectedAttachment.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
-                                        <img
-                                            src={selectedAttachment.url}
-                                            alt={selectedAttachment.name}
-                                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                                        />
-                                    ) : (
-                                        <div className="bg-white rounded-xl p-8 flex flex-col items-center max-w-sm text-center">
-                                            <FileIcon className="w-16 h-16 text-blue-500 mb-4" />
-                                            <h3 className="text-lg font-bold text-slate-800 mb-2 truncate w-full">{selectedAttachment.name}</h3>
-                                            <p className="text-slate-500 text-sm mb-6">Aperçu non disponible pour ce type de fichier.</p>
-                                            <a
-                                                href={selectedAttachment.url}
-                                                download={selectedAttachment.name}
-                                                className="px-6 py-2.5 bg-[#0073ea] hover:bg-[#0060c2] text-white font-semibold rounded-lg shadow-sm transition-colors"
-                                            >
-                                                Télécharger
-                                            </a>
+                {/* Search */}
+                <div className="px-8 py-4 shrink-0 bg-slate-50/30 border-b border-slate-100">
+                    <div className="relative">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <Input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Rechercher..."
+                            className="pl-9 rounded-xl border-slate-200 h-10 text-xs font-medium bg-white"
+                        />
+                    </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
+                    {messages.filter(m => m.isPinned).length > 0 && (
+                        <div className="bg-amber-50 shrink-0 border-b border-amber-100 flex items-center p-3 px-8 gap-4 overflow-x-auto custom-scrollbar sticky top-0 z-10 shadow-sm shadow-amber-500/5">
+                            <Pin className="w-4 h-4 text-amber-500 shrink-0" />
+                            <span className="text-[10px] font-black uppercase text-amber-700 tracking-widest shrink-0">Épinglés</span>
+                            <div className="flex items-center gap-2">
+                                {messages.filter(m => m.isPinned).map(msg => (
+                                    <div 
+                                        key={`pin-${msg.id}`} 
+                                        className="bg-white/90 shrink-0 px-3 py-1.5 rounded-lg border border-amber-200/50 shadow-[0_2px_10px_rgba(245,158,11,0.05)] min-w-[200px] max-w-[260px] cursor-pointer hover:border-amber-400 hover:bg-white transition-all backdrop-blur-sm" 
+                                        onClick={() => document.getElementById(`board-msg-${msg.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                                    >
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <img src={msg.authorAvatar} alt="" className="w-4 h-4 rounded-full" />
+                                            <span className="text-[10px] items-center font-black text-slate-700 uppercase tracking-tight truncate flex-1">{msg.authorName}</span>
+                                            <span className="text-[8px] text-amber-500 font-bold uppercase">{new Date(msg.createdAt).toLocaleDateString()}</span>
                                         </div>
-                                    )}
-                                    {selectedAttachment.type?.startsWith('image/') || selectedAttachment.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
-                                        <div className="absolute -bottom-10 left-0 right-0 text-center text-white/90 font-medium text-sm">
-                                            {selectedAttachment.name}
+                                        <div className="text-[11px] text-slate-500 truncate" dangerouslySetInnerHTML={{ __html: msg.content }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="px-8 py-8">
+                        <AnimatePresence mode="wait">
+                            <motion.div key="discussion-list" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                                {isLoading && messages.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                                        <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Chargement...</p>
+                                    </div>
+                                ) : filteredMessages.length === 0 ? (
+                                    <div className="text-center border-2 border-dashed border-slate-100 rounded-[2.5rem] p-12 text-slate-300">
+                                        <MessageSquare className="w-10 h-10 mx-auto mb-4 opacity-20" />
+                                        <p className="font-bold text-sm uppercase tracking-widest">Aucun message</p>
+                                    </div>
+                                ) : (
+                                    filteredMessages.map((msg) => {
+                                        const isMine = msg.authorId === user?.id;
+                                        return (
+                                        <div key={msg.id} id={`board-msg-${msg.id}`} className="group relative flex items-start gap-4 hover:bg-slate-50/50 -mx-4 px-4 py-4 rounded-[2rem] transition-all h-auto">
+                                            {/* Action Bar Overlay */}
+                                            <div className={`absolute -top-3 opacity-0 group-hover:opacity-100 transition-all z-20 flex items-center gap-1 bg-white border border-slate-100 shadow-xl shadow-indigo-500/10 rounded-xl p-1 ${isMine ? 'left-4' : 'right-4'}`}>
+                                                {isMine && !msg.isDeleted && (
+                                                    <>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50" onClick={() => deleteMessage(msg.id)}>
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50" onClick={() => { setEditingMessage(msg); editor?.commands.setContent(msg.content); }}>
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-lg ${msg.likes?.includes(user?.id || '') ? 'text-rose-500 bg-rose-50' : 'text-slate-400'}`} onClick={() => toggleLike(msg.id)}>
+                                                    <Heart className={`w-4 h-4 ${msg.likes?.includes(user?.id || '') ? 'fill-current' : ''}`} />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50" onClick={() => setReplyTo(msg)}>
+                                                    <CornerUpLeft className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-lg ${msg.isPinned ? 'text-amber-500 bg-amber-50' : 'text-slate-400'}`} onClick={() => togglePin(msg.id)}>
+                                                    <Pin className={`w-4 h-4 ${msg.isPinned ? 'fill-current' : ''}`} />
+                                                </Button>
+                                            </div>
+
+                                            {!isMine && (
+                                                <div className="relative shrink-0">
+                                                    <Avatar className="w-10 h-10 rounded-2xl shadow-sm mt-1 ring-2 ring-white">
+                                                        <AvatarImage src={msg.authorAvatar} />
+                                                        <AvatarFallback>{msg.authorName.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    {onlineUsers.includes(msg.authorId) && (
+                                                        <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full transition-all duration-500 animate-pulse shadow-sm" />
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className={`flex-1 min-w-0 ${isMine ? 'flex flex-col items-end' : ''}`}>
+                                                <div className={`flex items-center gap-3 mb-1.5 px-3 opacity-0 group-hover:opacity-100 transition-opacity ${isMine ? 'flex-row-reverse' : ''}`}>
+                                                    <span className="text-[11px] font-black tracking-tight text-slate-900 uppercase">
+                                                        {isMine ? 'Moi' : msg.authorName}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-slate-300 uppercase">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                                                </div>
+
+                                                {msg.replyTo && (
+                                                    <div className="mb-2 pl-3 border-l-2 border-indigo-200 bg-slate-50/50 py-1.5 px-3 rounded-lg overflow-hidden max-w-sm">
+                                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-tight mb-0.5">Réponse à {msg.replyTo.authorName}</p>
+                                                        <p className="text-[11px] text-slate-400 truncate font-medium italic" dangerouslySetInnerHTML={{ __html: msg.replyTo.content }} />
+                                                    </div>
+                                                )}
+
+                                                <div 
+                                                    className={`px-5 py-3 rounded-[24px] text-sm font-medium leading-relaxed shadow-sm ${
+                                                        isMine 
+                                                        ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                                        : 'bg-slate-50 text-slate-700 rounded-tl-none border border-slate-100'
+                                                    }`}
+                                                    onClick={(e) => {
+                                                        const target = e.target as Node;
+                                                        const element = (target.nodeType === Node.TEXT_NODE ? target.parentElement : target) as HTMLElement;
+                                                        const anchor = element?.closest('a');
+                                                        if (anchor) {
+                                                            const href = anchor.getAttribute('href');
+                                                            if (href && href.startsWith('#data:')) {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                if (href.startsWith('#data:image')) {
+                                                                    setSelectedImage(href.substring(1));
+                                                                } else {
+                                                                    const dl = document.createElement('a');
+                                                                    dl.href = href.substring(1);
+                                                                    dl.download = anchor.textContent?.replace('📎 ', '') || 'document';
+                                                                    dl.click();
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <div dangerouslySetInnerHTML={{ __html: msg.content }} className={msg.isDeleted ? 'opacity-60 grayscale relative' : ''} />
+                                                </div>
+                                                
+                                                {msg.isEdited && !msg.isDeleted && (
+                                                    <div className={`flex items-center gap-1 mt-1 opacity-50 ${isMine ? 'justify-end' : ''}`}>
+                                                        <Edit2 className="w-3 h-3 text-slate-500" />
+                                                        <span className="text-[9px] font-bold uppercase text-slate-500">Modifié</span>
+                                                    </div>
+                                                )}
+
+                                                {msg.likes && msg.likes.length > 0 && (
+                                                    <div className={`mt-2 flex ${isMine ? 'justify-end' : ''}`}>
+                                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-100/50 text-rose-600 shadow-sm">
+                                                            <Heart className="w-3.5 h-3.5 fill-current" />
+                                                            <span className="text-[10px] font-black">{msg.likes.length}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    ) : null}
+                                        );
+                                    })
+                                )}
+                                <div ref={messagesEndRef} className="h-4" />
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+
+                {/* Input Area */}
+                <div className="p-6 border-t border-slate-50 bg-white shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.02)]">
+                    {/* Typing Indicator */}
+                    <AnimatePresence>
+                        {typingUsers.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 5 }} 
+                                animate={{ opacity: 1, y: 0 }} 
+                                exit={{ opacity: 0, y: 5 }}
+                                className="px-6 py-1 flex items-center gap-2 mb-1"
+                            >
+                                <div className="flex gap-1">
+                                    <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <span className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                 </div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight italic">
+                                    {typingUsers.length === 1 
+                                        ? `${typingUsers[0].name} est en train d'écrire...` 
+                                        : `${typingUsers.length} personnes écrivent...`
+                                    }
+                                </span>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-slate-900/10 backdrop-blur-[2px] z-[100]"
-                    />
-
-                    <motion.div
-                        initial={{ x: '100%', opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: '100%', opacity: 0 }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        className="fixed top-0 right-0 h-full w-[650px] bg-white shadow-[-8px_0_32px_rgba(0,0,0,0.1)] z-[101] flex flex-col border-l border-slate-200"
-                    >
-                        {/* Header */}
-                        <div className="px-8 pt-8 pb-6">
-                            <div className="flex items-center gap-6 mb-4">
-                                <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
-                                    <X className="w-7 h-7 stroke-[1.5]" />
-                                </button>
-                                <div className="flex-1">
-                                    <h2 className="text-[32px] font-black text-[#333333] tracking-tight leading-none mb-2">
-                                        Board Discussion
-                                    </h2>
-                                    <span className="text-base font-medium text-slate-500">{projectName}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Feed Area */}
-                        <div className="flex flex-col flex-1 overflow-hidden bg-slate-50/50">
-                            {/* Editor Area */}
-                            <div className="px-8 pt-6 pb-4 shrink-0 bg-white border-b border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.02)] z-10">
-                                <div
-                                    className={`border border-slate-200 focus-within:border-[#0073ea] focus-within:shadow-[0_0_0_4px_rgba(0,115,234,0.1)] rounded-xl overflow-hidden flex flex-col bg-white transition-all duration-200 ${!isEditorExpanded ? 'cursor-text hover:border-[#0073ea]/50' : ''}`}
-                                    onClick={() => !isEditorExpanded && setIsEditorExpanded(true)}
-                                >
-                                    {/* Top Toolbar */}
-                                    {isEditorExpanded && (
-                                        <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b border-slate-100 bg-white">
-                                            <ToolbarButton
-                                                icon={<Bold className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleBold().run()}
-                                                active={editor?.isActive('bold')}
-                                            />
-                                            <ToolbarButton
-                                                icon={<Italic className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleItalic().run()}
-                                                active={editor?.isActive('italic')}
-                                            />
-                                            <ToolbarButton
-                                                icon={<Underline className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleUnderline().run()}
-                                                active={editor?.isActive('underline')}
-                                            />
-                                            <ToolbarButton
-                                                icon={<Strikethrough className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleStrike().run()}
-                                                active={editor?.isActive('strike')}
-                                            />
-                                            <ToolbarDivider />
-                                            <ToolbarButton
-                                                icon={<Quote className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-                                                active={editor?.isActive('blockquote')}
-                                            />
-                                            <ToolbarButton
-                                                icon={<ListIcon className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                                                active={editor?.isActive('bulletList')}
-                                            />
-                                            <ToolbarButton
-                                                icon={<ListOrdered className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                                                active={editor?.isActive('orderedList')}
-                                            />
-                                            <ToolbarDivider />
-                                            <ToolbarButton
-                                                icon={<CheckSquare className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleTaskList().run()}
-                                                active={editor?.isActive('taskList')}
-                                            />
-                                            <ToolbarButton
-                                                icon={<Highlighter className="w-4 h-4" />}
-                                                onClick={() => editor?.chain().focus().toggleHighlight().run()}
-                                                active={editor?.isActive('highlight')}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Tiptap Content */}
-                                    <div className={`bg-white overflow-y-auto ${isEditorExpanded ? 'p-4 min-h-[100px] max-h-[250px]' : 'px-4 py-3 min-h-[48px]'} scrollbar-thin scrollbar-thumb-slate-200 cursor-text`} onClick={() => editor?.commands.focus()}>
-                                        <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none min-h-full" />
+                    <div className="bg-slate-50 border border-slate-100 rounded-[28px] overflow-hidden transition-all focus-within:bg-white focus-within:border-indigo-100 focus-within:shadow-xl focus-within:shadow-indigo-500/5">
+                        
+                        {/* Action Mode Banners */}
+                        {(replyTo || editingMessage) && (
+                            <div className="bg-indigo-50/5 border-b border-indigo-100/50 px-6 py-3 flex items-center justify-between animate-in slide-in-from-bottom-2">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-7 h-7 rounded-xl bg-indigo-100 flex items-center justify-center">
+                                        {replyTo ? <Reply className="w-3.5 h-3.5 text-indigo-600" /> : <Edit2 className="w-3.5 h-3.5 text-amber-500" />}
                                     </div>
+                                    <div className="truncate">
+                                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-tight">
+                                            {replyTo ? `Répondre à ` : `Édition de votre message`}
+                                            {replyTo && <span className="text-slate-900">{replyTo.authorName}</span>}
+                                        </p>
+                                        {replyTo && (
+                                            <p className="text-[11px] text-slate-500 truncate italic font-medium" dangerouslySetInnerHTML={{ __html: replyTo.content }} />
+                                        )}
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => { setReplyTo(null); setEditingMessage(null); editor?.commands.clearContent(); }} 
+                                    className="p-2 hover:bg-indigo-50 rounded-lg text-indigo-400 transition-colors cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
 
-                                    {/* Attachments Preview */}
-                                    {attachments.length > 0 && (
-                                        <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex flex-wrap gap-2">
-                                            {attachments.map((file, i) => (
-                                                <div key={i} className="flex items-center gap-2 px-2 py-1 bg-white border border-slate-200 rounded text-xs text-slate-600 shadow-sm">
-                                                    <FileIcon className="w-3 h-3 text-blue-500" />
-                                                    <span className="truncate max-w-[150px] font-medium">{file.name}</span>
-                                                    <button onClick={() => removeAttachment(i)} className="text-slate-400 hover:text-red-500 ml-1">
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                </div>
+                        <div className="px-6 pt-4 pb-2 min-h-[44px]">
+                            <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none text-slate-600 font-medium text-sm" />
+                        </div>
+                        
+                        <div className="flex items-center justify-between px-3 pb-2 pt-1 border-t border-slate-100/50 mt-2 bg-slate-50/50">
+                            <div className="flex items-center gap-1">
+                                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-slate-400 hover:text-indigo-600" onClick={() => fileInputRef.current?.click()}>
+                                    <Paperclip className="w-4 h-4"/>
+                                </Button>
+                                <Separator orientation="vertical" className="h-3 mx-1 bg-slate-200" />
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-slate-400 hover:text-indigo-600" onClick={() => editor?.chain().focus().insertContent('@').run()}>
+                                    <AtSign className="w-4 h-4"/>
+                                </Button>
+                                <Separator orientation="vertical" className="h-3 mx-1 bg-slate-200" />
+                                <Popover>
+                                    <PopoverTrigger className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-indigo-600">
+                                        <SmilePlus className="w-4 h-4" />
+                                    </PopoverTrigger>
+                                    <PopoverContent align="center" className="w-[240px] p-3 rounded-2xl shadow-2xl border-slate-100">
+                                        <div className="grid grid-cols-6 gap-2">
+                                            {emojiList.map(emoji => (
+                                                <button key={emoji} className="h-8 w-8 rounded-lg hover:bg-slate-50 text-lg" onClick={() => editor?.chain().focus().insertContent(`${emoji} `).run()}>
+                                                    {emoji}
+                                                </button>
                                             ))}
                                         </div>
-                                    )}
-
-                                    {/* Bottom Toolbar */}
-                                    {isEditorExpanded && (
-                                        <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-t border-slate-100 relative">
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={() => editor?.chain().focus().insertContent('@').run()}
-                                                    className="p-1.5 text-slate-400 hover:text-[#0073ea] hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Mentionner (@)"
-                                                >
-                                                    <AtSign className="w-5 h-5 stroke-[1.5]" />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    className="p-1.5 text-slate-400 hover:text-[#0073ea] hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Ajouter un fichier"
-                                                >
-                                                    <Paperclip className="w-5 h-5 stroke-[1.5]" />
-                                                </button>
-                                                <input
-                                                    type="file"
-                                                    ref={fileInputRef}
-                                                    className="hidden"
-                                                    multiple
-                                                    onChange={handleFileUpload}
-                                                />
-
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setShowEmojiPicker(!showEmojiPicker);
-                                                        }}
-                                                        className={`p-1.5 rounded-lg transition-colors ${showEmojiPicker ? 'text-[#0073ea] bg-blue-50' : 'text-slate-400 hover:text-[#0073ea] hover:bg-blue-50'}`}
-                                                        title="Emojis"
-                                                    >
-                                                        <Smile className="w-5 h-5 stroke-[1.5]" />
-                                                    </button>
-
-                                                    <AnimatePresence>
-                                                        {showEmojiPicker && (
-                                                            <motion.div
-                                                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                                                                className="absolute bottom-full left-0 mb-2 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 rounded-xl p-3 flex flex-wrap gap-1 z-[200] w-[200px]"
-                                                            >
-                                                                {commonEmojis.map(emoji => (
-                                                                    <button
-                                                                        key={emoji}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            addEmoji(emoji);
-                                                                        }}
-                                                                        className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded text-xl transition-all hover:scale-125"
-                                                                    >
-                                                                        {emoji}
-                                                                    </button>
-                                                                ))}
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 h-8">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setIsEditorExpanded(false); }}
-                                                    className="text-sm font-semibold text-slate-500 hover:text-slate-700 transition-colors"
-                                                >
-                                                    Annuler
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
-                                                    disabled={!editor || (editor.isEmpty && attachments.length === 0)}
-                                                    className="h-full px-5 bg-[#0073ea] hover:bg-[#0060c2] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold rounded shadow-sm shadow-blue-500/20 transition-all"
-                                                >
-                                                    Mettre à jour
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
-
-                            {/* Updates List Scroll */}
-                            <div className="flex-1 overflow-y-auto px-8 py-6 scrollbar-thin scrollbar-thumb-slate-200">
-                                {updates.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-70 mt-10">
-                                        <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4 border border-blue-100 shadow-inner">
-                                            <MessageCircle className="w-10 h-10 text-blue-400 stroke-[1.5]" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-slate-700 mb-1">Commencez la discussion</h3>
-                                        <p className="text-sm text-slate-500 max-w-[250px]">Partagez des mises à jour, posez des questions ou mentionnez un membre de l'équipe.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6 pb-20">
-                                        {updates.map(update => (
-                                            <UpdateCard
-                                                key={update.id}
-                                                update={update}
-                                                currentUser={currentUser}
-                                                onLike={() => toggleLike(update.id)}
-                                                onReplySubmit={(updateId, content) => handleAddReply(updateId, content)}
-                                                onAttachmentClick={setSelectedAttachment}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </motion.div>
-                </>
-            )}
-        </AnimatePresence>
-    );
-};
-
-const UpdateCard: React.FC<{
-    update: BoardUpdate,
-    currentUser: Member,
-    onLike: () => void,
-    onReplySubmit: (updateId: string, replyContent: string) => void,
-    onAttachmentClick: (attachment: { name: string, url?: string, type?: string }) => void
-}> = ({ update, currentUser, onLike, onReplySubmit, onAttachmentClick }) => {
-    const [isReplying, setIsReplying] = useState(false);
-    const [replyText, setReplyText] = useState('');
-    const hasLiked = update.likes.includes(currentUser.id);
-
-    const handleReply = () => {
-        if (!replyText.trim()) return;
-        onReplySubmit(update.id, replyText);
-        setReplyText('');
-        setIsReplying(false);
-    };
-
-    return (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="p-5 pb-4">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0073ea] to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-sm ring-2 ring-white overflow-hidden">
-                            {renderAvatar(update.author.avatar, update.author.fullName)}
-                        </div>
-                        <div>
-                            <h4 className="text-[15px] font-bold text-slate-800 leading-tight">{update.author.fullName}</h4>
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-                                <Clock className="w-3 h-3" />
-                                <span>{update.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
+                            <Button 
+                                onClick={handleSend}
+                                className={`h-11 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${(!editor || (editor.isEmpty && !editor.getHTML().includes('href') && !editor.getHTML().includes('img'))) ? 'opacity-50' : 'shadow-lg shadow-indigo-600/30'}`}
+                            >
+                                <span>Envoyer</span>
+                                <Send className="w-3.5 h-3.5 ml-2" />
+                            </Button>
                         </div>
                     </div>
-                    <button className="text-slate-400 hover:text-[#0073ea] p-1.5 hover:bg-slate-50 rounded-lg transition-colors">
-                        <MoreHorizontal className="w-5 h-5" />
-                    </button>
                 </div>
 
-                <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed font-normal tiptap-content"
-                    dangerouslySetInnerHTML={{ __html: update.content }} />
-
-                {update.attachments.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        {update.attachments.map((file, i) => (
-                            <div
-                                key={i}
-                                onClick={() => onAttachmentClick(file)}
-                                className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-lg text-sm text-slate-700 font-medium hover:bg-slate-100 transition-colors cursor-pointer group"
-                            >
-                                {file.type?.startsWith('image/') || file.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
-                                    <ImageIcon className="w-4 h-4 text-[#0073ea] group-hover:scale-110 transition-transform" />
-                                ) : (
-                                    <FileIcon className="w-4 h-4 text-[#0073ea] group-hover:scale-110 transition-transform" />
-                                )}
-                                <span className="truncate max-w-[200px]">{file.name}</span>
-                            </div>
-                        ))}
-                    </div>
+                {selectedImage && (
+                    <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+                        <DialogContent className="max-w-[80vw] max-h-[90vh] p-4 bg-white/90 backdrop-blur-xl border-none shadow-2xl rounded-3xl flex flex-col items-center justify-center overflow-hidden">
+                            <img src={selectedImage} alt="Aperçu du fichier" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-lg ring-1 ring-black/5" />
+                        </DialogContent>
+                    </Dialog>
                 )}
-            </div>
+            </SheetContent>
 
-            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-3">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={onLike}
-                        className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${hasLiked ? 'text-[#0073ea]' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm">
-                            <Smile className={`w-4 h-4 ${hasLiked ? 'text-[#0073ea]' : 'text-slate-400'}`} />
-                        </span>
-                        J'aime {update.likes.length > 0 && <span className="bg-[#0073ea]/10 text-[#0073ea] px-1.5 rounded-full text-xs ml-0.5">{update.likes.length}</span>}
-                    </button>
-
-                    <button
-                        onClick={() => setIsReplying(!isReplying)}
-                        className={`flex items-center gap-1.5 text-sm font-semibold transition-colors group ${isReplying || update.replies.length > 0 ? 'text-[#0073ea]' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <span className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 shadow-sm group-hover:border-slate-300 transition-colors">
-                            <MessageCircle className={`w-4 h-4 ${isReplying || update.replies.length > 0 ? 'text-[#0073ea]' : 'text-slate-400 group-hover:text-slate-500'}`} />
-                        </span>
-                        Répondre {update.replies.length > 0 && <span className="bg-[#0073ea]/10 text-[#0073ea] px-1.5 rounded-full text-xs ml-0.5">{update.replies.length}</span>}
-                    </button>
-                </div>
-
-                {update.replies.length > 0 && (
-                    <div className="mt-2 space-y-3 pt-3 border-t border-slate-200/60">
-                        {update.replies.map(r => (
-                            <div key={r.id} className="flex gap-3 relative">
-                                <div className="absolute left-3.5 top-8 bottom-0 w-px bg-slate-200/60 -z-10" />
-                                <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500 z-10 shadow-sm overflow-hidden">
-                                    {renderAvatar(r.author.avatar, r.author.fullName)}
-                                </div>
-                                <div className="flex-1 bg-white p-3 rounded-xl border border-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)] text-sm">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="font-bold text-slate-800 text-[13px]">{r.author.fullName}</span>
-                                        <span className="text-[10px] text-slate-400 font-medium">{r.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                    <p className="text-slate-600 leading-relaxed font-normal">{r.content}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {isReplying && (
-                    <div className={`flex items-start gap-3 ${update.replies.length > 0 ? 'mt-2' : 'mt-3 pt-3 border-t border-slate-200/60'}`}>
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0073ea] to-indigo-500 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-2 ring-white z-10 overflow-hidden">
-                            {renderAvatar(currentUser.avatar, currentUser.fullName)}
-                        </div>
-                        <div className="flex-1 relative">
-                            <textarea
-                                autoFocus
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleReply();
-                                    }
-                                }}
-                                placeholder="Écrivez une réponse..."
-                                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] min-h-[44px] resize-none shadow-sm transition-all pr-12"
-                                rows={1}
-                            />
-                            <button
-                                onClick={handleReply}
-                                disabled={!replyText.trim()}
-                                className="absolute right-2 bottom-2 p-1.5 text-white bg-[#0073ea] hover:bg-[#0060c2] rounded-lg disabled:opacity-50 disabled:bg-slate-300 transition-colors shadow-sm"
-                            >
-                                <Send className="w-3.5 h-3.5 -ml-0.5" />
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+            <style dangerouslySetInnerHTML={{ __html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                .ProseMirror p.is-editor-empty:first-child::before {
+                    content: attr(data-placeholder);
+                    float: left;
+                    color: #94a3b8;
+                    pointer-events: none;
+                    height: 0;
+                }
+            `}} />
+        </Sheet>
     );
 };
-
-const ToolbarButton: React.FC<{
-    icon: React.ReactNode,
-    onClick?: () => void,
-    active?: boolean
-}> = ({ icon, onClick, active }) => (
-    <button
-        onClick={onClick}
-        className={`p-2 rounded transition-colors group ${active ? 'bg-blue-50 text-[#0073ea]' : 'text-slate-600 hover:bg-slate-100'}`}
-    >
-        <div className="group-hover:scale-110 transition-transform">
-            {icon}
-        </div>
-    </button>
-);
-
-const ToolbarDivider = () => <div className="w-px h-6 bg-slate-100 mx-1" />;

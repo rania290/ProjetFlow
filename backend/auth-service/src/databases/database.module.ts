@@ -5,14 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
+      host: process.env.DB_HOST || '127.0.0.1',
       port: parseInt(process.env.DB_PORT || '5432'),
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'auth_db',
       entities: [__dirname + '/../features/**/*.model{.ts,.js}'],
       synchronize: process.env.NODE_ENV !== 'production',
-      logging: process.env.NODE_ENV === 'development',
+      logging: false, // Désactiver les logs SQL
+      retryAttempts: 5,
+      retryDelay: 3000,
     }),
   ],
 })

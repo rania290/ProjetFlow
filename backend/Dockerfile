@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy package config and root node_modules if they exist (monorepo root)
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund --timeout=300000
 
 # Copy the entire mono-repo
 COPY . .
@@ -23,10 +23,10 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 WORKDIR /app
 
 COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --no-audit --no-fund --timeout=300000
 
 # Copy distribution folder and built node_modules
 COPY --from=builder /app/dist ./dist
 
-# Standard start command for NestJS built projects
-CMD node dist/${SERVICE_NAME}/main.js
+# Point d'entrée pour les projets NestJS (monorepo structure)
+CMD node dist/${SERVICE_NAME}/src/main.js

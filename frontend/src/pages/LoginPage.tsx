@@ -19,7 +19,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       const user = await login({ email, password });
-      if (user.role === 'ADMIN' || user.role === 'ROOT') {
+      if (user.role === 'ADMIN') {
         navigate('/admin/dashboard');
       } else {
         navigate('/dashboard');

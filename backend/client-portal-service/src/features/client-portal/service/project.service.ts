@@ -27,22 +27,23 @@ export class ProjectService {
     });
 
     const savedProject = await this.projectRepository.save(project);
+    const projectData = Array.isArray(savedProject) ? savedProject[0] : savedProject;
 
     // Envoyer une notification au client
     try {
-      await this.emailService.sendProjectNotification(savedProject, 'created');
+      await this.emailService.sendProjectNotification(projectData, 'created');
     } catch (error) {
       console.error('Erreur lors de l\'envoi de l\'email de projet:', error);
     }
 
     // Notifier l'équipe interne
     await this.notificationService.notifyTeam('NEW_PROJECT', {
-      projectName: savedProject.name,
-      projectId: savedProject.id,
+      projectName: projectData.name,
+      projectId: projectData.id,
       createdBy: user.email,
     });
 
-    return savedProject;
+    return projectData;
   }
 
   async findAll(params: {

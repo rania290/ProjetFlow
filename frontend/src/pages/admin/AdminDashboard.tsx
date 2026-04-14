@@ -10,6 +10,15 @@ import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { FadeInView } from '../../components/ui/FadeInView';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
+import { Badge } from '../../components/ui/badge';
 
 export const AdminDashboard: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState('avancement');
@@ -136,10 +145,12 @@ export const AdminDashboard: React.FC = () => {
     datasets: [{
       label: 'Progression (%)',
       data: projectsProgress.length ? projectsProgress : [0],
-      backgroundColor: 'rgba(52, 152, 219, 0.8)',
-      borderColor: 'rgba(52, 152, 219, 1)',
-      borderWidth: 2,
-      borderRadius: 6
+      backgroundColor: 'rgba(79, 70, 229, 0.8)', // Indigo-600
+      borderColor: 'rgba(79, 70, 229, 1)',
+      borderWidth: 0,
+      borderRadius: 20,
+      barThickness: 32,
+      maxBarThickness: 48,
     }]
   };
 
@@ -156,13 +167,15 @@ export const AdminDashboard: React.FC = () => {
     datasets: [{
       data: hasTasks ? Object.values(tasksByStatusCount) : [1],
       backgroundColor: hasTasks ? [
-        'rgba(149, 165, 166, 0.8)',
-        'rgba(52, 152, 219, 0.8)',
-        'rgba(155, 89, 182, 0.8)',
-        'rgba(39, 174, 96, 0.8)'
-      ] : ['rgba(226, 232, 240, 1)'], // Slate-200
-      borderWidth: 2,
-      borderColor: '#ffffff'
+        '#94a3b8', // Todo: Slate-400
+        '#6366f1', // In Progress: Indigo-500
+        '#a855f7', // In Test: Purple-500
+        '#10b981'  // Done: Emerald-500
+      ] : ['#e2e8f0'],
+      borderWidth: 4,
+      borderColor: '#ffffff',
+      hoverOffset: 15,
+      weight: 0.5
     }]
   };
 
@@ -197,10 +210,51 @@ export const AdminDashboard: React.FC = () => {
       monthlyBurn: [8000, 12000, 9500, 11000, totalSpent]
     },
     rh: {
-      absences: [],
-      productivity: [],
-      totalAbsences: 0,
-      averageProductivity: 100
+      totalStaff: realResources.length,
+      roleDistribution: (() => {
+        const counts: Record<string, number> = {};
+        realResources.forEach(r => {
+          counts[r.role] = (counts[r.role] || 0) + 1;
+        });
+        return {
+          labels: Object.keys(counts),
+          data: Object.values(counts)
+        };
+      })(),
+      productivityTrend: (() => {
+        const trend = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+          const tasksUpToMonth = state.tasks.filter(t => new Date(t.createdAt) <= monthEnd);
+          if (tasksUpToMonth.length === 0) { trend.push(0); continue; }
+          
+          let totalEffort = 0;
+          let completedEffort = 0;
+          tasksUpToMonth.forEach(t => {
+            const effort = t.storyPoints || (t.estimatedHours ? t.estimatedHours / 8 : 1);
+            totalEffort += effort;
+            if (t.status === 'DONE' && t.completedAt && new Date(t.completedAt) <= monthEnd) {
+              completedEffort += effort;
+            } else if (i === 0) {
+              if (t.status === 'DONE') completedEffort += effort;
+              else if (t.status === 'IN_TEST') completedEffort += effort * 0.9;
+              else if (t.status === 'IN_PROGRESS') completedEffort += effort * 0.5;
+            }
+          });
+          trend.push(totalEffort > 0 ? Math.round((completedEffort / totalEffort) * 100) : 0);
+        }
+        return trend;
+      })(),
+      retentionRate: (() => {
+        // Formule : 100% de base, -5% par projet suspendu
+        const suspendedCount = state.projects.filter(p => p.status === 'SUSPENDED').length;
+        return Math.max(0, 100 - (suspendedCount * 5));
+      })(),
+      socialClimate: (() => {
+        // Formule : Base de 3/5 + bonus proportionnel à l'efficacité globale
+        return 3.0 + (averageGlobalEfficiency / 100) * 2.0;
+      })()
     }
   };
 
@@ -419,36 +473,51 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <GlassCard className="p-8 border-white/40" delay={0.4}>
+            <GlassCard className="p-8 border-white/40 shadow-2xl" delay={0.4}>
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
-                  <div className="w-1.5 h-6 bg-blue-500 rounded-full"></div>
-                  Progression Individuelle
-                </h3>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  Projets actifs
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
+                    <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+                    Progression Individuelle
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Avancement par projet actif</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black text-indigo-600 leading-none">{globalCompletion}%</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Moyenne Globale</p>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative pt-4">
                  <ChartComponent type="bar" data={realProjectProgressData} height={320} animate={true} />
               </div>
             </GlassCard>
             
-            <GlassCard className="p-8 border-white/40" delay={0.5}>
+            <GlassCard className="p-8 border-white/40 shadow-2xl" delay={0.5}>
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
-                  <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-                  Santé des Tâches
-                </h3>
-                <select className="bg-slate-50 border-none text-[10px] font-black rounded-lg px-2 py-1 outline-none text-slate-500 cursor-pointer">
-                  <option>Par Statut</option>
-                  <option>Par Priorité</option>
-                </select>
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
+                    <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+                    Santé des Tâches
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Répartition par statut opérationnel</p>
+                </div>
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-black text-[10px] uppercase">
+                   Stable
+                </Badge>
               </div>
-              <div className="relative flex justify-center">
-                 <div className="w-full max-w-[320px]">
-                     <ChartComponent type="doughnut" data={realTaskStatusData} height={320} animate={true} />
+              <div className="relative flex justify-center py-6">
+                 <div className="w-full max-w-[280px]">
+                     <ChartComponent type="doughnut" data={realTaskStatusData} height={280} animate={true} />
+                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100/50">
+                 <div className="space-y-1">
+                    <p className="text-[9px] font-black text-slate-400 uppercase">Productivité</p>
+                    <p className="text-sm font-black text-slate-800">Haute density</p>
+                 </div>
+                 <div className="space-y-1 text-right">
+                    <p className="text-[9px] font-black text-slate-400 uppercase">Focus</p>
+                    <p className="text-sm font-black text-emerald-600">Livraisons</p>
                  </div>
               </div>
             </GlassCard>
@@ -528,20 +597,20 @@ export const AdminDashboard: React.FC = () => {
               <button className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-tighter">Voir tout l'historique</button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50/50 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em]">
-                  <tr>
-                    <th className="px-8 py-5">Membre de l'équipe</th>
-                    <th className="px-6 py-5">Tâches</th>
-                    <th className="px-6 py-5 text-right">Reste à faire</th>
-                    <th className="px-6 py-5 text-center">Progression</th>
-                    <th className="px-8 py-5 text-right">Disponibilité</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/50">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100/50">
+                    <TableHead className="px-8 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Membre de l'équipe</TableHead>
+                    <TableHead className="px-6 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Tâches</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Reste à faire</TableHead>
+                    <TableHead className="px-6 py-5 text-center text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Progression</TableHead>
+                    <TableHead className="px-8 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Disponibilité</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {reportData.charge.resources.length > 0 ? reportData.charge.resources.map((r: any, i: number) => (
-                    <tr key={i} className="hover:bg-indigo-50/20 transition-all group cursor-default">
-                      <td className="px-8 py-5">
+                    <TableRow key={i} className="hover:bg-indigo-50/20 transition-all group cursor-default border-slate-100/50">
+                      <TableCell className="px-8 py-5">
                         <div className="flex items-center gap-4">
                           <div className="relative">
                             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-primary-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-indigo-100">
@@ -554,17 +623,17 @@ export const AdminDashboard: React.FC = () => {
                             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{r.role}</div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-5">
+                      </TableCell>
+                      <TableCell className="px-6 py-5">
                         <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-black text-[10px]">
                           {r.tasksCount} active
                         </span>
-                      </td>
-                      <td className="px-6 py-5 text-right">
+                      </TableCell>
+                      <TableCell className="px-6 py-5 text-right">
                         <span className="font-black text-slate-800">{r.remainingHours}h</span>
                         <span className="text-[10px] text-slate-400 font-bold block">sur {r.assignedHours}h</span>
-                      </td>
-                      <td className="px-6 py-5">
+                      </TableCell>
+                      <TableCell className="px-6 py-5">
                         <div className="flex flex-col items-center gap-2 w-full max-w-[140px] mx-auto">
                           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden p-[1px]">
                             <motion.div 
@@ -575,21 +644,21 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{r.efficiency}% complété</span>
                         </div>
-                      </td>
-                      <td className="px-8 py-5 text-right">
+                      </TableCell>
+                      <TableCell className="px-8 py-5 text-right">
                         {r.workloadStatus === 'OVERLOADED' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-red-50 text-red-600 border border-red-100">SATURÉ</span>}
                         {r.workloadStatus === 'AVAILABLE_SOON' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100">PROCHAINEMENT</span>}
                         {r.workloadStatus === 'AVAILABLE' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100">LIBRE</span>}
                         {r.workloadStatus === 'OPTIMAL' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100">OPTIMAL</span>}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )) : (
-                    <tr>
-                        <td colSpan={5} className="px-8 py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">Aucune ressource assignée au workflow actuel.</td>
-                    </tr>
+                    <TableRow>
+                        <TableCell colSpan={5} className="px-8 py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">Aucune ressource assignée au workflow actuel.</TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </GlassCard>
         </FadeInView>
@@ -687,39 +756,39 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50/50 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em]">
-                    <tr>
-                      <th className="px-8 py-5">Identifiant Projet</th>
-                      <th className="px-6 py-5 text-right">Budget Alloué</th>
-                      <th className="px-6 py-5 text-right">Consommé Réel</th>
-                      <th className="px-6 py-5 text-right">Reste</th>
-                      <th className="px-8 py-5 text-right">Progression Budget</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/50">
-                    {projectCosts.map((p, i) => {
-                      const projRate = Math.min(100, Math.round((p.spent / Math.max(p.budget, 1)) * 100));
-                      return (
-                      <tr key={i} className="hover:bg-emerald-50/10 transition-all group">
-                        <td className="px-8 py-6 font-black text-slate-800 text-[13px]">{p.name}</td>
-                        <td className="px-6 py-6 text-right text-slate-400 font-bold">{(p.budget / 1000).toFixed(1)}k</td>
-                        <td className="px-6 py-6 text-right font-black text-indigo-600">{(p.spent / 1000).toFixed(1)}k</td>
-                        <td className="px-6 py-6 text-right text-slate-400 font-bold">{(p.remaining / 1000).toFixed(1)}k</td>
-                        <td className="px-8 py-6">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="hover:bg-transparent border-slate-100/50">
+                    <TableHead className="px-8 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Identifiant Projet</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Budget Alloué</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Consommé Réel</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Reste</TableHead>
+                    <TableHead className="px-8 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Progression Budget</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projectCosts.map((p, i) => {
+                    const projRate = Math.min(100, Math.round((p.spent / Math.max(p.budget, 1)) * 100));
+                    return (
+                      <TableRow key={i} className="hover:bg-emerald-50/10 transition-all group border-slate-100/50">
+                        <TableCell className="px-8 py-6 font-black text-slate-800 text-[13px]">{p.name}</TableCell>
+                        <TableCell className="px-6 py-6 text-right text-slate-400 font-bold">{(p.budget / 1000).toFixed(1)}k</TableCell>
+                        <TableCell className="px-6 py-6 text-right font-black text-indigo-600">{(p.spent / 1000).toFixed(1)}k</TableCell>
+                        <TableCell className="px-6 py-6 text-right text-slate-400 font-bold">{(p.remaining / 1000).toFixed(1)}k</TableCell>
+                        <TableCell className="px-8 py-6">
                            <div className="flex flex-col items-end gap-2">
                                <div className="w-full max-w-[120px] h-1.5 bg-slate-100 rounded-full overflow-hidden p-[1px]">
                                    <div className={`h-full rounded-full ${projRate > 90 ? 'bg-red-500' : projRate > 75 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${projRate}%` }} />
                                </div>
                                <span className={`text-[9px] font-black ${projRate > 90 ? 'text-red-500' : projRate > 75 ? 'text-amber-500' : 'text-emerald-500'}`}>{projRate}%</span>
                            </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )})}
-                  </tbody>
-                </table>
-              </div>
+                </TableBody>
+              </Table>
+            </div>
             </GlassCard>
           </FadeInView>
       )}
@@ -742,18 +811,18 @@ export const AdminDashboard: React.FC = () => {
             <GlassCard className="p-6 border-white/40" delay={0.1}>
               <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Effectif Total</p>
               <div className="flex items-end justify-between">
-                <p className="text-4xl font-black text-slate-900 font-display">24</p>
-                <span className="text-[10px] font-black px-2 py-1 bg-purple-50 text-purple-600 rounded-lg">+2 ce mois</span>
+                <p className="text-4xl font-black text-slate-900 font-display">{reportData.rh.totalStaff}</p>
+                <span className="text-[10px] font-black px-2 py-1 bg-purple-50 text-purple-600 rounded-lg">Experts actifs</span>
               </div>
             </GlassCard>
 
             <GlassCard className="p-6 border-white/40" delay={0.2}>
               <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Taux de Rétention</p>
               <div className="flex items-end justify-between">
-                <p className="text-4xl font-black text-slate-900 font-display">96%</p>
+                <p className="text-4xl font-black text-slate-900 font-display">{reportData.rh.retentionRate}%</p>
                 <div className="w-12 h-12">
                    <ChartComponent type="doughnut" data={{
-                     datasets: [{ data: [96, 4], backgroundColor: [THEME.emerald.start, 'rgba(0,0,0,0.05)'], borderWidth: 0 }]
+                     datasets: [{ data: [reportData.rh.retentionRate, 100 - reportData.rh.retentionRate], backgroundColor: [THEME.emerald.start, 'rgba(0,0,0,0.05)'], borderWidth: 0 }]
                    }} height={48} animate={true} />
                 </div>
               </div>
@@ -762,9 +831,9 @@ export const AdminDashboard: React.FC = () => {
             <GlassCard className="p-6 border-white/40" delay={0.3}>
               <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Climat Social</p>
               <div className="flex items-end justify-between">
-                <p className="text-4xl font-black text-indigo-600 font-display">4.8</p>
+                <p className="text-4xl font-black text-indigo-600 font-display">{reportData.rh.socialClimate.toFixed(1)}</p>
                 <div className="flex gap-0.5 mb-1">
-                  {[1,2,3,4,5].map(i => <div key={i} className={`w-1.5 h-3 rounded-full ${i <= 4 ? 'bg-indigo-500' : 'bg-slate-200'}`} />)}
+                  {[1,2,3,4,5].map(i => <div key={i} className={`w-1.5 h-3 rounded-full ${i <= reportData.rh.socialClimate ? 'bg-indigo-500' : 'bg-slate-200'}`} />)}
                 </div>
               </div>
             </GlassCard>
@@ -777,13 +846,25 @@ export const AdminDashboard: React.FC = () => {
                   <div className="w-1.5 h-6 bg-purple-500 rounded-full"></div>
                   Productivité Mensuelle
                 </h3>
+                <div className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-1 rounded-lg uppercase">
+                  Vs mois précédent : +{Math.max(0, reportData.rh.productivityTrend[5] - reportData.rh.productivityTrend[4])}%
+                </div>
               </div>
               <div className="relative">
                  <ChartComponent type="line" data={{
-                   labels: ['Jan', 'Féb', 'Mar', 'Avr', 'Mai', 'Juin'],
+                   labels: (() => {
+                      const labels = [];
+                      const now = new Date();
+                      for (let i = 5; i >= 0; i--) {
+                        labels.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toLocaleString('fr-FR', { month: 'short' }));
+                      }
+                      return labels;
+                    })(),
                    datasets: [{
                      label: 'Productivité (%)',
-                     data: [82, 85, 88, 84, 91, 94],
+                     data: reportData.rh.productivityTrend,
+                     borderColor: '#8b5cf6',
+                     backgroundColor: 'rgba(139, 92, 246, 0.1)',
                    }]
                  }} height={300} animate={true} />
               </div>
@@ -798,10 +879,11 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <div className="relative">
                  <ChartComponent type="bar" data={{
-                   labels: ['Dev', 'Design', 'Ops', 'QA', 'PM'],
+                   labels: reportData.rh.roleDistribution.labels,
                    datasets: [{
-                     label: 'Experts',
-                     data: [12, 5, 3, 2, 2],
+                     label: 'Nombre d\'Experts',
+                     data: reportData.rh.roleDistribution.data,
+                     backgroundColor: 'rgba(245, 158, 11, 0.8)',
                    }]
                  }} height={300} animate={true} />
               </div>

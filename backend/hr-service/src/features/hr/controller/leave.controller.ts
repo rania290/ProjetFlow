@@ -1,0 +1,64 @@
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, Query } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
+import { LeaveRole } from "../constants/leave.constants";
+import { CreateLeaveDto } from "../dto/create-leave.dto";
+import { LeaveResponseDto } from "../dto/leave-response.dto";
+import { ReviewLeaveDto } from "../dto/review-leave.dto";
+import { LeaveService } from "../service/leave.service";
+import { JwtAuthGuard } from "../../../utils/auth/jwt-auth.guard";
+import { RolesGuard } from "../../../utils/auth/roles.guard";
+import { Roles } from "../../../utils/auth/roles.decorator";
+
+@ApiTags("HR Leaves")
+@Controller("hr/leaves")
+export class LeaveController {
+  constructor(private readonly leaveService: LeaveService) { }
+
+  @Get("/hello")
+  async hello() {
+    return { status: "ok", version: "debug-1" };
+  }
+
+  @Get("/")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(LeaveRole.MANAGER, LeaveRole.HR_ADMIN)
+  async getLeaves(): Promise<LeaveResponseDto[]> {
+    return this.leaveService.getLeaves();
+  }
+
+  @Post("/")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(LeaveRole.EMPLOYEE)
+  async createLeaveRequest(@Body() dto: CreateLeaveDto): Promise<LeaveResponseDto> {
+    return this.leaveService.createLeaveRequest(dto);
+  }
+
+  @Get("/pending")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(LeaveRole.MANAGER, LeaveRole.HR_ADMIN)
+  async getPendingLeaves(@Query("validatorId") validatorId?: string): Promise<LeaveResponseDto[]> {
+    return this.leaveService.getPendingLeaves(validatorId);
+  }
+
+  @Get("/employee/:employeeId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(LeaveRole.EMPLOYEE, LeaveRole.MANAGER)
+  async getLeavesByEmployee(@Param("employeeId") employeeId: string): Promise<LeaveResponseDto[]> {
+    return this.leaveService.getLeavesByEmployee(employeeId);
+  }
+
+  @Get("/:id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(LeaveRole.EMPLOYEE, LeaveRole.MANAGER, LeaveRole.HR_ADMIN)
+  async getLeaveById(@Param("id") id: string): Promise<LeaveResponseDto> {
+    return this.leaveService.getLeaveById(id);
+  }
+
+  @Patch("/:id/review")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(LeaveRole.MANAGER, LeaveRole.HR_ADMIN)
+  async reviewLeaveRequest(@Param("id") id: string, @Body() dto: ReviewLeaveDto): Promise<LeaveResponseDto> {
+    return this.leaveService.reviewLeaveRequest(id, dto);
+  }
+}
+

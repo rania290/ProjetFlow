@@ -40,6 +40,15 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ nullable: true })
+  managerId: string;
+
+  /**
+   * Optional: Actually relate the manager for easier tree building later
+   * if we want to use TypeORM's tree entities or just simple relations.
+   */
+  manager?: User;
+
   @CreateDateColumn()
   createdAt: Date;
 

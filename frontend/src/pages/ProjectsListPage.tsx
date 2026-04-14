@@ -177,7 +177,7 @@ export const ProjectsListPage: React.FC = () => {
             {/* Real create project modal */}
             <AnimatePresence>
                 {showCreate && (
-                    <CreateProjectModal onClose={() => setShowCreate(false)} />
+                    <CreateProjectModal isOpen={showCreate} onClose={() => setShowCreate(false)} />
                 )}
             </AnimatePresence>
         </AppLayout>

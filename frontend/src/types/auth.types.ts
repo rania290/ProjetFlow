@@ -4,8 +4,8 @@ export const UserRole = {
     DEVELOPER: 'DEVELOPER',
     DESIGNER: 'DESIGNER',
     CLIENT: 'CLIENT',
+    RH: 'RH',
     AURA_AI: 'AURA_AI',
-    ROOT: 'ROOT',
 } as const;
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -28,6 +28,7 @@ export interface User {
     fullName?: string;
     role: UserRole;
     isActive?: boolean;
+    managerId?: string;
     createdAt?: string;
     updatedAt?: string;
 }

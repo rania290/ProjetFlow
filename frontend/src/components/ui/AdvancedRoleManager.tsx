@@ -77,7 +77,7 @@ export const AdvancedRoleManager: React.FC = () => {
     }
   };
 
-  const assignRole = async (userId: string, projectId: string, role: string, notes?: string) => {
+  const assignRole = async (userId: string, projectId: string, role: string, tjm?: number, notes?: string) => {
     setLoading(true);
     try {
       const project = projects.find(p => p.id === projectId);
@@ -86,6 +86,7 @@ export const AdvancedRoleManager: React.FC = () => {
         userId, 
         projectId, 
         role,
+        tjm,
         user: user ? { id: user.id, fullName: user.fullName, email: user.email } : undefined,
         project: project ? { id: project.id, name: project.name } : undefined
       };
@@ -127,7 +128,7 @@ export const AdvancedRoleManager: React.FC = () => {
     }
   };
 
-  const bulkAssignRoles = async (userId: string, assignments: { projectId: string; role: string; notes?: string }[]) => {
+  const bulkAssignRoles = async (userId: string, assignments: { projectId: string; role: string; tjm: number; notes?: string }[]) => {
     setLoading(true);
     try {
       if (!assignments.length) return;
@@ -139,6 +140,7 @@ export const AdvancedRoleManager: React.FC = () => {
             userId,
             projectId: a.projectId,
             role: a.role,
+            tjm: a.tjm,
             notes: a.notes?.trim(),
             user: user ? { id: user.id, fullName: user.fullName, email: user.email } : undefined,
             project: project ? { id: project.id, name: project.name } : undefined

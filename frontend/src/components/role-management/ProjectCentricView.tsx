@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Users, 
   Briefcase, 
   UserPlus, 
   Trash2,
-  UserCheck
+  UserCheck,
+  Search
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +19,7 @@ interface ProjectCentricViewProps {
   projects: Project[];
   users: User[];
   assignments: RoleAssignment[];
-  onAssignRole: (userId: string, projectId: string, role: string) => Promise<void>;
+  onAssignRole: (userId: string, projectId: string, role: string, tjm?: number, notes?: string) => Promise<void>;
   onRemoveRole: (userId: string, projectId: string, userName: string, projectName: string) => void;
 }
 
@@ -30,21 +32,35 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
 }) => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [projectSearch, setProjectSearch] = useState('');
+
+  const filteredProjects = projects.filter(p => 
+    p.name.toLowerCase().includes(projectSearch.toLowerCase())
+  );
 
   const projectAssignments = selectedProject
     ? assignments.filter((a: RoleAssignment) => a.project.id === selectedProject.id)
     : [];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       {/* Projects List Sidebar */}
       <div className="lg:col-span-4 flex flex-col gap-4">
-        <Card className="flex flex-col h-[600px] border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Catalogue Projets</h2>
+        <Card className="flex flex-col h-[700px] border-none shadow-sm bg-white rounded-[32px] overflow-hidden">
+          <div className="p-6 border-b border-slate-50 bg-slate-50/30">
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Catalogue Projets</h2>
+            <div className="relative group">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <input 
+                value={projectSearch}
+                onChange={e => setProjectSearch(e.target.value)}
+                placeholder="Rechercher une roadmap..."
+                className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200/60 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-slate-700 transition-all font-medium"
+              />
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-            {projects.map((project: Project) => {
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {filteredProjects.map((project: Project) => {
               const isActive = selectedProject?.id === project.id;
               const count = assignments.filter((a: RoleAssignment) => a.project.id === project.id).length;
               
@@ -52,33 +68,40 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
                 <button
                   key={project.id}
                   onClick={() => setSelectedProject(project)}
-                  className={`w-full p-4 flex flex-col gap-2 rounded-xl transition-all duration-200 text-left ${
-                    isActive ? 'bg-primary-50 border border-primary-200/50 shadow-sm' : 'hover:bg-slate-50 border border-transparent'
+                  className={`w-full p-4 flex flex-col gap-3 rounded-2xl transition-all duration-300 text-left group/project border ${
+                    isActive 
+                      ? 'bg-indigo-50/50 border-indigo-100 shadow-sm' 
+                      : 'hover:bg-slate-50 border-transparent hover:border-slate-100'
                   }`}
                 >
-                  <div className="flex items-start justify-between w-full border-transparent">
-                    <p className={`text-sm font-semibold truncate pr-2 ${isActive ? 'text-primary-900' : 'text-slate-900'}`}>
+                  <div className="flex items-start justify-between w-full">
+                    <p className={`text-sm font-black tracking-tight truncate pr-2 ${isActive ? 'text-indigo-900' : 'text-slate-900'}`}>
                         {project.name}
                     </p>
-                    <Badge variant={project.status === 'ACTIVE' ? 'default' : project.status === 'COMPLETED' ? 'secondary' : 'outline'} className={
-                        project.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' :
-                        project.status === 'COMPLETED' ? 'bg-slate-200 text-slate-700 hover:bg-slate-200' : 'text-slate-500'
-                    }>
-                      {project.status === 'ACTIVE' ? 'En cours' : project.status === 'COMPLETED' ? 'Fait' : 'Archivé'}
+                    <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${
+                        project.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        project.status === 'COMPLETED' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-400 border-slate-100'
+                    }`}>
+                      {project.status === 'ACTIVE' ? 'Actif' : project.status === 'COMPLETED' ? 'Fait' : 'Archivé'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between w-full">
-                     <p className="text-xs text-slate-500 truncate max-w-[150px]">{project.description || 'Aucune description'}</p>
-                     <div className="flex items-center gap-1 text-xs font-medium text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-100">
-                         <Users className="w-3 h-3"/> {count}
+                     <p className="text-[11px] text-slate-400 font-medium truncate max-w-[180px] italic">
+                        {project.description || 'Aucune description'}
+                     </p>
+                     <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm transition-transform group-hover/project:scale-105">
+                         <Users className="w-3 h-3 text-indigo-400"/> {count}
                      </div>
                   </div>
                 </button>
               );
             })}
-             {projects.length === 0 && (
-                <div className="p-8 text-center text-slate-400">
-                    Aucun projet trouvé
+             {filteredProjects.length === 0 && (
+                <div className="p-12 text-center">
+                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                        <Briefcase className="w-6 h-6 text-slate-200" />
+                    </div>
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun projet</p>
                 </div>
             )}
           </div>
@@ -88,21 +111,25 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
       {/* Project Details Panel */}
       <div className="lg:col-span-8">
         {selectedProject ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
              {/* Project Header */}
-             <Card className="border-slate-200 shadow-sm overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                            <Briefcase className="w-5 h-5"/>
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900">{selectedProject.name}</h2>
+             <Card className="border-none shadow-sm bg-white rounded-[40px] overflow-hidden relative group/header">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -mr-32 -mt-32 group-hover/header:scale-125 transition-transform duration-1000" />
+              <CardContent className="p-8 relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 shadow-inner group-hover/header:rotate-6 transition-transform">
+                        <Briefcase className="w-8 h-8"/>
                     </div>
-                    <p className="text-sm text-slate-500 ml-11 max-w-xl">{selectedProject.description}</p>
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900 font-display tracking-tight uppercase leading-tight">{selectedProject.name}</h2>
+                      <p className="text-sm font-medium text-slate-500 mt-1 max-w-xl line-clamp-2 italic opacity-80">{selectedProject.description}</p>
+                    </div>
                   </div>
-                  <Button onClick={() => setShowAddMember(true)} className="gap-2 shrink-0">
+                  <Button 
+                    onClick={() => setShowAddMember(true)} 
+                    className="gap-2 shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-6 py-6 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-200 active:scale-95 transition-all"
+                  >
                     <UserPlus className="w-4 h-4" />
                     Ajouter un membre
                   </Button>
@@ -111,64 +138,76 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
             </Card>
 
             {/* Team List */}
-            <Card className="overflow-hidden min-h-[400px] border-slate-200 shadow-sm">
-               <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                 <div className="flex items-center gap-2">
-                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Équipe Projet</h3>
-                     <Badge variant="secondary">{projectAssignments.length}</Badge>
+            <Card className="border-none shadow-sm bg-white rounded-[40px] overflow-hidden min-h-[450px]">
+               <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
+                 <div className="flex items-center gap-3">
+                     <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Équipe Projet</h3>
+                     <Badge variant="outline" className="text-indigo-600 border-indigo-100 bg-white ml-2 px-2 py-0.5 rounded-full text-[10px] font-black">{projectAssignments.length}</Badge>
                  </div>
                </div>
                <div className="p-0">
                   {projectAssignments.length > 0 ? (
-                      <div className="divide-y divide-slate-100/50">
-                          {projectAssignments.map((assignment: RoleAssignment) => {
+                      <div className="divide-y divide-slate-50">
+                          {projectAssignments.map((assignment: RoleAssignment, idx) => {
                                const roleConfig = ROLE_CONFIG[assignment.role as keyof typeof ROLE_CONFIG];
-                               const RoleIcon = roleConfig?.icon || UserCheck;
-                               
                                return (
-                                  <div key={assignment.id} className="p-4 sm:px-6 hover:bg-slate-50/50 transition-colors flex items-center justify-between group border-transparent">
-                                      <div className="flex items-center gap-4">
-                                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-sm font-bold text-slate-500 shrink-0">
+                                  <motion.div 
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.03 }}
+                                    key={assignment.id} 
+                                    className="p-5 sm:px-8 hover:bg-indigo-50/30 transition-all flex items-center justify-between group/row border-transparent"
+                                  >
+                                      <div className="flex items-center gap-5 focus-within:ring-0">
+                                          <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-sm font-black text-slate-500 shrink-0 border border-slate-100 shadow-sm group-hover/row:scale-110 transition-transform">
                                               {assignment.user.avatar ? (
-                                                  <img src={assignment.user.avatar} className="w-full h-full object-cover" alt=""/>
+                                                  <img src={assignment.user.avatar} className="w-full h-full object-cover rounded-2xl" alt=""/>
                                               ) : (
                                                   assignment.user.fullName.charAt(0).toUpperCase()
                                               )}
                                           </div>
                                           <div className="min-w-0">
-                                              <p className="font-semibold text-slate-900 truncate">{assignment.user.fullName}</p>
+                                              <p className="text-sm font-black text-slate-900 truncate tracking-tight uppercase">{assignment.user.fullName}</p>
                                               <div className="flex items-center gap-2 mt-0.5 whitespace-nowrap">
-                                                 <p className="text-xs text-slate-500 truncate">{assignment.user.email}</p>
-                                                 <span className="w-1 h-1 rounded-full bg-slate-300 flex-shrink-0"></span>
-                                                 <p className="text-[10px] text-slate-400">Ajouté le {new Date(assignment.createdAt).toLocaleDateString('fr-FR')}</p>
+                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{assignment.user.email.split('@')[0]}</p>
+                                                 <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                                 <p className="text-[9px] text-slate-400 font-medium italic">Depuis le {new Date(assignment.createdAt).toLocaleDateString('fr-FR')}</p>
                                               </div>
                                           </div>
                                       </div>
                                       <div className="flex items-center gap-4">
-                                         <Badge variant="outline" className={`hidden sm:flex items-center px-2.5 py-1 ${roleConfig?.color || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                                            {roleConfig?.label || assignment.role}
-                                         </Badge>
+                                         <div className="hidden sm:flex flex-col items-end gap-1">
+                                            <Badge variant="outline" className={`items-center px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${roleConfig?.color || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                                               {roleConfig?.label || assignment.role}
+                                            </Badge>
+                                            {assignment.tjm && (
+                                              <span className="text-[10px] font-black text-indigo-600 bg-indigo-50/50 px-2 py-0.5 rounded-lg border border-indigo-100/50">
+                                                {assignment.tjm} DT/J
+                                              </span>
+                                            )}
+                                         </div>
                                          <Button
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => onRemoveRole(assignment.user.id, selectedProject.id, assignment.user.fullName, selectedProject.name)}
-                                            className="text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100"
+                                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover/row:opacity-100 rounded-xl transition-all shadow-sm bg-white"
                                             title="Retirer du projet"
                                           >
                                             <Trash2 className="w-4 h-4" />
                                           </Button>
                                       </div>
-                                  </div>
+                                  </motion.div>
                                );
                           })}
                       </div>
                   ) : (
-                      <div className="text-center py-16">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                            <Briefcase className="w-6 h-6 text-slate-400" />
+                      <div className="text-center py-24">
+                        <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-inner">
+                            <Briefcase className="w-8 h-8 text-slate-200" />
                         </div>
-                        <h4 className="text-slate-900 font-medium mb-1">Équipe vide</h4>
-                        <p className="text-sm text-slate-500 mb-4 max-w-sm mx-auto">Il n'y a pas encore de membres assignés à ce projet.</p>
+                        <h4 className="text-slate-900 font-black uppercase tracking-tight mb-2">Équipe vide</h4>
+                        <p className="text-xs text-slate-400 font-medium mb-4 max-w-sm mx-auto uppercase tracking-wide">Il n'y a pas encore de membres assignés à ce projet.</p>
                       </div>
                   )}
                </div>
@@ -176,13 +215,14 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
             
           </div>
         ) : (
-          <Card className="h-[600px] flex items-center justify-center flex-col text-center p-8 border-slate-200 shadow-sm">
-            <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-6">
-                <Briefcase className="w-8 h-8 text-slate-300" />
+          <Card className="h-[730px] flex items-center justify-center flex-col text-center p-12 border-none shadow-sm bg-white rounded-[40px] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-grid-slate-100 [mask-image:radial-gradient(ellipse_at_center,white,transparent)] opacity-20" />
+            <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[32px] flex items-center justify-center mb-8 relative z-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                <Briefcase className="w-10 h-10 text-slate-200" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Sélectionnez un projet</h3>
-            <p className="text-slate-500 text-sm max-w-md">
-              Choisissez un projet pour voir l'équipe associée et configurer les accès et responsabilités
+            <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10 uppercase tracking-tight font-display">SÉLECTIONNEZ UN PROJET</h3>
+            <p className="text-slate-400 text-sm max-w-xs relative z-10 font-medium leading-relaxed">
+              Choisissez un projet pour configurer l'équipe dédiée et attribuer les responsabilités stratégiques.
             </p>
           </Card>
         )}

@@ -4,11 +4,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, RequestMethod } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { CustomLogger } from './utils/logger.service';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: new CustomLogger(),
   });
+
+  // Enable Socket.io WebSocket adapter
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   app.setGlobalPrefix('api', {
     exclude: [{ path: '', method: RequestMethod.GET }],

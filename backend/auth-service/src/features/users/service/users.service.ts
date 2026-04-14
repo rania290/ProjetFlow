@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -23,7 +23,7 @@ export class UsersService {
     });
 
     if (existingUser) {
-      return existingUser;
+      throw new ConflictException('Un utilisateur avec cet email existe déjà');
     }
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -97,6 +97,13 @@ export class UsersService {
     if (!user) {
       console.error(`[UsersService] update: USER NOT FOUND in database: ${id}`);
       throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Hash password if provided, otherwise delete it from update payload to prevent wiping
+    if (updateData.password && updateData.password.trim() !== '') {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    } else {
+      delete updateData.password;
     }
 
     // 2. Perform the update (manual merge to prevent ID overwrites)

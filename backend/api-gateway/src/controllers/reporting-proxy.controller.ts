@@ -10,7 +10,7 @@ export class ReportingProxyController {
     private readonly reportingServiceUrl: string;
 
     constructor(private configService: ConfigService) {
-        this.reportingServiceUrl = 'http://localhost:3005'; // Port for reporting-service
+        this.reportingServiceUrl = this.configService.get('REPORTING_SERVICE_URL') || 'http://localhost:3005';
     }
 
     @All('*')

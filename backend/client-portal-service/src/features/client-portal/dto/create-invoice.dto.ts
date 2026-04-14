@@ -1,123 +1,82 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsDecimal, IsArray, ValidateNested, IsDateString, MaxLength, IsEmail } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsNumber, IsDate, IsOptional, IsEnum, IsArray, IsObject } from 'class-validator';
 
-export class BillingAddressDto {
-  @IsString()
-  @MaxLength(255)
-  company: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  address: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  city: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  postalCode: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  country: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  vatNumber: string;
+export enum InvoiceStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+  CANCELLED = 'CANCELLED'
 }
 
-export class PaymentTermsDto {
-  @IsOptional()
-  @IsNumber()
-  dueDays?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @IsDecimal()
-  lateFee?: number;
-
-  @IsOptional()
-  @IsNumber()
-  discountDays?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @IsDecimal()
-  discountPercentage?: number;
+export enum InvoiceType {
+  STANDARD = 'STANDARD',
+  RECURRING = 'RECURRING',
+  CREDIT = 'CREDIT'
 }
 
 export class CreateInvoiceDto {
   @IsString()
-  @IsEnum(['STANDARD', 'RECURRING', 'CREDIT_NOTE', 'DEPOSIT'])
-  type: string;
+  clientId: string;
 
   @IsString()
-  invoiceNumber: string;
-
   @IsOptional()
-  @IsString()
-  @MaxLength(255)
   projectId?: string;
 
-  @IsArray()
-  items: InvoiceItemDto[];
+  @IsString()
+  @IsOptional()
+  invoiceNumber?: string;
 
   @IsNumber()
-  @IsDecimal()
-  taxRate: number;
+  amount: number;
 
+  @IsNumber()
   @IsOptional()
+  taxRate?: number;
+
   @IsString()
-  @MaxLength(1000)
+  currency: string;
+
+  @IsEnum(InvoiceStatus)
+  status: InvoiceStatus;
+
+  @IsEnum(InvoiceType)
+  type: InvoiceType;
+
+  @IsDate()
+  dueDate: Date;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
   notes?: string;
 
-  @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @IsOptional()
   terms?: string;
 
+  @IsObject()
   @IsOptional()
-  @ValidateNested()
-  @Type(() => BillingAddressDto)
-  billingAddress?: BillingAddressDto;
+  billingAddress?: {
+    company: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
 
+  @IsObject()
   @IsOptional()
-  @IsDateString()
-  dueDate?: string;
+  metadata?: Record<string, any>;
 
-  @IsString()
-  @MaxLength(3)
-  currency?: string;
-
+  @IsArray()
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  paymentTerms?: string;
-
-  @IsOptional()
-  metadata?: any;
-}
-
-export class InvoiceItemDto {
-  @IsString()
-  @MaxLength(500)
-  description: string;
-
-  @IsNumber()
-  @IsDecimal()
-  quantity: number;
-
-  @IsNumber()
-  @IsDecimal()
-  unitPrice: number;
-
-  @IsNumber()
-  @IsDecimal()
-  total: number;
+  items?: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
 }

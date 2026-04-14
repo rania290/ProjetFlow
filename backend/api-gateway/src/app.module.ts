@@ -9,7 +9,12 @@ import { RoleAssignmentsProxyController } from './controllers/role-assignments-p
 import { PermissionsProxyController } from './controllers/permissions-proxy.controller';
 import { ClientPortalProxyController } from './controllers/client-portal-proxy.controller';
 import { ReportingProxyController } from './controllers/reporting-proxy.controller';
+import { HrProxyController } from './controllers/hr-proxy.controller';
+import { CommunicationProxyController } from './controllers/communication-proxy.controller';
+import { SystemController } from './controllers/system.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { NotificationGateway } from './notification/notification.gateway';
+import { WsJwtGuard } from './guards/ws-jwt.guard';
 
 @Module({
   imports: [
@@ -26,8 +31,11 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     PermissionsProxyController,
     ClientPortalProxyController,
     ReportingProxyController,
+    HrProxyController,
+    CommunicationProxyController,
+    SystemController,
   ],
-  providers: [JwtAuthGuard],
+  providers: [JwtAuthGuard, WsJwtGuard, NotificationGateway],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -55,6 +55,24 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.json"
       }
+    },
+    "hr-service": {
+      "type": "application",
+      "root": "hr-service",
+      "entryFile": "main",
+      "sourceRoot": "hr-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
+    },
+    "communication-service": {
+      "type": "application",
+      "root": "communication-service",
+      "entryFile": "main",
+      "sourceRoot": "communication-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
     }
   }
 }

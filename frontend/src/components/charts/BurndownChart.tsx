@@ -35,28 +35,23 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint, tasks }) =
         for (let i = 0; i < totalDays; i++) {
             const currentDate = new Date(start);
             currentDate.setDate(start.getDate() + i);
+            currentDate.setHours(23, 59, 59, 999); // End of the day for comparison
 
             const dayLabel = `Jour ${i + 1}`;
+            const isFuture = currentDate > today && i > 0;
 
             // Ideal line: linear decrease from totalPoints to 0
             const ideal = Math.max(0, totalPoints - (totalPoints / (totalDays - 1)) * i);
 
             // Actual line: 
-            // For past days, we'd need history. For now, we'll interpolate or show constant if today
-            // If i >= daysPassed, it's future. If i < daysPassed, it's past.
-            // Simplified: current remaining points for 'today', and a mock trend for previous days
+            // Total points - points of tasks completed before or during this day
             let actual: number | null = null;
-            if (i <= daysPassed) {
-                if (i === daysPassed) {
-                    // Real data for today
-                    actual = remainingPoints;
-                } else {
-                    // For previous days, if no history, we interpolate slightly more realistically
-                    // based on current completion, but it remains an estimate for now
-                    const totalCompletedSoFar = totalPoints - remainingPoints;
-                    const completionRatio = daysPassed > 0 ? Math.min(1, i / daysPassed) : 0;
-                    actual = totalPoints - (totalCompletedSoFar * completionRatio);
-                }
+            if (!isFuture) {
+                const pointsCompletedByDay = tasks
+                    .filter(t => t.status === 'DONE' && t.completedAt && new Date(t.completedAt) <= currentDate)
+                    .reduce((sum, t) => sum + (t.storyPoints || 0), 0);
+                
+                actual = Math.max(0, totalPoints - pointsCompletedByDay);
             }
 
             data.push({

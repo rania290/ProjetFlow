@@ -62,7 +62,7 @@ export const CLIENT_PORTAL_CONSTANTS = {
     INVALID_PRIORITY: 'Priorité invalide',
     FILE_TOO_LARGE: 'Fichier trop volumineux',
     INVALID_FILE_TYPE: 'Type de fichier invalide',
-    EMAIL_ALREADY_EXISTS: 'Email déjà utilisé',
+    EMAIL_ALREADY_EXISTS: 'Un client avec cet email existe déjà',
   },
 
   // Limites

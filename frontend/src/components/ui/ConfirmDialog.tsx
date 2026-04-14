@@ -1,6 +1,11 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X } from 'lucide-react';
+import { 
+    Dialog, DialogContent, 
+    DialogHeader, DialogTitle, 
+    DialogDescription, DialogFooter 
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Info, Trash2, X, CheckCircle2 } from 'lucide-react';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -8,9 +13,9 @@ interface ConfirmDialogProps {
     message: string;
     confirmText?: string;
     cancelText?: string;
-    type?: 'danger' | 'warning' | 'info';
     onConfirm: () => void;
     onCancel: () => void;
+    type?: 'danger' | 'warning' | 'info' | 'success';
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -19,116 +24,92 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     message,
     confirmText = 'Confirmer',
     cancelText = 'Annuler',
-    type = 'danger',
     onConfirm,
-    onCancel
+    onCancel,
+    type = 'warning'
 }) => {
-    if (!isOpen) return null;
-
-    const getIconAndColors = () => {
-        switch (type) {
-            case 'danger':
-                return {
-                    icon: <AlertTriangle className="w-5 h-5" />,
-                    bgColor: 'bg-red-50',
-                    iconColor: 'text-red-600',
-                    borderColor: 'border-red-200',
-                    confirmBg: 'bg-red-600 hover:bg-red-700',
-                    confirmTextColor: 'text-white'
-                };
-            case 'warning':
-                return {
-                    icon: <AlertTriangle className="w-5 h-5" />,
-                    bgColor: 'bg-amber-50',
-                    iconColor: 'text-amber-600',
-                    borderColor: 'border-amber-200',
-                    confirmBg: 'bg-amber-600 hover:bg-amber-700',
-                    confirmTextColor: 'text-white'
-                };
-            case 'info':
-                return {
-                    icon: <AlertTriangle className="w-5 h-5" />,
-                    bgColor: 'bg-blue-50',
-                    iconColor: 'text-blue-600',
-                    borderColor: 'border-blue-200',
-                    confirmBg: 'bg-blue-600 hover:bg-blue-700',
-                    confirmTextColor: 'text-white'
-                };
-            default:
-                return {
-                    icon: <AlertTriangle className="w-5 h-5" />,
-                    bgColor: 'bg-red-50',
-                    iconColor: 'text-red-600',
-                    borderColor: 'border-red-200',
-                    confirmBg: 'bg-red-600 hover:bg-red-700',
-                    confirmTextColor: 'text-white'
-                };
+    const CONFIG = {
+        danger: {
+            icon: Trash2,
+            color: 'text-red-600',
+            bg: 'bg-red-50',
+            btn: 'bg-red-600 hover:bg-red-700 shadow-red-500/20',
+            border: 'border-red-100',
+            titleColor: 'text-red-900'
+        },
+        warning: {
+            icon: AlertTriangle,
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+            btn: 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20',
+            border: 'border-amber-100',
+            titleColor: 'text-amber-900'
+        },
+        info: {
+            icon: Info,
+            color: 'text-primary-600',
+            bg: 'bg-primary-50',
+            btn: 'bg-primary-600 hover:bg-primary-700 shadow-primary-500/20',
+            border: 'border-primary-100',
+            titleColor: 'text-primary-900'
+        },
+        success: {
+            icon: CheckCircle2,
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-50',
+            btn: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20',
+            border: 'border-emerald-100',
+            titleColor: 'text-emerald-900'
         }
     };
 
-    const { icon, bgColor, iconColor, borderColor, confirmBg, confirmTextColor } = getIconAndColors();
+    const cfg = CONFIG[type];
+    const Icon = cfg.icon;
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={onCancel}
-                    />
-
-                    {/* Dialog */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="relative bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full mx-4 overflow-hidden"
-                    >
-                        {/* Header */}
-                        <div className={`px-6 py-4 ${bgColor} ${borderColor} border-b`}>
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl ${bgColor} ${iconColor} flex items-center justify-center`}>
-                                    {icon}
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-bold text-slate-800">{title}</h3>
-                                </div>
-                                <button
-                                    onClick={onCancel}
-                                    className="text-slate-400 hover:text-slate-600 transition-colors"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border border-slate-200 shadow-xl rounded-2xl">
+                <div className="px-6 pt-6 pb-4 bg-white">
+                    <DialogHeader className="space-y-3 text-left">
+                        <div className="flex items-start gap-3">
+                            <div className={cn("mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center border", cfg.bg, cfg.border)}>
+                                <Icon className={cn("w-4.5 h-4.5", cfg.color)} />
+                            </div>
+                            <div className="space-y-1">
+                                <DialogTitle className={cn("text-base font-bold tracking-tight", cfg.titleColor)}>
+                                    {title}
+                                </DialogTitle>
+                                <DialogDescription className="text-slate-500 text-sm leading-relaxed">
+                                    {message}
+                                </DialogDescription>
                             </div>
                         </div>
-
-                        {/* Content */}
-                        <div className="p-6">
-                            <p className="text-slate-600 leading-relaxed">{message}</p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3 justify-end">
-                            <button
-                                onClick={onCancel}
-                                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
-                                {cancelText}
-                            </button>
-                            <button
-                                onClick={onConfirm}
-                                className={`px-4 py-2.5 text-sm font-medium ${confirmBg} ${confirmTextColor} rounded-lg transition-colors shadow-md`}
-                            >
-                                {confirmText}
-                            </button>
-                        </div>
-                    </motion.div>
+                    </DialogHeader>
                 </div>
-            )}
-        </AnimatePresence>
+
+                <DialogFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+                    <Button 
+                        variant="outline" 
+                        onClick={onCancel}
+                        className="flex-1 h-10 rounded-lg font-semibold text-slate-600 border-slate-200 hover:bg-white order-2 sm:order-1"
+                    >
+                        {cancelText}
+                    </Button>
+                    <Button 
+                        onClick={onConfirm}
+                        className={cn(
+                            "flex-1 h-10 rounded-lg font-semibold text-white shadow-sm transition-all active:scale-95 order-1 sm:order-2",
+                            cfg.btn
+                        )}
+                    >
+                        {confirmText}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };
+
+function cn(...inputs: any[]) {
+    return inputs.filter(Boolean).join(' ');
+}

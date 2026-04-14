@@ -217,19 +217,19 @@ export const ClientDocumentsPage: React.FC = () => {
                 </div>
 
                 {/* Storage insight */}
-                <div className="mt-8 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+                <div className="mt-8 p-6 bg-green-50 rounded-2xl border border-green-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-indigo-600 shadow-sm">
+                        <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-green-600 shadow-sm">
                             <FileText className="w-6 h-6" />
                         </div>
                         <div>
-                            <h4 className="text-sm font-bold text-indigo-900">Espace Documentary</h4>
-                            <p className="text-xs text-indigo-600/70">12 fichiers partagés • 58.4 MB utilisés</p>
+                            <h4 className="text-sm font-bold text-green-900">Espace Documentaire</h4>
+                            <p className="text-xs text-green-600/70">12 fichiers partagés • 58.4 MB utilisés</p>
                         </div>
                     </div>
                     <div className="hidden sm:block">
                         <div className="w-48 h-2 bg-white rounded-full overflow-hidden">
-                            <div className="h-full bg-indigo-500 w-[20%]" />
+                            <div className="h-full bg-green-500 w-[20%]" />
                         </div>
                     </div>
                 </div>

@@ -1,38 +1,57 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 
-@Catch()
+@Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
-    const request = ctx.getRequest();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = exception.getStatus();
+    const exceptionResponse = exception.getResponse();
 
-    const message = exception instanceof HttpException
-      ? exception.getResponse()
-      : { message: 'Erreur interne du serveur' };
+    let message: string;
+    let details: any;
 
-    const timestamp = new Date().toISOString();
+    if (typeof exceptionResponse === 'string') {
+      message = exceptionResponse;
+    } else if (typeof exceptionResponse === 'object') {
+      message = (exceptionResponse as any).message || exception.message;
+      details = (exceptionResponse as any).details || (exceptionResponse as any).errors;
+    } else {
+      message = 'Internal server error';
+    }
 
-    // Logger l'erreur
+    // Log the error
     this.logger.error(
-      `${timestamp} ${request.method} ${request.url} ${status}`,
+      `${request.method} ${request.url} - Status: ${status} - Message: ${message}`,
       exception.stack,
     );
 
-    // Envoyer la réponse d'erreur
-    response.status(status).json({
+    const errorResponse = {
       statusCode: status,
-      timestamp,
+      timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message: typeof message === 'string' ? message : (message as any).message,
-      error: exception instanceof HttpException ? exception.message : 'Internal server error',
-    });
+      message: Array.isArray(message) ? message[0] : message,
+      ...(details && { details }),
+    };
+
+    // Don't expose stack trace in production
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse['stack'] = exception.stack;
+    }
+
+    response.status(status).json(errorResponse);
   }
 }

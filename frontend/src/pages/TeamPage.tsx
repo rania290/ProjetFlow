@@ -22,7 +22,6 @@ interface EnrichedMember extends ProjectMember {
 
 const ROLE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; Icon: React.ElementType }> = {
     ADMIN: { label: 'Admin', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-200', Icon: Shield },
-    ROOT: { label: 'Super Admin', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', Icon: Shield },
     PROJECT_MANAGER: { label: 'Manager', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', Icon: Briefcase },
     TEAM_MEMBER: { label: 'Membre', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', Icon: Users },
 };
@@ -61,8 +60,19 @@ export const TeamPage: React.FC = () => {
             });
         });
 
-        return Array.from(memberMap.values());
-    }, [state.projects]);
+        // Add performance stats directly out of state.tasks
+        const membersWithStats = Array.from(memberMap.values()).map(m => {
+            const mTasks = state.tasks?.filter(t => t.assigneeId === m.id) || [];
+            const doneTasks = mTasks.filter(t => t.status === 'DONE');
+            return {
+                ...m,
+                totalTasksAssigned: mTasks.length,
+                completedTasksCount: doneTasks.length
+            };
+        });
+
+        return membersWithStats;
+    }, [state.projects, state.tasks]);
 
     const filteredMembers = useMemo(() => {
         const q = search.toLowerCase();
@@ -200,6 +210,27 @@ export const TeamPage: React.FC = () => {
                                                     <div className="text-xs font-bold text-slate-700">
                                                         {member.tjm} DT / jour
                                                     </div>
+                                                )}
+                                            </div>
+
+                                            {/* Performance stats */}
+                                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-4 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Performances</span>
+                                                    <span className="text-xs font-bold text-slate-900">
+                                                        {(member as any).completedTasksCount} / {(member as any).totalTasksAssigned} tâches
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
+                                                        style={{ width: `${(member as any).totalTasksAssigned > 0 ? ((member as any).completedTasksCount / (member as any).totalTasksAssigned) * 100 : 0}%` }}
+                                                    />
+                                                </div>
+                                                {(member as any).totalTasksAssigned > 0 && (
+                                                    <p className="text-right text-[10px] font-bold text-emerald-600">
+                                                        {Math.round(((member as any).completedTasksCount / (member as any).totalTasksAssigned) * 100)}% d'avancement
+                                                    </p>
                                                 )}
                                             </div>
 

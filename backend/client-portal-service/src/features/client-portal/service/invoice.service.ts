@@ -21,42 +21,41 @@ export class InvoiceService {
 
   async create(createInvoiceDto: CreateInvoiceDto, user: any) {
     // Calculer les totaux
-    const subtotal = createInvoiceDto.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const taxAmount = subtotal * (createInvoiceDto.taxRate / 100);
+    const subtotal = createInvoiceDto.items?.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) || 0;
+    const taxAmount = subtotal * ((createInvoiceDto.taxRate || 0) / 100);
     const total = subtotal + taxAmount;
 
     // Créer la facture
     const invoice = this.invoiceRepository.create({
       ...createInvoiceDto,
+      invoiceNumber: createInvoiceDto.invoiceNumber || `INV-${Date.now()}`,
       subtotal,
       taxAmount,
       total,
+      taxRate: createInvoiceDto.taxRate || 0,
+      terms: createInvoiceDto.terms || 'Payment due within 30 days',
+      billingAddress: createInvoiceDto.billingAddress,
+      metadata: createInvoiceDto.metadata || {},
       status: CLIENT_PORTAL_CONSTANTS.INVOICE_STATUS.DRAFT,
       createdAt: new Date(),
-      type: createInvoiceDto.type,
-      invoiceNumber: createInvoiceDto.invoiceNumber,
-      projectId: createInvoiceDto.projectId,
-      items: createInvoiceDto.items,
-      taxRate: createInvoiceDto.taxRate,
-      notes: createInvoiceDto.notes,
-      terms: createInvoiceDto.terms,
-      billingAddress: createInvoiceDto.billingAddress,
       dueDate: createInvoiceDto.dueDate ? new Date(createInvoiceDto.dueDate) : undefined,
-      currency: createInvoiceDto.currency,
-      paymentTerms: undefined, // Éviter le conflit de type
-      metadata: createInvoiceDto.metadata,
     } as any);
 
     const savedInvoice = await this.invoiceRepository.save(invoice);
+    const invoiceData = Array.isArray(savedInvoice) ? savedInvoice[0] : savedInvoice;
 
     // Envoyer l'email de facture
     try {
-      await this.emailService.sendInvoiceEmail(savedInvoice, (savedInvoice as any).billingAddress?.company || 'client@example.com');
+      await this.emailService.sendInvoiceEmail(
+        (invoiceData as any).billingAddress?.company || 'client@example.com',
+        invoiceData.invoiceNumber,
+        invoiceData.total
+      );
     } catch (error) {
       console.error('Erreur lors de l\'envoi de la facture:', error);
     }
 
-    return savedInvoice;
+    return invoiceData;
   }
 
   async findAll(params: {
@@ -210,7 +209,11 @@ export class InvoiceService {
     await this.invoiceRepository.save(updatedInvoice);
 
     // Envoyer l'email
-    await this.emailService.sendInvoiceEmail(updatedInvoice, invoice.client?.email || 'client@example.com');
+    await this.emailService.sendInvoiceEmail(
+      invoice.client?.email || 'client@example.com',
+      updatedInvoice.invoiceNumber,
+      updatedInvoice.total
+    );
 
     return { message: 'Facture envoyée avec succès' };
   }

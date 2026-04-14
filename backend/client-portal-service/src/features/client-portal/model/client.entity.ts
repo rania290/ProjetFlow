@@ -55,9 +55,11 @@ export class ClientEntity {
     language: string;
     timezone: string;
     currency: string;
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    pushNotifications: boolean;
+    notifications: {
+      email: boolean;
+      sms: boolean;
+      push: boolean;
+    };
   };
 
   @Column({ nullable: true })

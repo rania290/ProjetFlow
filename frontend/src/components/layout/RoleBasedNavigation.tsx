@@ -14,7 +14,8 @@ import {
   Calendar,
   Target,
   UserPlus,
-  Database
+  Database,
+  HeartHandshake
 } from 'lucide-react';
 
 interface NavItem {
@@ -74,11 +75,17 @@ export const RoleBasedNavigation: React.FC = () => {
       requiredPermission: 'READ_TICKET'
     },
     {
+      name: 'Ressources Humaines',
+      href: '/hr',
+      icon: HeartHandshake,
+      badge: 'Nouveau'
+    },
+    {
       name: 'Admin Panel',
       href: '/admin',
       icon: Shield,
       requiredPermission: 'VIEW_ADMIN_PANEL',
-      requiredRole: ['ADMIN', 'ROOT']
+      requiredRole: ['ADMIN']
     },
 
     {
@@ -86,7 +93,7 @@ export const RoleBasedNavigation: React.FC = () => {
       href: '/settings',
       icon: Settings,
       requiredPermission: 'MANAGE_SYSTEM',
-      requiredRole: ['ROOT']
+      requiredRole: ['ADMIN']
     }
   ];
 
@@ -106,6 +113,10 @@ export const RoleBasedNavigation: React.FC = () => {
     return true;
   });
 
+  // Debug temporaire
+  console.log('Navigation items:', navigationItems);
+  console.log('Filtered items:', filteredNavItems);
+
   const isActive = (href: string) => {
     if (href === '/dashboard') {
       return location.pathname === '/dashboard' || location.pathname === '/';
@@ -115,6 +126,19 @@ export const RoleBasedNavigation: React.FC = () => {
 
   return (
     <nav className="space-y-1">
+      {/* Ajout forcé du menu HR - temporaire */}
+      <NavLink
+        to="/hr"
+        className="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-pink-50 text-pink-700 border border-pink-200"
+      >
+        <HeartHandshake className="w-5 h-5 text-pink-600" />
+        <span className="flex-1">Ressources Humaines</span>
+        <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+          Nouveau
+        </span>
+      </NavLink>
+      
+      {/* Navigation normale */}
       {filteredNavItems.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.href);
@@ -169,6 +193,12 @@ export const RoleBasedQuickActions: React.FC = () => {
       permission: 'CREATE_USER',
       color: 'bg-purple-500 hover:bg-purple-600'
     },
+    {
+      name: 'Demande de congé',
+      icon: HeartHandshake,
+      href: '/hr/my-leaves',
+      color: 'bg-pink-500 hover:bg-pink-600'
+    },
 
     {
       name: 'Voir les analytics',
@@ -180,7 +210,7 @@ export const RoleBasedQuickActions: React.FC = () => {
   ];
 
   const availableActions = quickActions.filter(action => 
-    hasPermission(action.permission)
+    !action.permission || hasPermission(action.permission)
   );
 
   if (availableActions.length === 0) {
@@ -193,7 +223,16 @@ export const RoleBasedQuickActions: React.FC = () => {
         Actions rapides
       </h3>
       <div className="grid grid-cols-1 gap-2">
-        {availableActions.slice(0, 4).map((action) => {
+        {/* Ajout forcé du bouton HR - temporaire */}
+        <a
+          href="/hr/my-leaves"
+          className="bg-pink-500 hover:bg-pink-600 text-white rounded-lg px-3 py-2 flex items-center gap-2 text-sm font-medium transition-colors"
+        >
+          <HeartHandshake className="w-4 h-4" />
+          Demande de congé
+        </a>
+        
+        {availableActions.slice(0, 3).map((action) => {
           const Icon = action.icon;
           return (
             <a
@@ -217,11 +256,6 @@ export const UserRoleBadge: React.FC<{ role: string; className?: string }> = ({
   className = '' 
 }) => {
   const roleConfig = {
-    ROOT: {
-      label: 'Super Admin',
-      color: 'bg-purple-100 text-purple-800 border-purple-200',
-      icon: Shield
-    },
     ADMIN: {
       label: 'Administrateur',
       color: 'bg-red-100 text-red-800 border-red-200',
@@ -246,6 +280,21 @@ export const UserRoleBadge: React.FC<{ role: string; className?: string }> = ({
       label: 'Observateur',
       color: 'bg-slate-100 text-slate-800 border-slate-200',
       icon: Eye
+    },
+    HR_ADMIN: {
+      label: 'RH Admin',
+      color: 'bg-pink-100 text-pink-800 border-pink-200',
+      icon: HeartHandshake
+    },
+    MANAGER: {
+      label: 'Manager',
+      color: 'bg-blue-100 text-blue-800 border-blue-200',
+      icon: Briefcase
+    },
+    EMPLOYEE: {
+      label: 'Employé',
+      color: 'bg-green-100 text-green-800 border-green-200',
+      icon: Users
     }
   };
 

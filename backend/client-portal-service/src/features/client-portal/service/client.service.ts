@@ -37,7 +37,7 @@ export class ClientService {
 
     // Envoyer un email de bienvenue
     try {
-      await this.emailService.sendWelcomeEmail(savedClient);
+      await this.emailService.sendWelcomeEmail(savedClient.email, savedClient.companyName);
     } catch (error) {
       console.error('Erreur lors de l\'envoi de l\'email de bienvenue:', error);
     }
@@ -122,13 +122,10 @@ export class ClientService {
 
     // Mettre à jour les préférences si fournies
     if (updateClientDto.preferences) {
-      updateClientDto.preferences = {
-        ...client.preferences,
-        ...updateClientDto.preferences,
-        emailNotifications: updateClientDto.preferences?.emailNotifications ?? client.preferences?.emailNotifications,
-        smsNotifications: updateClientDto.preferences?.smsNotifications ?? client.preferences?.smsNotifications,
-        pushNotifications: updateClientDto.preferences?.pushNotifications ?? client.preferences?.pushNotifications,
-      };
+      // Garder les anciennes propriétés pour compatibilité
+      (updateClientDto.preferences as any).emailNotifications = updateClientDto.preferences?.emailNotifications ?? client.preferences?.notifications.email;
+      (updateClientDto.preferences as any).smsNotifications = updateClientDto.preferences?.smsNotifications ?? client.preferences?.notifications.sms;
+      (updateClientDto.preferences as any).pushNotifications = updateClientDto.preferences?.pushNotifications ?? client.preferences?.notifications.push;
     }
 
     const updatedClient = this.clientRepository.merge(client, updateClientDto);
@@ -252,7 +249,7 @@ export class ClientService {
   async sendWelcomeEmail(id: string, user: any) {
     const client = await this.findOne(id, user);
 
-    await this.emailService.sendWelcomeEmail(client);
+    await this.emailService.sendWelcomeEmail(client.email, client.companyName);
 
     return { message: 'Email de bienvenue envoyé avec succès' };
   }

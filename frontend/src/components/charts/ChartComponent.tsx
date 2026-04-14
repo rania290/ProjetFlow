@@ -165,6 +165,8 @@ export const ChartComponent: React.FC<ChartComponentProps> = ({
         backdropFilter: 'blur(4px)'
       }
     },
+    cutout: type === 'doughnut' ? '70%' : undefined,
+    radius: type === 'doughnut' ? '90%' : undefined,
     scales: (type === 'bar' || type === 'line') ? {
       x: {
         grid: {
@@ -208,11 +210,45 @@ export const ChartComponent: React.FC<ChartComponentProps> = ({
     } : undefined
   };
 
+  // Add custom plugin for center text in doughnut
+  const centerTextPlugin = {
+    id: 'centerText',
+    beforeDraw: (chart: any) => {
+        if (type !== 'doughnut') return;
+        const { ctx, width, height } = chart;
+        ctx.restore();
+        
+        // Find total value from dataset
+        const total = chart.data.datasets[0].data.reduce((acc: number, val: number) => acc + val, 0);
+        
+        const fontSize = (height / 250).toFixed(2);
+        ctx.font = `black ${fontSize}em 'Space Grotesk', sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = THEME.slate.text;
+        
+        const text = total.toString();
+        const textX = Math.round((width - ctx.measureText(text).width) / 2);
+        const textY = height / 2;
+        ctx.fillText(text, textX, textY);
+        
+        ctx.textBaseline = 'middle';
+        ctx.font = `600 0.8em 'Inter', sans-serif`;
+        ctx.fillStyle = THEME.slate.muted;
+        const subtext = "TOTAL";
+        const subtextX = Math.round((width - ctx.measureText(subtext).width) / 2);
+        const subtextY = height / 2 + 25;
+        ctx.fillText(subtext, subtextX, subtextY);
+        
+        ctx.save();
+    }
+  };
+
   const renderChart = () => {
     const commonProps = {
         options: chartOptions,
         ref: chartRef,
-        data: chartRef.current ? processData(data) : data
+        data: chartRef.current ? processData(data) : data,
+        plugins: type === 'doughnut' ? [centerTextPlugin] : []
     };
 
     switch (type) {

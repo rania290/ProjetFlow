@@ -12,26 +12,27 @@ import {
 
     Ticket, TrendingUp, Download, ShieldCheck, Sparkles, Circle,
 
-    ArrowLeftRight, Briefcase
+    ArrowLeftRight, Briefcase, UserCog, HeartPulse, ClipboardList, Network
 
 } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
+import { NotificationCenter } from '../notifications/NotificationCenter';
 
 import { useStore } from '../../store/projectStore';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Input } from '../ui/input';
-import { Toaster } from '../ui/sonner';
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Toaster } from '@/components/ui/sonner';
+import { Input } from '@/components/ui/input';
 
 const NAV_ITEMS = [
 
@@ -45,13 +46,13 @@ const NAV_ITEMS = [
 
     { id: 'documents', label: 'Documents', icon: <FileText className="w-4 h-4" />, path: '/documents' },
 
-    { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-4 h-4" />, path: '/messages', badge: 3 },
-
-
+    { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-4 h-4" />, path: '/messages' },
 
     { id: 'analytics', label: 'Reporting', icon: <BarChart3 className="w-4 h-4" />, path: '/analytics' },
 
     { id: 'client-portal', label: 'Portail Client', icon: <Sparkles className="w-4 h-4" />, path: '/client-portal' },
+
+    { id: 'hr', label: 'Ressources Humaines', icon: <HeartPulse className="w-4 h-4" />, path: '/hr' },
 
     { id: 'calendar', label: 'Calendrier', icon: <Calendar className="w-4 h-4" />, path: '/calendar' },
 
@@ -72,6 +73,14 @@ export const CLIENT_NAV_ITEMS = [
     { id: 'client-projects', label: 'Mes Projets', icon: <FolderKanban className="w-4 h-4" />, path: '/client-portal/projects' },
     { id: 'client-tickets', label: 'Support & Tickets', icon: <Ticket className="w-4 h-4" />, path: '/client-portal/tickets' },
     { id: 'client-docs', label: 'Mes Documents', icon: <FileText className="w-4 h-4" />, path: '/client-portal/documents' },
+];
+
+export const HR_NAV_ITEMS = [
+    { id: 'hr-dash', label: 'Tableau de bord', icon: <LayoutDashboard className="w-4 h-4" />, path: '/hr' },
+    { id: 'hr-my-leaves', label: 'Mes Congés', icon: <ClipboardList className="w-4 h-4" />, path: '/hr/my-leaves' },
+    { id: 'hr-validations', label: 'Validations', icon: <CheckSquare className="w-4 h-4" />, path: '/hr/validations', rolls: ['SUPER_ADMIN', 'ADMIN', 'HR_ADMIN', 'PROJECT_MANAGER', 'MANAGER'] },
+    { id: 'hr-hierarchy', label: 'Organigramme', icon: <Network className="w-4 h-4" />, path: '/hr/hierarchy' },
+    { id: 'hr-annuaire', label: 'Annuaire', icon: <Users className="w-4 h-4" />, path: '/hr/directory' },
 ];
 
 
@@ -102,7 +111,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
     const [searchQuery, setSearchQuery] = useState('');
 
-    const [notifOpen, setNotifOpen] = useState(false);
 
 
 
@@ -118,7 +126,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
     const isAdmin = location.pathname.startsWith('/admin');
     const isClientPortal = location.pathname.startsWith('/client-portal');
-    const isAdminUser = user?.role === 'ROOT' || user?.role === 'ADMIN';
+    const isHRPortal = location.pathname.startsWith('/hr');
+    const isAdminUser = user?.role === 'ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'SUPER_ADMIN';
+    const isHRManager = isAdminUser || user?.role === 'PROJECT_MANAGER' || user?.role === 'MANAGER';
     const isClient = user?.role === 'CLIENT';
 
 
@@ -139,8 +149,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
         switch (role) {
 
-            case 'ROOT': return 'Super Admin';
-
             case 'ADMIN': return 'Administrateur';
 
             case 'PROJECT_MANAGER': return 'Chef de projet';
@@ -153,15 +161,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
 
 
-    const NOTIFICATIONS = [
-
-        { id: 'n1', text: 'Sprint 1 se termine dans 4 jours', time: 'Il y a 1h', type: 'warning' },
-
-        { id: 'n2', text: 'Nouvelle tâche assignée : Intégration OAuth', time: 'Il y a 2h', type: 'info' },
-
-        { id: 'n3', text: 'Bug critique signalé sur Portail Client', time: 'Il y a 3h', type: 'error' },
-
-    ];
+    const jwtToken = localStorage.getItem('token');
 
 
 
@@ -226,12 +226,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
 
 
-                        {/* Mode indicator — visible for admin or client portal */}
-                        {(isAdmin || isClientPortal) && (
-                            <div className={`px-4 py-3 flex items-center justify-center gap-2 border-b border-white/5 ${isAdmin ? 'bg-emerald-500/10' : 'bg-indigo-500/10'}`}>
-                                <div className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-emerald-500' : 'bg-indigo-500'} animate-pulse shadow-sm`} />
-                                <span className={`text-[11px] font-bold uppercase tracking-widest ${isAdmin ? 'text-emerald-400' : 'text-indigo-400'}`}>
-                                    {isAdmin ? 'Mode Administration' : 'Espace Client'}
+                        {/* Mode indicator — visible for admin, client portal or HR */}
+                        {(isAdmin || isClientPortal || isHRPortal) && (
+                            <div className={`px-4 py-3 flex items-center justify-center gap-2 border-b border-white/5 ${isAdmin ? 'bg-emerald-500/10' : isHRPortal ? 'bg-pink-500/10' : 'bg-green-500/10'}`}>
+                                <div className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-emerald-500' : isHRPortal ? 'bg-pink-500' : 'bg-green-500'} animate-pulse shadow-sm`} />
+                                <span className={`text-[11px] font-bold uppercase tracking-widest ${isAdmin ? 'text-emerald-400' : isHRPortal ? 'text-pink-400' : 'text-green-400'}`}>
+                                    {isAdmin ? 'Mode Administration' : isHRPortal ? 'Portail RH' : 'Espace Client'}
                                 </span>
                             </div>
                         )}
@@ -338,8 +338,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                                 </>
                             ) : isClientPortal ? (
                                 <>
-                                    <div className="px-2 py-1.5 mb-1 text-[10px] font-bold text-white/25 uppercase tracking-widest">
-                                        Portail Client
+                                    <div className="px-2 py-1.5 mb-1 text-[10px] font-bold text-green-400/80 uppercase tracking-[0.2em]">
+                                        Espace Client
                                     </div>
                                     {CLIENT_NAV_ITEMS.map(item => {
                                         const isActive = location.pathname === item.path;
@@ -350,11 +350,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
                                                     }`}
                                                 style={isActive ? {
-                                                    background: 'rgba(99,102,241,0.18)',
-                                                    borderLeft: '2px solid rgb(129,140,248)'
+                                                    background: 'rgba(34,197,94,0.18)',
+                                                    borderLeft: '2px solid rgb(34,197,94)'
                                                 } : { borderLeft: '2px solid transparent' }}
                                             >
-                                                <span className={isActive ? 'text-indigo-400' : 'text-white/30 group-hover:text-white/60'}>
+                                                <span className={isActive ? 'text-green-400' : 'text-white/30 group-hover:text-white/60'}>
                                                     {item.icon}
                                                 </span>
                                                 <span className="flex-1">{item.label}</span>
@@ -367,13 +367,49 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                                         <div className="pt-4">
                                             <Link
                                                 to="/dashboard"
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-indigo-300/80 hover:text-indigo-200 transition-all border border-indigo-500/20 hover:border-indigo-400/40 hover:bg-indigo-500/10"
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-green-300/80 hover:text-green-200 transition-all border border-green-500/20 hover:border-green-400/40 hover:bg-green-500/10"
                                             >
                                                 <ArrowLeftRight className="w-4 h-4 flex-shrink-0" />
                                                 <span>Retour à l'application</span>
                                             </Link>
                                         </div>
                                     )}
+                                </>
+                            ) : isHRPortal ? (
+                                <>
+                                    <div className="px-2 py-1.5 mb-1 text-[10px] font-bold text-pink-400/80 uppercase tracking-[0.2em]">
+                                        Espace RH
+                                    </div>
+                                    {HR_NAV_ITEMS.filter(item => !item.rolls || (user?.role && item.rolls.includes(user.role))).map(item => {
+                                        const isActive = item.path === '/hr' ? location.pathname === '/hr' : location.pathname.startsWith(item.path);
+                                        return (
+                                            <Link
+                                                key={item.id}
+                                                to={item.path}
+                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
+                                                    }`}
+                                                style={isActive ? {
+                                                    background: 'rgba(236,72,153,0.18)',
+                                                    borderLeft: '2px solid rgb(236,72,153)'
+                                                } : { borderLeft: '2px solid transparent' }}
+                                            >
+                                                <span className={isActive ? 'text-pink-400' : 'text-white/30 group-hover:text-white/60'}>
+                                                    {item.icon}
+                                                </span>
+                                                <span className="flex-1">{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+
+                                    <div className="pt-4">
+                                        <Link
+                                            to="/dashboard"
+                                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-pink-300/80 hover:text-pink-200 transition-all border border-pink-500/20 hover:border-pink-400/40 hover:bg-pink-500/10"
+                                        >
+                                            <ArrowLeftRight className="w-4 h-4 flex-shrink-0" />
+                                            <span>Quitter le Portail RH</span>
+                                        </Link>
+                                    </div>
                                 </>
                             ) : (
 
@@ -387,7 +423,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
                                     {NAV_ITEMS.map(item => {
 
-                                        const isActive = item.path === '/projects' 
+                                        const isActive = item.path === '/projects'
                                             ? location.pathname === item.path
                                             : location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
 
@@ -436,7 +472,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                                         );
 
                                     })}
-
 
 
                                     {/* Recent projects */}
@@ -605,8 +640,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                         <div className="p-3 border-t border-white/5">
                             <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
                                 <Avatar className="h-9 w-9 border-2 border-indigo-500/30">
-                                   <AvatarImage src={user?.profilePhoto} alt={user?.fullName} />
-                                   <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-xs font-bold">{userInitials}</AvatarFallback>
+                                    <AvatarImage src={user?.profilePhoto} alt={user?.fullName} />
+                                    <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-xs font-bold">{userInitials}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-semibold text-white/80 truncate">{user?.fullName || 'Utilisateur'}</p>
@@ -713,82 +748,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
 
 
-                        {/* Notifications */}
-
-                        <div className="relative">
-
-                            <button
-
-                                onClick={() => setNotifOpen(v => !v)}
-
-                                className="relative p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-
-                            >
-
-                                <Bell className="w-4 h-4" />
-
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-
-                            </button>
-
-                            <AnimatePresence>
-
-                                {notifOpen && (
-
-                                    <motion.div
-
-                                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
-
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-
-                                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
-
-                                        className="absolute right-0 top-12 w-80 rounded-2xl shadow-2xl z-50 overflow-hidden border"
-                                        style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
-
-                                    >
-
-                                        <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-
-                                            <span className="text-sm font-bold text-slate-800">Notifications</span>
-
-                                            <span className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">Tout lire</span>
-
-                                        </div>
-
-                                        <div className="divide-y divide-slate-50">
-
-                                            {NOTIFICATIONS.map(n => (
-
-                                                <div key={n.id} className="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer">
-
-                                                    <div className="flex items-start gap-3">
-
-                                                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === 'error' ? 'bg-red-500' : n.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-
-                                                        <div>
-
-                                                            <p className="text-xs font-medium text-slate-700">{n.text}</p>
-
-                                                            <p className="text-[10px] text-slate-400 mt-0.5">{n.time}</p>
-
-                                                        </div>
-
-                                                    </div>
-
-                                                </div>
-
-                                            ))}
-
-                                        </div>
-
-                                    </motion.div>
-
-                                )}
-
-                            </AnimatePresence>
-
-                        </div>
+                        {/* Notifications — Real-time via WebSocket */}
+                        <NotificationCenter token={jwtToken} />
 
 
 

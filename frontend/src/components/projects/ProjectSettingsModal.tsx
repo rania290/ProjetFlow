@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Save, FolderKanban, Zap, Calendar, DollarSign,
-    Tag, FileText, Users, ChevronRight
+    Tag, FileText, Users, ChevronRight, Trash2, AlertTriangle, Shield, Folder, Check
 } from 'lucide-react';
 import { useStore } from '../../store/projectStore';
+import { AuthContext } from '../../store/authStore';
 import type { Project, ProjectType, ProjectStatus } from '../../types/project.types';
 import { projectsService } from '../../api/projects.service';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { 
+    Dialog, DialogContent, DialogHeader, 
+    DialogTitle, DialogDescription, DialogFooter 
+} from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 const PROJECT_TYPES: { id: ProjectType; label: string; desc: string; icon: React.ReactNode; color: string; gradient: string }[] = [
     {
@@ -49,8 +59,10 @@ interface Props {
 
 export const ProjectSettingsModal: React.FC<Props> = ({ project, onClose }) => {
     const { dispatch } = useStore();
+    const { user } = useContext(AuthContext)!;
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const [form, setForm] = useState({
         name: project.name,
@@ -116,186 +128,200 @@ export const ProjectSettingsModal: React.FC<Props> = ({ project, onClose }) => {
         setTimeout(() => onClose(), 1500);
     };
 
+    const handleDelete = async () => {
+        setLoading(true);
+        try {
+            await projectsService.delete(project.id);
+            dispatch({ type: 'DELETE_PROJECT', id: project.id });
+            onClose();
+        } catch (err) {
+            console.error('Failed to delete project:', err);
+            setErrors({ submit: 'Erreur lors de la suppression.' });
+            setLoading(false);
+        }
+    };
+
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
-            onClick={e => e.target === e.currentTarget && onClose()}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 30 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="w-full max-w-2xl bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/50 overflow-hidden max-h-[90vh] flex flex-col"
-            >
+        <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-[32px]">
                 {/* Visual Accent Header */}
-                <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500" />
-                
-                {/* Header */}
-                <div className="px-8 py-6 flex items-center justify-between border-b border-white/40">
-                    <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100 ring-4 ring-indigo-500/5">
-                            <FolderKanban className="w-7 h-7" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black text-slate-900 font-display uppercase tracking-tight">Paramètres Projet</h2>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1 opacity-70">Configuration & Roadmap • {project.name}</p>
+                <div className="relative px-6 pt-6 pb-4 bg-slate-50/80 backdrop-blur-md border-b border-slate-100">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                                <Folder className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-xl font-black text-slate-900 leading-none uppercase tracking-tight">Paramètres</DialogTitle>
+                                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic">Configuration • {project.name}</DialogDescription>
+                            </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-100 text-slate-400 hover:text-slate-900">
-                        <X className="w-5 h-5" />
-                    </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                        <div className="col-span-2">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-indigo-500 pl-2">Informations Générales</label>
-                            <input
-                                value={form.name}
-                                onChange={e => set('name', e.target.value)}
-                                placeholder="Nom du projet"
-                                className={`w-full px-5 py-3.5 bg-slate-50/50 border ${errors.name ? 'border-red-300 ring-4 ring-red-500/5' : 'border-slate-200/60'} rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none font-medium text-slate-700 placeholder:text-slate-300`}
-                            />
-                            {errors.name && <p className="text-[10px] font-bold text-red-500 mt-2 ml-1">{errors.name}</p>}
+                <div className="max-h-[60vh] overflow-hidden flex flex-col min-h-0 bg-white">
+                    <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
+                        <div className="px-6 py-2 border-b border-slate-50 bg-slate-50/20">
+                            <TabsList className="grid w-full grid-cols-3 bg-slate-100/30 p-1 rounded-xl">
+                                <TabsTrigger value="general" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Base</TabsTrigger>
+                                <TabsTrigger value="logistics" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Phase</TabsTrigger>
+                                <TabsTrigger value="business" className="text-[10px] font-black uppercase tracking-widest rounded-lg">Cible</TabsTrigger>
+                            </TabsList>
                         </div>
 
-                        <div className="col-span-2">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-slate-200 pl-2">Description Roadmap</label>
-                            <textarea
-                                value={form.description}
-                                onChange={e => set('description', e.target.value)}
-                                rows={4}
-                                placeholder="Décrivez les objectifs majeurs..."
-                                className={`w-full px-5 py-3.5 bg-slate-50/50 border ${errors.description ? 'border-red-300 ring-4 ring-red-500/5' : 'border-slate-200/60'} rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none resize-none font-medium text-slate-700 placeholder:text-slate-300`}
-                            />
-                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <TabsContent value="general" className="p-6 space-y-4 m-0 focus-visible:ring-0">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Nom du Projet</Label>
+                                        <Input
+                                            value={form.name}
+                                            onChange={e => set('name', e.target.value)}
+                                            className="h-12 rounded-xl text-sm font-bold border-slate-100 bg-slate-50/30 focus-visible:ring-indigo-500/20"
+                                        />
+                                    </div>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-indigo-500 pl-2">Phase Actuelle</label>
-                            <div className="relative">
-                                <select
-                                    value={form.status}
-                                    onChange={e => set('status', e.target.value as ProjectStatus)}
-                                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none appearance-none font-black text-[11px] uppercase tracking-tight text-slate-700"
-                                >
-                                    {STATUS_OPTIONS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
-                                    <ChevronRight className="w-4 h-4 rotate-90" />
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-100 pl-2">Roadmap</Label>
+                                        <textarea
+                                            value={form.description}
+                                            onChange={e => set('description', e.target.value)}
+                                            rows={5}
+                                            className="w-full px-4 py-3 bg-slate-50/30 border border-slate-100 rounded-xl outline-none resize-none text-xs font-semibold text-slate-600 leading-relaxed italic"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </TabsContent>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-slate-200 pl-2">Architecture</label>
-                            <div className="relative">
-                                <select
-                                    value={form.type}
-                                    onChange={e => set('type', e.target.value as ProjectType)}
-                                    className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none appearance-none font-black text-[11px] uppercase tracking-tight text-slate-700"
-                                >
-                                    {PROJECT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
-                                    <ChevronRight className="w-4 h-4 rotate-90" />
+                            <TabsContent value="logistics" className="p-6 space-y-4 m-0">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Statut Actuel</Label>
+                                        <select
+                                            value={form.status}
+                                            onChange={e => set('status', e.target.value as ProjectStatus)}
+                                            className="w-full h-12 px-4 bg-slate-50/30 border border-slate-100 rounded-xl font-black text-xs uppercase tracking-wider text-slate-700 outline-none"
+                                        >
+                                            {STATUS_OPTIONS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-100 pl-2">Architecture</Label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {PROJECT_TYPES.map(t => (
+                                                <button
+                                                    key={t.id}
+                                                    onClick={() => set('type', t.id)}
+                                                    className={`flex items-center gap-4 p-3 rounded-xl border-2 transition-all ${form.type === t.id ? 'border-indigo-500 bg-indigo-50/50 shadow-sm' : 'border-slate-50 bg-white hover:border-slate-100'}`}
+                                                >
+                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${form.type === t.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-200' : 'bg-slate-100 text-slate-400'}`}>
+                                                        {t.icon}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <div className={`text-xs font-black uppercase tracking-tight ${form.type === t.id ? 'text-indigo-900' : 'text-slate-600'}`}>{t.label}</div>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </TabsContent>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-indigo-500 pl-2">Client Associé</label>
-                            <div className="relative">
-                                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                <input
-                                    value={form.clientName}
-                                    onChange={e => set('clientName', e.target.value)}
-                                    className="w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none font-medium text-slate-700"
-                                />
-                            </div>
-                        </div>
+                            <TabsContent value="business" className="p-6 space-y-4 m-0">
+                                <div className="grid grid-cols-1 gap-5">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Client / Commanditaire</Label>
+                                        <Input
+                                            value={form.clientName}
+                                            onChange={e => set('clientName', e.target.value)}
+                                            className="h-12 rounded-xl text-sm font-bold border-slate-100 bg-slate-50/30"
+                                        />
+                                    </div>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-slate-200 pl-2">Budget Prévisionnel</label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                <input
-                                    type="number"
-                                    value={form.budget}
-                                    onChange={e => set('budget', e.target.value)}
-                                    className="w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none font-black text-xs text-indigo-600"
-                                />
-                            </div>
-                        </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-100 pl-2">Budget Financier</Label>
+                                        <Input
+                                            type="number"
+                                            value={form.budget}
+                                            onChange={e => set('budget', e.target.value)}
+                                            className="h-12 rounded-xl font-black text-sm text-indigo-600 border-slate-100 bg-slate-50/30"
+                                        />
+                                    </div>
 
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-indigo-500 pl-2">Date Lancement</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                <input
-                                    type="date"
-                                    value={form.startDate}
-                                    onChange={e => set('startDate', e.target.value)}
-                                    className={`w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border ${errors.startDate ? 'border-red-300' : 'border-slate-200/60'} rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none font-black text-[11px] uppercase tracking-tighter text-slate-700`}
-                                />
-                            </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Lancement</Label>
+                                            <Input
+                                                type="date"
+                                                value={form.startDate}
+                                                onChange={e => set('startDate', e.target.value)}
+                                                className="h-12 rounded-xl font-black text-xs border-slate-100 bg-slate-50/30"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-100 pl-2">Livraison</Label>
+                                            <Input
+                                                type="date"
+                                                value={form.endDate}
+                                                onChange={e => set('endDate', e.target.value)}
+                                                className="h-12 rounded-xl font-black text-xs border-slate-100 bg-slate-50/30"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </TabsContent>
                         </div>
-
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 pr-2 border-l-2 border-slate-200 pl-2">Date Echéance</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                                <input
-                                    type="date"
-                                    value={form.endDate}
-                                    onChange={e => set('endDate', e.target.value)}
-                                    className={`w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border ${errors.endDate ? 'border-red-300' : 'border-slate-200/60'} rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none font-black text-[11px] uppercase tracking-tighter text-slate-700`}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    </Tabs>
                 </div>
 
-                {/* Footer Actions */}
-                <div className="px-8 py-6 border-t border-white/40 bg-slate-50/30 flex flex-col gap-5">
-                    <AnimatePresence>
-                        {errors.submit && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-100 shadow-sm">
-                                <Zap className="w-4 h-4" /> {errors.submit}
-                            </motion.div>
+                <DialogFooter className="px-6 py-6 bg-white border-t border-slate-50 flex items-center justify-start gap-3 shadow-[0_-8px_30px_rgba(0,0,0,0.02)]">
+                    <Button 
+                        onClick={handleSave}
+                        disabled={loading || !!errors.success}
+                        className="h-11 px-10 rounded-2xl bg-indigo-600 hover:bg-black text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-xl shadow-indigo-500/10 transition-all active:scale-95"
+                    >
+                        {loading ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : errors.success ? (
+                            <><Check className="w-4 h-4" /> Sauvé</>
+                        ) : (
+                            <><Save className="w-4 h-4 mr-2" /> Appliquer</>
                         )}
-                        {errors.success && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-3 px-4 py-3 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-emerald-100 shadow-sm">
-                                <Save className="w-4 h-4" /> {errors.success}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    
-                    <div className="flex justify-end gap-4">
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-800 transition-all"
+                    </Button>
+
+                    <Button 
+                        variant="ghost" 
+                        onClick={onClose} 
+                        className="rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 px-8 h-11"
+                    >
+                        Fermer
+                    </Button>
+
+                    {user?.role === 'ADMIN' && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => setIsDeleteDialogOpen(true)}
+                            className="ml-auto rounded-2xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-all h-11 w-11"
+                            title="Supprimer le Projet"
                         >
-                            Ignorer
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={loading || !!errors.success}
-                            className={`flex items-center justify-center gap-3 px-10 py-3 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-2xl hover:bg-black transition-all shadow-lg shadow-indigo-500/20 active:scale-95 ${(loading || errors.success) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            {loading ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <><Save className="w-4 h-4" /> Synchroniser</>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </motion.div>
-        </motion.div>
+                            <Trash2 className="w-5 h-5" />
+                        </Button>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+
+            <ConfirmDialog 
+                isOpen={isDeleteDialogOpen}
+                title="Suppression Définitive"
+                message={`Êtes-vous sûr de vouloir supprimer "${project.name}" ? Toutes les données associées seront perdues. Cette action est irréversible.`}
+                confirmText="Supprimer définitivement"
+                cancelText="Annuler"
+                onConfirm={handleDelete}
+                onCancel={() => setIsDeleteDialogOpen(false)}
+                type="danger"
+            />
+        </Dialog>
     );
 };

@@ -12,6 +12,7 @@ interface UserProfile {
     location?: string;
     phone?: string;
     bio?: string;
+    managerId?: string;
     institution?: string;
     domain?: string;
     profilePhoto?: string;
@@ -67,6 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     domain: (response as any).domain,
                     profilePhoto: (response as any).profilePhoto,
                     preferredLanguage: (response as any).preferredLanguage,
+                    managerId: (response as any).managerId,
                 });
             } catch (error) {
                 console.log('Auth check failed:', error);
@@ -83,12 +85,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const response = await authService.login(dto);
         localStorage.setItem('token', response.accessToken);
         setIsAuthenticated(true);
-        const loggedInUser = {
+        const loggedInUser: UserProfile = {
             id: (response.user as any).id || (response.user as any)._id,
             fullName: response.user?.fullName || 'Utilisateur',
             email: response.user?.email,
             role: response.user?.role || 'TEAM_MEMBER',
             profilePhoto: (response.user as any).profilePhoto,
+            managerId: (response.user as any).managerId,
         };
         setUser(loggedInUser);
         return loggedInUser;

@@ -15,7 +15,7 @@ export class UsersController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.TEAM_MEMBER, UserRole.DEVELOPER, UserRole.DESIGNER, UserRole.TESTER)
   @ApiOperation({ summary: 'Get all users' })
   findAll() {
     return this.usersService.findAll();
@@ -23,7 +23,7 @@ export class UsersController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.PROJECT_MANAGER, UserRole.TEAM_MEMBER, UserRole.DEVELOPER, UserRole.DESIGNER, UserRole.TESTER)
   @ApiOperation({ summary: 'Get user by id' })
   findOne(@Param('id') id: string) {
     return this.usersService.findById(id);

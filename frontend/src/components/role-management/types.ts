@@ -14,6 +14,7 @@ export interface User {
   email: string;
   fullName: string;
   avatar?: string;
+  tjm?: number;
 }
 
 export interface Project {
@@ -34,6 +35,7 @@ export interface RoleAssignment {
   assignedBy?: string;
   notes?: string;
   expiresAt?: string;
+  tjm?: number;
 }
 
 export interface UserProjectRolesResponse {
@@ -47,6 +49,7 @@ export interface UserProjectRolesResponse {
     isActive: boolean;
     assignedAt: string;
     expiresAt?: string;
+    tjm?: number;
   }[];
   totalProjects: number;
 }

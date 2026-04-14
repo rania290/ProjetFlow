@@ -60,6 +60,7 @@ export interface Task {
     acceptanceCriteria?: string;
     tags: string[];
     createdAt: string;
+    completedAt?: string;
     dueDate?: string;
     comments: TaskComment[];
     subTasks?: Task[];
@@ -146,6 +147,7 @@ export interface TicketMessage {
 export interface Ticket {
     id: string;
     projectId: string;
+    projectName?: string;
     title: string;
     description: string;
     status: TicketStatus;

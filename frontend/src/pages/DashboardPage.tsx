@@ -79,9 +79,6 @@ export const DashboardPage: React.FC = () => {
                     <div className="lg:col-span-2 space-y-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-base font-bold text-slate-800">Mes projets</h2>
-                            <Button onClick={() => setShowCreateModal(true)} size="sm" className="gap-2">
-                                <Plus className="w-4 h-4" /> Nouveau projet
-                            </Button>
                         </div>
 
                         <div className="space-y-3">

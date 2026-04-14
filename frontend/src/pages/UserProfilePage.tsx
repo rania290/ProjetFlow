@@ -1,30 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api-client';
 import { authService } from '../api/auth.service';
 import { useAuth } from '../hooks/useAuth';
 import {
-  User,
-  Mail,
-  Phone,
-  Globe,
-  Lock,
-  Upload,
-  Camera,
-  CheckCircle,
-  AlertCircle,
-  Save,
-  Shield,
-  Building,
-  Calendar,
-  Bell,
-  Settings,
-  Eye,
-  EyeOff,
-  X as XIcon,
-  Download
+  User, Mail, Phone, Lock, Camera, CheckCircle,
+  AlertCircle, Save, Shield, Settings, Eye, EyeOff,
+  Bell, X as XIcon, RefreshCw
 } from 'lucide-react';
+
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
 
 interface UserProfile {
   fullName: string;
@@ -47,7 +39,6 @@ export const UserProfilePage: React.FC = () => {
   const { user, updateProfile: updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications'>('profile');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -63,10 +54,7 @@ export const UserProfilePage: React.FC = () => {
     preferredLanguage: (user?.preferredLanguage as 'fr' | 'en') || 'fr',
     profilePhoto: user?.profilePhoto || '',
     createdAt: '',
-    notifications: {
-      email: true,
-      inApp: true
-    }
+    notifications: { email: true, inApp: true }
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -82,7 +70,6 @@ export const UserProfilePage: React.FC = () => {
   });
 
   useEffect(() => {
-    // Initialiser avec les données de l'utilisateur connecté
     if (user) {
       setProfile({
         fullName: user.fullName || '',
@@ -94,67 +81,43 @@ export const UserProfilePage: React.FC = () => {
         preferredLanguage: (user.preferredLanguage as 'fr' | 'en') || 'fr',
         profilePhoto: user.profilePhoto || '',
         createdAt: new Date().toISOString(),
-        notifications: {
-          email: true,
-          inApp: true
-        }
+        notifications: { email: true, inApp: true }
       });
       setPhotoPreview(user.profilePhoto || null);
       setLoading(false);
     }
   }, [user]);
 
-  const fetchProfile = async () => {
-    try {
-      const response = await api.get('/auth/profile');
-      setProfile(response.data);
-      setPhotoPreview(response.data.profilePhoto);
-    } catch (err) {
-      console.error('Erreur lors du chargement du profil:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({ profilePhoto: 'La photo ne doit pas dépasser 5MB' });
-        return;
-      }
+    if (!file) return;
 
-      // Vérifier le type de fichier
-      if (!file.type.startsWith('image/')) {
-        setErrors({ profilePhoto: 'Veuillez sélectionner une image valide (JPG, PNG, GIF)' });
-        return;
-      }
-
-      setUploadingPhoto(true);
-      setErrors({});
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-        uploadPhoto(file);
-      };
-      reader.readAsDataURL(file);
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ profilePhoto: 'La photo ne doit pas dépasser 5MB' });
+      return;
     }
+
+    if (!file.type.startsWith('image/')) {
+      setErrors({ profilePhoto: 'Veuillez sélectionner une image valide (JPG, PNG, GIF)' });
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setErrors({});
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result as string);
+      uploadPhoto(file);
+    };
+    reader.readAsDataURL(file);
   };
 
   const uploadPhoto = async (file: File) => {
     try {
-      // Pour l'instant, on simule l'upload et on garde juste le preview
-      // Plus tard, vous pourrez connecter ça à votre vraie API
-
-      // Simulation d'upload (2 secondes)
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Mettre à jour le profil avec l'URL de la preview (base64)
       setProfile(prev => ({ ...prev, profilePhoto: photoPreview || '' }));
       setSuccess('Photo de profil mise à jour avec succès');
-
-      console.log('Photo uploadée avec succès (simulation)');
     } catch (err) {
       setErrors({ profilePhoto: 'Erreur lors du téléchargement de la photo' });
     } finally {
@@ -162,38 +125,10 @@ export const UserProfilePage: React.FC = () => {
     }
   };
 
-  const downloadPhoto = () => {
-    if (photoPreview) {
-      const link = document.createElement('a');
-      link.href = photoPreview;
-      link.download = `profile-photo-${profile.fullName.replace(/\s+/g, '-').toLowerCase()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
-  const removePhoto = async () => {
-    try {
-      // Pour l'instant, on simule la suppression
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setProfile(prev => ({ ...prev, profilePhoto: '' }));
-      setPhotoPreview(null);
-      setSuccess('Photo de profil supprimée avec succès');
-
-      console.log('Photo supprimée avec succès (simulation)');
-    } catch (err) {
-      setErrors({ profilePhoto: 'Erreur lors de la suppression de la photo' });
-    }
-  };
-
   const updateProfile = async () => {
     setSaving(true);
     setErrors({});
-
     try {
-      // Préparer les données à envoyer
       const profileData = {
         fullName: profile.fullName,
         phone: profile.phoneNumber,
@@ -203,21 +138,11 @@ export const UserProfilePage: React.FC = () => {
         preferredLanguage: profile.preferredLanguage
       };
 
-      console.log('Mise à jour du profil via API:', profileData);
-
-      // Appel API réel (via le service ou directement via api-client)
       const updatedUser = await authService.updateProfile(profileData as any);
-
-      // Mettre à jour le profil global dans le authStore avec les données du serveur
       updateUserProfile(updatedUser as any);
-
       setSuccess('Profil mis à jour avec succès!');
-      console.log('Profil mis à jour avec succès (réel):', updatedUser);
-
     } catch (err: any) {
-      setErrors({
-        submit: err.response?.data?.message || 'Erreur lors de la mise à jour du profil'
-      });
+      setErrors({ submit: err.response?.data?.message || 'Erreur lors de la mise à jour du profil' });
     } finally {
       setSaving(false);
     }
@@ -225,18 +150,11 @@ export const UserProfilePage: React.FC = () => {
 
   const updateNotifications = async () => {
     setSaving(true);
-
     try {
-      // Pour l'instant, on simule la sauvegarde des notifications
       await new Promise(resolve => setTimeout(resolve, 1000));
-
       setSuccess('Préférences de notification mises à jour');
-
-      console.log('Notifications mises à jour (simulation):', profile.notifications);
     } catch (err: any) {
-      setErrors({
-        notifications: err.response?.data?.message || 'Erreur lors de la mise à jour des notifications'
-      });
+      setErrors({ notifications: err.response?.data?.message || 'Erreur lors de la mise à jour des notifications' });
     } finally {
       setSaving(false);
     }
@@ -244,19 +162,14 @@ export const UserProfilePage: React.FC = () => {
 
   const changePassword = async () => {
     const e: Record<string, string> = {};
-
-    if (!passwordForm.currentPassword) {
-      e.currentPassword = 'Le mot de passe actuel est requis';
-    }
-
+    if (!passwordForm.currentPassword) e.currentPassword = 'Requis';
     if (!passwordForm.newPassword) {
-      e.newPassword = 'Le nouveau mot de passe est requis';
+      e.newPassword = 'Requis';
     } else if (passwordForm.newPassword.length < 8) {
-      e.newPassword = 'Le mot de passe doit contenir au moins 8 caractères';
+      e.newPassword = 'Min 8 caractères';
     }
-
     if (!passwordForm.confirmPassword) {
-      e.confirmPassword = 'La confirmation est requise';
+      e.confirmPassword = 'Requis';
     } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       e.confirmPassword = 'Les mots de passe ne correspondent pas';
     }
@@ -265,19 +178,12 @@ export const UserProfilePage: React.FC = () => {
     if (Object.keys(e).length > 0) return;
 
     setSaving(true);
-
     try {
-      // Pour l'instant, on simule le changement de mot de passe
       await new Promise(resolve => setTimeout(resolve, 2000));
-
       setSuccess('Mot de passe changé avec succès');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-
-      console.log('Mot de passe changé avec succès (simulation)');
     } catch (err: any) {
-      setErrors({
-        password: err.response?.data?.message || 'Erreur lors du changement de mot de passe'
-      });
+      setErrors({ password: err.response?.data?.message || 'Erreur lors du changement de mot de passe' });
     } finally {
       setSaving(false);
     }
@@ -300,16 +206,16 @@ export const UserProfilePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <RefreshCw className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#f8fafc] pb-12">
       {/* Premium Header */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -318,58 +224,67 @@ export const UserProfilePage: React.FC = () => {
               </div>
               <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Paramètres du Compte</h1>
             </div>
-            <button
+            <Button
+              variant="ghost"
               onClick={() => navigate('/dashboard')}
-              className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all flex items-center gap-2"
+              className="text-slate-500 hover:bg-slate-100"
             >
               Quitter
-              <XIcon className="w-4 h-4" />
-            </button>
+              <XIcon className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto p-6">
-        {/* Success Message */}
-        {successMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700"
-          >
-            <CheckCircle className="w-5 h-5" />
-            {successMessage}
-          </motion.div>
-        )}
+      <main className="max-w-4xl mx-auto p-6 mt-4">
+        {/* Alerts */}
+        <AnimatePresence>
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, mb: 0 }}
+              animate={{ opacity: 1, height: 'auto', mb: 24 }}
+              exit={{ opacity: 0, height: 0, mb: 0 }}
+              className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 text-green-700 shadow-sm"
+            >
+              <CheckCircle className="w-5 h-5" />
+              <span className="font-medium text-sm">{successMessage}</span>
+            </motion.div>
+          )}
 
-        {/* Error Message */}
-        {errors.submit && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-            <AlertCircle className="w-5 h-5" />
-            {errors.submit}
-          </div>
-        )}
+          {errors.submit && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, mb: 0 }}
+              animate={{ opacity: 1, height: 'auto', mb: 24 }}
+              exit={{ opacity: 0, height: 0, mb: 0 }}
+              className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 shadow-sm"
+            >
+              <AlertCircle className="w-5 h-5" />
+              <span className="font-medium text-sm">{errors.submit}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Minimalist Profile Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-sm">
-              <div className="text-center">
-                <div className="relative inline-block mb-6">
-                  <div className="w-28 h-28 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 font-bold text-2xl overflow-hidden">
-                    {uploadingPhoto ? (
-                      <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    ) : photoPreview ? (
-                      <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-12 h-12 text-slate-300 stroke-[1.5]" />
-                    )}
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Avatar & Summary */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+              <CardContent className="p-8 text-center flex flex-col items-center">
+                <div className="relative inline-block mb-6 group">
+                  <Avatar className="w-28 h-28 border-4 border-white shadow-xl ring-1 ring-slate-100">
+                    <AvatarImage src={photoPreview || ''} alt="Profile" className="object-cover" />
+                    <AvatarFallback className="bg-slate-50 text-slate-400 font-bold text-2xl">
+                      {profile.fullName.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-white/60 rounded-full flex items-center justify-center z-10 backdrop-blur-sm">
+                      <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+                    </div>
+                  )}
 
-                  <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center shadow-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                    <Camera className="w-4 h-4 text-slate-600" />
+                  <label className="absolute -bottom-2 -right-2 w-10 h-10 bg-white text-slate-600 rounded-full border border-slate-200 flex items-center justify-center shadow-lg cursor-pointer hover:bg-slate-50 hover:text-blue-600 hover:scale-105 transition-all">
+                    <Camera className="w-4 h-4" />
                     <input
                       type="file"
                       accept="image/*"
@@ -380,283 +295,277 @@ export const UserProfilePage: React.FC = () => {
                   </label>
                 </div>
 
-                <div className="space-y-1 mb-6">
-                  <h2 className="text-xl font-bold text-slate-900">{profile.fullName}</h2>
-                  <div className="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                <div className="space-y-1 w-full">
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">{profile.fullName}</h2>
+                  <div className="inline-flex items-center px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase tracking-widest mt-1">
                     {getRoleLabel(profile.role)}
                   </div>
                 </div>
-
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Tabs Content */}
+          {/* Right Column: Tabs Content */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              {/* Minimalist Professional Tabs */}
-              <div className="px-1 border-b border-slate-100 bg-white">
-                <div className="flex">
-                  {[
-                    { id: 'profile', label: 'Informations' },
-                    { id: 'security', label: 'Sécurité' },
-                    { id: 'notifications', label: 'Préférences' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`px-6 py-4 text-[11px] font-bold uppercase tracking-wider transition-all relative ${activeTab === tab.id
-                        ? 'text-blue-600'
-                        : 'text-slate-400 hover:text-slate-600'
-                        }`}
-                    >
-                      {tab.label}
-                      {activeTab === tab.id && (
-                        <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <Tabs defaultValue="profile" className="w-full">
+              <TabsList className="w-full h-14 bg-transparent border-b border-slate-200 rounded-none p-0 flex justify-start gap-6 relative">
+                <TabsTrigger 
+                  value="profile" 
+                  className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
+                >
+                  Informations
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="security" 
+                  className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
+                >
+                  Sécurité
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="notifications" 
+                  className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
+                >
+                  Préférences
+                </TabsTrigger>
+              </TabsList>
 
-              <div className="p-8">
-                {/* Profile Tab */}
-                {activeTab === 'profile' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                  >
+              {/* PROFILE TAB */}
+              <TabsContent value="profile" className="mt-8 outline-none">
+                <Card className="border-slate-200 shadow-sm rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-slate-800">Détails Personnels</CardTitle>
+                    <CardDescription>Mettez à jour vos informations publiques.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nom complet</label>
-                        <input
-                          type="text"
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nom complet</Label>
+                        <Input
+                          id="fullName"
                           value={profile.fullName}
                           onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all"
+                          className="h-11 bg-slate-50/50"
                         />
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Adresse e-mail</label>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse e-mail</Label>
                         <div className="relative">
-                          <input
+                          <Input
+                            id="email"
                             type="email"
                             value={profile.email}
                             disabled
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-500 cursor-not-allowed"
+                            className="h-11 bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed"
                           />
-                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
+                          <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Téléphone (facultatif)</label>
-                      <input
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Téléphone (facultatif)</Label>
+                      <Input
+                        id="phone"
                         type="tel"
                         value={profile.phoneNumber || ''}
                         onChange={(e) => setProfile({ ...profile, phoneNumber: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all"
-                        placeholder="+216 -- --- ---"
+                        placeholder="+33 6 -- -- -- --"
+                        className="h-11 bg-slate-50/50"
                       />
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bio / Position</label>
-                      <textarea
+                    <div className="space-y-2">
+                      <Label htmlFor="bio" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bio / Position</Label>
+                      <Textarea
+                        id="bio"
                         value={profile.bio || ''}
                         onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                         rows={3}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Développeur Full Stack passionné par les nouvelles technologies..."
+                        className="resize-none bg-slate-50/50"
+                        placeholder="Parlez-nous de votre rôle..."
                       />
                     </div>
+                  </CardContent>
+                  <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+                    <Button 
+                      onClick={updateProfile} 
+                      disabled={saving}
+                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold tracking-wide h-11 px-8 rounded-xl"
+                    >
+                      {saving ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      {saving ? 'Enregistrement...' : 'Enregistrer'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
 
-                    <div className="flex justify-between">
-                      <button
-                        onClick={() => navigate('/dashboard')}
-                        className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
-                      >
-                        ← Retour au dashboard
-                      </button>
-
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
-                      <button
-                        onClick={updateProfile}
-                        disabled={saving}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-                      >
-                        <Save className="w-4 h-4" />
-                        {saving ? 'Enregistrement...' : 'Enregistrer'}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Security Tab */}
-                {activeTab === 'security' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="p-4 bg-amber-50/50 border border-amber-100 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Shield className="w-5 h-5 text-amber-500 mt-0.5" />
-                        <div>
-                          <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Sécurité du compte</h3>
-                          <p className="text-xs text-amber-700/80 mt-1 leading-relaxed">
-                            Renforcez votre sécurité en utilisant un mot de passe complexe et unique.
-                          </p>
-                        </div>
+              {/* SECURITY TAB */}
+              <TabsContent value="security" className="mt-8 outline-none">
+                <Card className="border-slate-200 shadow-sm rounded-2xl">
+                  <CardHeader>
+                    <div className="flex gap-3 items-start p-4 bg-amber-50/50 border border-amber-100 rounded-xl mb-4">
+                      <Shield className="w-5 h-5 text-amber-500 mt-0.5" />
+                      <div>
+                        <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Sécurité du compte</h3>
+                        <p className="text-xs text-amber-700/80 mt-1 leading-relaxed">
+                          Renforcez votre sécurité en utilisant un mot de passe complexe et unique.
+                        </p>
                       </div>
                     </div>
-
-                    <div className="space-y-4 pt-2">
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mot de passe actuel</label>
-                        <div className="relative">
-                          <input
-                            type={showPasswords.current ? 'text' : 'password'}
-                            value={passwordForm.currentPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPasswords.current ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                          </button>
-                        </div>
-                        {errors.currentPassword && <p className="text-[10px] text-red-500 font-bold">{errors.currentPassword}</p>}
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mot de passe actuel</Label>
+                      <div className="relative">
+                        <Input
+                          type={showPasswords.current ? 'text' : 'password'}
+                          value={passwordForm.currentPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                          className={`h-11 bg-slate-50/50 pr-12 ${errors.currentPassword ? 'border-red-300 ring-1 ring-red-300' : ''}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowPasswords(p => ({ ...p, current: !p.current }))}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPasswords.current ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </Button>
                       </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Nouveau mot de passe</label>
-                        <div className="relative">
-                          <input
-                            type={showPasswords.new ? 'text' : 'password'}
-                            value={passwordForm.newPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPasswords.new ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Confirmer le nouveau mot de passe</label>
-                        <div className="relative">
-                          <input
-                            type={showPasswords.confirm ? 'text' : 'password'}
-                            value={passwordForm.confirmPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPasswords.confirm ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                          </button>
-                        </div>
-                      </div>
+                      {errors.currentPassword && <p className="text-[10px] text-red-500 font-bold">{errors.currentPassword}</p>}
                     </div>
 
-                    <div className="flex justify-end pt-4">
-                      <button
-                        onClick={changePassword}
-                        disabled={saving}
-                        className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-                      >
-                        <Lock className="w-4 h-4" />
-                        {saving ? 'Changement...' : 'Mettre à jour le mot de passe'}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Notifications Tab */}
-                {activeTab === 'notifications' && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="space-y-4"
-                  >
-                    {errors.notifications && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                        {errors.notifications}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nouveau mot de passe</Label>
+                      <div className="relative">
+                        <Input
+                          type={showPasswords.new ? 'text' : 'password'}
+                          value={passwordForm.newPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                          className={`h-11 bg-slate-50/50 pr-12 ${errors.newPassword ? 'border-red-300 ring-1 ring-red-300' : ''}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPasswords.new ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </Button>
                       </div>
-                    )}
+                      {errors.newPassword && <p className="text-[10px] text-red-500 font-bold">{errors.newPassword}</p>}
+                    </div>
 
-                    <div className="space-y-4">
-                      {[
-                        {
-                          id: 'email',
-                          icon: Mail,
-                          title: 'Notifications par email',
-                          desc: 'Recevez les rapports et alertes par e-mail',
-                          value: profile.notifications.email
-                        },
-                        {
-                          id: 'inApp',
-                          icon: Bell,
-                          title: 'Notifications système',
-                          desc: 'Alertes en temps réel dans l\'interface',
-                          value: profile.notifications.inApp
-                        }
-                      ].map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100 transition-all">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400">
-                              <item.icon className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-bold text-slate-700">{item.title}</h3>
-                              <p className="text-xs text-slate-500">{item.desc}</p>
-                            </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmer le nouveau mot de passe</Label>
+                      <div className="relative">
+                        <Input
+                          type={showPasswords.confirm ? 'text' : 'password'}
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                          className={`h-11 bg-slate-50/50 pr-12 ${errors.confirmPassword ? 'border-red-300 ring-1 ring-red-300' : ''}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPasswords.confirm ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                      {errors.confirmPassword && <p className="text-[10px] text-red-500 font-bold">{errors.confirmPassword}</p>}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end mt-4">
+                    <Button 
+                      onClick={changePassword} 
+                      disabled={saving}
+                      className="bg-slate-900 hover:bg-black text-white shadow-sm font-bold tracking-wide h-11 px-8 rounded-xl"
+                    >
+                      {saving ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Lock className="w-4 h-4 mr-2" />
+                      )}
+                      {saving ? 'Changement...' : 'Mettre à jour'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              {/* NOTIFICATIONS TAB */}
+              <TabsContent value="notifications" className="mt-8 outline-none">
+                <Card className="border-slate-200 shadow-sm rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-slate-800">Préférences de Contact</CardTitle>
+                    <CardDescription>Gérez comment et quand nous pouvons vous contacter.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {[
+                      {
+                        id: 'email',
+                        icon: Mail,
+                        title: 'Notifications par email',
+                        desc: 'Recevez les rapports et alertes par e-mail',
+                        value: profile.notifications.email
+                      },
+                      {
+                        id: 'inApp',
+                        icon: Bell,
+                        title: 'Notifications système',
+                        desc: 'Alertes en temps réel dans l\'interface',
+                        value: profile.notifications.inApp
+                      }
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-5 bg-white rounded-xl border border-slate-200 shadow-sm transition-all hover:border-slate-300 overflow-hidden">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500">
+                            <item.icon className="w-5 h-5" />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setProfile({
-                              ...profile,
-                              notifications: { ...profile.notifications, [item.id]: !item.value }
-                            })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${item.value ? 'bg-blue-600' : 'bg-slate-300'}`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${item.value ? 'translate-x-6' : 'translate-x-1'}`} />
-                          </button>
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-800">{item.title}</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-end pt-6 border-t border-slate-100 mt-6">
-                      <button
-                        onClick={updateNotifications}
-                        disabled={saving}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-                      >
-                        <Bell className="w-4 h-4" />
-                        {saving ? 'Enregistrement...' : 'Enregistrer les préférences'}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            </div>
+                        <button
+                          type="button"
+                          onClick={() => setProfile({
+                            ...profile,
+                            notifications: { ...profile.notifications, [item.id]: !item.value }
+                          })}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${item.value ? 'bg-blue-600' : 'bg-slate-300'}`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${item.value ? 'translate-x-[22px]' : 'translate-x-1'}`} />
+                        </button>
+                      </div>
+                    ))}
+                  </CardContent>
+                  <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end mt-4">
+                    <Button 
+                      onClick={updateNotifications} 
+                      disabled={saving}
+                      className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold tracking-wide h-11 px-8 rounded-xl"
+                    >
+                      {saving ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Bell className="w-4 h-4 mr-2" />
+                      )}
+                      {saving ? 'Enregistrement...' : 'Sauvegarder'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>
