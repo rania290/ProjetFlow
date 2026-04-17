@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { ClientService } from '../service/client.service';
 import { CreateClientDto } from '../dto/create-client.dto';
 import { UpdateClientDto } from '../dto/update-client.dto';
-import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../../middleware/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../guards/roles.guard';
 import { Roles } from '../../../decorators/roles.decorator';
 

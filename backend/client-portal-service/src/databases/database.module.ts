@@ -14,7 +14,7 @@ import { ConfigService } from '@nestjs/config';
         password: configService.get('DB_PASSWORD') || 'postgres',
         database: configService.get('DB_NAME') || 'client_portal_db',
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        synchronize: true, // Forcer la synchronisation en dev
         logging: false, // Désactiver les logs SQL
         migrations: [__dirname + '/../migrations/*{.ts,.js}'],
         migrationsRun: true,

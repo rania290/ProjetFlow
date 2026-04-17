@@ -81,11 +81,11 @@ __decorate([
     __metadata("design:type", String)
 ], LeaveRequest.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "manager_id", nullable: true }),
+    (0, typeorm_1.Column)("uuid", { name: "manager_id", nullable: true }),
     __metadata("design:type", Object)
 ], LeaveRequest.prototype, "managerId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "current_validator_id", nullable: true }),
+    (0, typeorm_1.Column)("uuid", { name: "current_validator_id", nullable: true }),
     __metadata("design:type", Object)
 ], LeaveRequest.prototype, "currentValidatorId", void 0);
 __decorate([

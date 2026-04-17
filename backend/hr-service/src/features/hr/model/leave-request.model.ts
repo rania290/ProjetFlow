@@ -43,10 +43,10 @@ export class LeaveRequest {
   @Index()
   status!: LeaveStatus;
 
-  @Column({ name: "manager_id", nullable: true })
+  @Column("uuid", { name: "manager_id", nullable: true })
   managerId!: string | null;
 
-  @Column({ name: "current_validator_id", nullable: true })
+  @Column("uuid", { name: "current_validator_id", nullable: true })
   currentValidatorId!: string | null;
 
   @Column({ name: "validation_step", type: "integer", default: 1 })

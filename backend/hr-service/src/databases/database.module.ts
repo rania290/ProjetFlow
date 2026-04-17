@@ -10,11 +10,11 @@ import { TypeOrmModule } from "@nestjs/typeorm";
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'hr_db',
-      entities: [__dirname + '/../**/*.{entity,model}{.ts,.js}'],
-      synchronize: process.env.NODE_ENV === 'development',
-      logging: false, // Désactiver les logs SQL
-      retryAttempts: 5,
-      retryDelay: 3000,
+      autoLoadEntities: true,
+      synchronize: true, // Force sync for dev
+      logging: false,
+      retryAttempts: 2,
+      retryDelay: 1000,
     }),
   ],
   exports: [TypeOrmModule],

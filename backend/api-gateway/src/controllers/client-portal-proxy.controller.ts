@@ -1,4 +1,4 @@
-import { All, Controller, Req, Res, UseGuards } from '@nestjs/common';
+import { All, Controller, Req, Res, UseGuards, InternalServerErrorException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import axios from 'axios';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
@@ -33,13 +33,24 @@ export class ClientPortalProxyController {
             delete axiosConfig.headers['content-length'];
 
             if (req.method !== 'GET' && req.method !== 'HEAD') {
-                axiosConfig.data = req.body;
+                if (req.headers['content-type']?.includes('multipart/form-data')) {
+                    // Use rawBody buffer for multipart requests to avoid stream corruption
+                    axiosConfig.data = (req as any).rawBody;
+                    axiosConfig.maxContentLength = Infinity;
+                    axiosConfig.maxBodyLength = Infinity;
+                } else {
+                    axiosConfig.data = req.body;
+                }
             }
 
             const response = await axios(axiosConfig);
 
-            // Propagate headers
+            // Propagate response headers (excluding CORS headers handled by the Gateway)
             Object.keys(response.headers).forEach(key => {
+                const lowerKey = key.toLowerCase();
+                if (lowerKey.startsWith('access-control-')) {
+                    return;
+                }
                 res.setHeader(key, response.headers[key] as string);
             });
 

@@ -10,9 +10,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'communication_db',
-      entities: [__dirname + '/../features/**/*.model{.ts,.js}'],
-      synchronize: process.env.NODE_ENV !== 'production',
-      logging: process.env.NODE_ENV === 'development',
+      autoLoadEntities: true,
+      synchronize: true, // Forcer la synchronisation en dev
+      logging: false,
     }),
   ],
 })

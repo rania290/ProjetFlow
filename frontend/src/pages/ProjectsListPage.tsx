@@ -11,6 +11,7 @@ import type { Project, ProjectStatus, ProjectType } from '../types/project.types
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { Card } from '@/components/ui/card';
 import { FadeInView } from '../components/ui/FadeInView';
+import { projectsService } from '../api/projects.service';
 
 
 // Re-export CreateProjectModal inline for this page
@@ -29,6 +30,18 @@ export const ProjectsListPage: React.FC = () => {
     const [filterCategory, setFilterCategory] = useState<ProjectType | 'ALL'>('ALL');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showCreate, setShowCreate] = useState(false);
+
+    React.useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const data = await projectsService.getAll();
+                dispatch({ type: 'SET_PROJECTS', projects: data });
+            } catch (err) {
+                console.error('Failed to load projects', err);
+            }
+        };
+        void fetchProjects();
+    }, [dispatch]);
 
     const filtered = state.projects.filter(p => {
         const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -323,7 +336,7 @@ const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => 
                             </div>
                         </div>
                     ))}
-                    {project.members.length === 0 && <span className="text-[10px] text-slate-300 font-black uppercase">0</span>}
+                    {(!project.members || project.members.length === 0) && <span className="text-[10px] text-slate-300 font-black uppercase">0</span>}
                 </div>
             </div>
             <div className="col-span-1 text-right pr-2">

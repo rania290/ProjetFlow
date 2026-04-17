@@ -179,7 +179,7 @@ export const UserProjectsPage: React.FC = () => {
             <div className="flex items-center gap-4">
 
                 <div>
-                  <h1 className="text-xl font-black text-slate-900 font-display flex items-center gap-2 uppercase tracking-tight">
+                  <h1 className="text-2xl font-black text-transparent bg-clip-text gradient-text font-display flex items-center gap-2 uppercase tracking-wide">
                     Mes Projets
                   </h1>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
@@ -274,20 +274,39 @@ export const UserProjectsPage: React.FC = () => {
             </p>
           </Card>
         ) : (
-          <div className={viewMode === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start'
-            : 'space-y-4'
-          }>
-            {filteredProjects.map((project, index) => {
-              const RoleIcon = ROLE_CONFIG[project.role].icon;
-              const expired = isExpired(project.expiresAt);
-              const daysUntilExpiry = getDaysUntilExpiry(project.expiresAt);
+          <motion.div 
+            className={viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start'
+              : 'space-y-4'
+            }
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+            }}
+          >
+            <AnimatePresence>
+              {filteredProjects.map((project, index) => {
+                const RoleIcon = ROLE_CONFIG[project.role].icon;
+                const expired = isExpired(project.expiresAt);
+                const daysUntilExpiry = getDaysUntilExpiry(project.expiresAt);
 
-              return (
-                <Card
-                  key={project.id}
-                  className={`p-6 shadow-sm border-slate-100 group hover:shadow-xl transition-all duration-500 ${expired ? 'ring-2 ring-red-100 bg-red-50/10' : ''} ${viewMode === 'list' ? 'flex items-center justify-between' : ''}`}
-                >
+                return (
+                  <motion.div
+                    key={project.id}
+                    layout
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+                    }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <Card
+                      className={`p-6 glass-card group transition-all duration-500 overflow-hidden relative ${expired ? 'ring-2 ring-red-100 bg-red-50/10' : ''} ${viewMode === 'list' ? 'flex items-center justify-between' : ''}`}
+                    >
+                      {/* Subtle gradient hover effect behind the card */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0 group-hover:from-indigo-500/5 group-hover:to-purple-500/5 transition-all duration-500 pointer-events-none" />
                   <div className={viewMode === 'list' ? 'flex items-center gap-6 flex-1' : ''}>
 
 
@@ -362,9 +381,11 @@ export const UserProjectsPage: React.FC = () => {
                     </div>
                   </div>
                 </Card>
+              </motion.div>
               );
             })}
-          </div>
+            </AnimatePresence>
+          </motion.div>
         )}
       </FadeInView>
 

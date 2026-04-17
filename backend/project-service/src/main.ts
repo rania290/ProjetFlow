@@ -15,11 +15,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PROJECT_PORT ?? 3002;
+  const port = process.env.PORT || process.env.PROJECT_PORT || 3002;
   await app.listen(port);
   console.log(`🚀 Project service running on: http://localhost:${port}`);
   console.log(`📚 Swagger UI: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();
-

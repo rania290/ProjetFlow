@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ClientController } from './controller/client.controller';
 import { ProjectController } from './controller/project.controller';
@@ -28,9 +29,12 @@ import { UtilsModule } from '../../utils/utils.module';
       DocumentEntity,
     ]),
     UtilsModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'default-secret',
-      signOptions: { expiresIn: '24h' },
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'dev-secret',
+        signOptions: { expiresIn: '24h' },
+      }),
     }),
   ],
   controllers: [

@@ -20,6 +20,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 
 import { useStore } from '../../store/projectStore';
+import { projectsService } from '../../api/projects.service';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -111,7 +112,22 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
     const [searchQuery, setSearchQuery] = useState('');
 
+    const jwtToken = localStorage.getItem('token');
 
+    // Hydrate store with real projects from backend
+    React.useEffect(() => {
+        const fetchProjects = async () => {
+            if (jwtToken) {
+                try {
+                    const data = await projectsService.getAll();
+                    dispatch({ type: 'SET_PROJECTS', projects: data });
+                } catch (err) {
+                    console.error('Failed to load projects in layout', err);
+                }
+            }
+        };
+        fetchProjects();
+    }, [jwtToken, dispatch]);
 
 
     const handleLogout = async () => {
@@ -158,11 +174,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         }
 
     };
-
-
-
-    const jwtToken = localStorage.getItem('token');
-
 
 
     return (
@@ -667,19 +678,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
             {/* ===== MAIN CONTENT ===== */}
 
-            <div className="flex-1 flex flex-col overflow-hidden">
-
-
-
-
-
-
+            <div className="flex-1 flex flex-col overflow-hidden relative bg-slate-50/50">
+                <div className="bg-grid-pattern opacity-60" />
 
                 {/* Top bar */}
 
                 <header
-                    className="flex items-center justify-between px-6 py-3 border-b flex-shrink-0 shadow-sm"
-                    style={{ backgroundColor: 'var(--app-surface)', borderColor: 'var(--app-border)' }}
+                    className="flex items-center justify-between px-6 py-3 flex-shrink-0 glass-strong z-10 sticky top-0 shadow-sm"
+                    style={{ borderBottom: '1px solid rgba(92, 124, 250, 0.15)' }}
                 >
 
                     <div className="flex items-center gap-4">
@@ -800,7 +806,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
                 {/* Page content */}
 
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto relative z-10">
 
                     {children}
 

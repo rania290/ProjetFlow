@@ -4,7 +4,10 @@ import { HrModule } from "./features/hr/hr.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../.env', '../../.env'],
+    }),
     HrModule,
   ],
 })

@@ -1,20 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileText, Download, Search,
     File, FileCode, FileImage,
-    MoreVertical, ExternalLink, Check, Copy
+    MoreVertical, ExternalLink, Check, Copy, Loader2, Upload
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 import { AppLayout } from '../../components/layout/AppLayout';
-
-const MOCK_DOCS = [
-    { name: 'Cahier des charges V1.2.pdf', type: 'pdf', size: '2.4 MB', date: '12 Mars 2026', category: 'Spécifications' },
-    { name: 'Charte Graphique - VAERDIA.zip', type: 'zip', size: '45 MB', date: '08 Mars 2026', category: 'Design' },
-    { name: 'Contrat de prestation signée.pdf', type: 'pdf', size: '1.1 MB', date: '01 Mars 2026', category: 'Administratif' },
-    { name: 'Rapport mensuel - Février.pdf', type: 'pdf', size: '840 KB', date: '02 Mars 2026', category: 'Reporting' },
-    { name: 'Maquettes_UI_Figma.png', type: 'image', size: '8.2 MB', date: '28 Fév 2026', category: 'Design' },
-];
+import { documentsService, type DocumentInfo } from '../../api/documents.service';
 
 const getIcon = (type: string) => {
     switch (type) {
@@ -26,61 +18,71 @@ const getIcon = (type: string) => {
 };
 
 export const ClientDocumentsPage: React.FC = () => {
-    const [notification, setNotification] = React.useState<{ message: string, type: 'success' | 'info' } | null>(null);
+    const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isUploading, setIsUploading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [notification, setNotification] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const showNotification = (message: string, type: 'success' | 'info' = 'success') => {
         setNotification({ message, type });
         setTimeout(() => setNotification(null), 3000);
     };
 
-    const handleDownload = (docName: string) => {
+    const fetchDocs = async () => {
         try {
-            const doc = new jsPDF();
-
-            // Branding VAERDIA
-            doc.setFontSize(22);
-            doc.setTextColor(79, 70, 229); // Indigo-600
-            doc.text('VAERDIA PROJECTFLOW', 20, 20);
-
-            doc.setDrawColor(226, 232, 240); // Slate-200
-            doc.line(20, 25, 190, 25);
-
-            // Titre du Document
-            doc.setFontSize(16);
-            doc.setTextColor(30, 41, 59); // Slate-800
-            doc.text(`Document : ${docName}`, 20, 45);
-
-            doc.setFontSize(10);
-            doc.setTextColor(100, 116, 139); // Slate-500
-            doc.text(`Date de génération : ${new Date().toLocaleString()}`, 20, 55);
-
-            // Corps du texte
-            doc.setFontSize(12);
-            doc.setTextColor(71, 85, 105); // Slate-600
-            const bodyContent =
-                `Ceci est un document officiel généré via le Portail Client VAERDIA. \n\n` +
-                `Le fichier "${docName}" est prêt pour la consultation. \n\n` +
-                `Note de sécurité : \n` +
-                `Ce document a été généré dynamiquement pour cette démonstration technique. ` +
-                `Dans un environnement de production, ce bouton permettrait de récupérer le ` +
-                `véritable fichier binaire stocké sur vos serveurs sécurisés.`;
-
-            const splitText = doc.splitTextToSize(bodyContent, 170);
-            doc.text(splitText, 20, 75);
-
-            // Pied de page
-            doc.setFontSize(8);
-            doc.setTextColor(148, 163, 184); // Slate-400
-            doc.text('Document généré par le système VAERDIA SaaS - Plateforme de Gestion de Projet', 20, 285);
-
-            // Sauvegarde
-            const pdfName = docName.toLowerCase().endsWith('.pdf') ? docName : `${docName.split('.')[0]}.pdf`;
-            doc.save(pdfName);
-
-            showNotification(`Document PDF généré pour "${docName}"`, 'success');
+            setIsLoading(true);
+            const data = await documentsService.getAllDocuments();
+            setDocuments(data);
         } catch (error) {
-            console.error('Erreur PDF:', error);
-            showNotification('Erreur lors de la génération du PDF', 'info');
+            console.error("Erreur lors du chargement des documents:", error);
+            showNotification("Erreur de chargement des documents", "info");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void fetchDocs();
+    }, []);
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploading(true);
+            showNotification(`Importation de "${file.name}" en cours...`, 'info');
+            
+            await documentsService.uploadDocument(file, { category: 'Ressources Client' });
+            
+            showNotification(`Fichier "${file.name}" importé avec succès`, 'success');
+            await fetchDocs(); // Recharger la liste
+        } catch (error) {
+            console.error('Erreur Importation:', error);
+            showNotification('Erreur lors de l\'importation du fichier', 'info');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const filteredDocs = documents.filter(doc => 
+        (doc.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (doc.category || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handleDownload = async (docId: string, docName: string) => {
+        try {
+            showNotification(`Téléchargement de "${docName}" en cours...`);
+            await documentsService.downloadDocument(docId, docName);
+            showNotification(`Document "${docName}" téléchargé avec succès`, 'success');
+        } catch (error) {
+            console.error('Erreur Téléchargement:', error);
+            showNotification('Erreur lors du téléchargement du document', 'info');
         }
     };
 
@@ -141,9 +143,26 @@ export const ClientDocumentsPage: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Rechercher un fichier..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                             />
                         </div>
+                        
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            onChange={handleFileUpload} 
+                            className="hidden" 
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="flex items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 transition-all disabled:opacity-50"
+                        >
+                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            <span className="hidden sm:inline">{isUploading ? 'En cours...' : 'Ajouter un document'}</span>
+                        </button>
                     </div>
                 </header>
 
@@ -159,59 +178,78 @@ export const ClientDocumentsPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {MOCK_DOCS.map((doc, i) => (
-                                <motion.tr
-                                    key={doc.name}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="hover:bg-slate-50/50 transition-colors group"
-                                >
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                {getIcon(doc.type)}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-800">{doc.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium md:hidden">{doc.category}</p>
-                                            </div>
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-3">
+                                            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Chargement des documents...</p>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 hidden md:table-cell">
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md uppercase tracking-tighter">
-                                            {doc.category}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs text-slate-500 hidden lg:table-cell">
-                                        {doc.size}
-                                    </td>
-                                    <td className="px-6 py-4 text-xs text-slate-500">
-                                        {doc.date}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleDownload(doc.name)}
-                                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                title="Télécharger"
-                                            >
-                                                <Download className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleShare(doc.name)}
-                                                className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                                                title="Partager"
-                                            >
-                                                <ExternalLink className="w-4 h-4" />
-                                            </button>
-                                            <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all lg:hidden">
-                                                <MoreVertical className="w-4 h-4" />
-                                            </button>
+                                </tr>
+                            ) : filteredDocs.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-16 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-3">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-100">
+                                                <FileText className="w-6 h-6 text-slate-300" />
+                                            </div>
+                                            <p className="text-sm font-black text-slate-500">Aucun document trouvé</p>
                                         </div>
                                     </td>
-                                </motion.tr>
-                            ))}
+                                </tr>
+                            ) : (
+                                filteredDocs.map((doc, i) => (
+                                    <motion.tr
+                                        key={doc.id}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                        className="hover:bg-slate-50/50 transition-colors group"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    {getIcon(doc.type)}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-800">{doc.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium md:hidden">{doc.category}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 hidden md:table-cell">
+                                            <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md uppercase tracking-tighter">
+                                                {doc.category}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs text-slate-500 hidden lg:table-cell">
+                                            {doc.size}
+                                        </td>
+                                        <td className="px-6 py-4 text-xs text-slate-500">
+                                            {new Date(doc.uploadedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleDownload(doc.id, doc.name)}
+                                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                    title="Télécharger"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleShare(doc.name)}
+                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                    title="Partager"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </motion.tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -224,7 +262,11 @@ export const ClientDocumentsPage: React.FC = () => {
                         </div>
                         <div>
                             <h4 className="text-sm font-bold text-green-900">Espace Documentaire</h4>
-                            <p className="text-xs text-green-600/70">12 fichiers partagés • 58.4 MB utilisés</p>
+                            {isLoading ? (
+                                <p className="text-xs text-green-600/70">Calcul en cours...</p>
+                            ) : (
+                                <p className="text-xs text-green-600/70">{documents.length} fichiers partagés</p>
+                            )}
                         </div>
                     </div>
                     <div className="hidden sm:block">

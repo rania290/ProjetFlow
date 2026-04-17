@@ -50,7 +50,7 @@ export const BurndownChart: React.FC<BurndownChartProps> = ({ sprint, tasks }) =
                 const pointsCompletedByDay = tasks
                     .filter(t => t.status === 'DONE' && t.completedAt && new Date(t.completedAt) <= currentDate)
                     .reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-                
+
                 actual = Math.max(0, totalPoints - pointsCompletedByDay);
             }
 

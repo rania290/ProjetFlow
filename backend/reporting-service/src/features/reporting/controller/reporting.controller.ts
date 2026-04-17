@@ -5,7 +5,7 @@ import { ReportingParamsDto } from '../dto/reporting-params.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('reporting')
-@Controller('reporting')
+@Controller('reports')
 export class ReportingController {
     constructor(private readonly reportingService: ReportingService) { }
 

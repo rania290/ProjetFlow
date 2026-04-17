@@ -155,7 +155,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
                                           min={0}
                                           value={a.tjm}
                                           onChange={(e) => setAssignments(assignments.map(x => x.projectId === a.projectId ? {...x, tjm: parseInt(e.target.value) || 0} : x))}
-                                          className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-700 outline-none focus:ring-4 focus:ring-indigo-500/10 w-24 text-center"
+                                          className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-700 outline-none focus:ring-4 focus:ring-indigo-500/10 w-24 text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                        />
                                     </div>
                                   </div>
@@ -318,7 +318,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                   min={0}
                   value={tjm}
                   onChange={e => setTjm(parseInt(e.target.value) || 0)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-indigo-600 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all text-center"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-indigo-600 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                 />
               </div>
            </div>

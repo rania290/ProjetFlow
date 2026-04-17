@@ -276,7 +276,7 @@ export const UserProfilePage: React.FC = () => {
                       {profile.fullName.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  
+
                   {uploadingPhoto && (
                     <div className="absolute inset-0 bg-white/60 rounded-full flex items-center justify-center z-10 backdrop-blur-sm">
                       <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
@@ -309,20 +309,20 @@ export const UserProfilePage: React.FC = () => {
           <div className="lg:col-span-2">
             <Tabs defaultValue="profile" className="w-full">
               <TabsList className="w-full h-14 bg-transparent border-b border-slate-200 rounded-none p-0 flex justify-start gap-6 relative">
-                <TabsTrigger 
-                  value="profile" 
+                <TabsTrigger
+                  value="profile"
                   className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
                 >
                   Informations
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="security" 
+                <TabsTrigger
+                  value="security"
                   className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
                 >
                   Sécurité
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="notifications" 
+                <TabsTrigger
+                  value="notifications"
                   className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
                 >
                   Préférences
@@ -388,8 +388,8 @@ export const UserProfilePage: React.FC = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end">
-                    <Button 
-                      onClick={updateProfile} 
+                    <Button
+                      onClick={updateProfile}
                       disabled={saving}
                       className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold tracking-wide h-11 px-8 rounded-xl"
                     >
@@ -486,8 +486,8 @@ export const UserProfilePage: React.FC = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end mt-4">
-                    <Button 
-                      onClick={changePassword} 
+                    <Button
+                      onClick={changePassword}
                       disabled={saving}
                       className="bg-slate-900 hover:bg-black text-white shadow-sm font-bold tracking-wide h-11 px-8 rounded-xl"
                     >
@@ -550,8 +550,8 @@ export const UserProfilePage: React.FC = () => {
                     ))}
                   </CardContent>
                   <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end mt-4">
-                    <Button 
-                      onClick={updateNotifications} 
+                    <Button
+                      onClick={updateNotifications}
                       disabled={saving}
                       className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold tracking-wide h-11 px-8 rounded-xl"
                     >

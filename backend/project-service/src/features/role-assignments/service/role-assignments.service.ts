@@ -1,117 +1,139 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { RoleAssignment } from '../model/role-assignment.model';
 
 @Injectable()
 export class RoleAssignmentsService {
-  private assignments: any[] = [
-    {
-      id: '1',
-      user: { id: 'user-1', fullName: 'Admin User', email: 'admin@example.com' },
-      project: { id: '1', name: 'Projet Alpha', description: 'Application web principale' },
-      role: 'ADMIN',
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      user: { id: 'user-1', fullName: 'Admin User', email: 'admin@example.com' },
-      project: { id: '2', name: 'Projet Bêta', description: 'Système interne' },
-      role: 'PROJECT_MANAGER',
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    },
-  ];
+  private readonly logger = new Logger(RoleAssignmentsService.name);
 
-  getAll() {
-    return this.assignments;
+  constructor(
+    @InjectRepository(RoleAssignment)
+    private readonly repo: Repository<RoleAssignment>,
+  ) {}
+
+  async getAll() {
+    const rows = await this.repo.find();
+    return rows.map(this.toDto);
   }
 
-  getMyProjects() {
-    // Simulated current user is 'user-1'
-    const userId = 'user-1';
-    const userAssignments = this.assignments.filter(a => a.user.id === userId);
-    
-    return {
-      userId: userId,
-      userFullName: 'Admin User',
-      userEmail: 'admin@example.com',
-      projects: userAssignments.map(a => ({
-        id: a.project.id,
-        name: a.project.name,
-        role: a.role,
-        isActive: a.isActive,
-        assignedAt: a.createdAt,
-      })),
-      totalProjects: userAssignments.length,
-    };
+  async getMyProjects() {
+    return { message: 'Use getUserProjects(userId) instead' };
   }
 
-  getUserProjects(userId: string) {
-    const userAssignments = this.assignments.filter(a => a.user.id === userId);
+  async getUserProjects(userId: string) {
+    const rows = await this.repo.find({ where: { userId, isActive: true } });
     return {
       userId,
-      userFullName: userAssignments[0]?.user.fullName || 'User ' + userId,
-      userEmail: userAssignments[0]?.user.email || 'user' + userId + '@example.com',
-      projects: userAssignments.map(a => ({
-        projectId: a.project.id,
-        projectName: a.project.name,
-        role: a.role,
-        isActive: a.isActive,
-        assignedAt: a.createdAt,
+      userFullName: rows[0]?.userFullName || '',
+      userEmail: rows[0]?.userEmail || '',
+      projects: rows.map(r => ({
+        projectId: r.projectId,
+        projectName: r.projectName,
+        role: r.role,
+        isActive: r.isActive,
+        assignedAt: r.createdAt,
       })),
-      totalProjects: userAssignments.length,
+      totalProjects: rows.length,
     };
   }
 
-  getProjectMembers(projectId: string) {
-    return this.assignments
-      .filter(a => a.project.id === projectId)
-      .map(a => ({
-        id: a.id,
-        userId: a.user.id,
-        fullName: a.user.fullName,
-        email: a.user.email,
-        role: a.role,
-        isActive: a.isActive,
-        assignedAt: a.createdAt,
-      }));
+  async getProjectMembers(projectId: string, role?: string) {
+    const where: any = { projectId };
+    if (role) where.role = role;
+    const rows = await this.repo.find({ where });
+    return {
+      projectId,
+      projectName: rows[0]?.projectName || '',
+      members: rows.map(r => ({
+        id: r.id,
+        user: { id: r.userId, fullName: r.userFullName, email: r.userEmail },
+        project: { id: r.projectId, name: r.projectName },
+        role: r.role,
+        isActive: r.isActive,
+        notes: r.notes,
+        createdAt: r.createdAt,
+      })),
+      totalCount: rows.length,
+      roleCounts: this.countRoles(rows),
+    };
   }
 
-  assign(payload: any) {
-    const newAssignment = {
-      id: Math.random().toString(36).substr(2, 9),
-      user: payload.user || { id: payload.userId, fullName: 'User ' + payload.userId, email: 'user' + payload.userId + '@example.com' },
-      project: payload.project || { id: payload.projectId, name: 'Project ' + payload.projectId },
-      role: payload.role || 'DEVELOPER',
+  async assign(payload: any) {
+    // Check if already assigned — update instead of duplicate
+    const existing = await this.repo.findOne({
+      where: { userId: payload.userId, projectId: payload.projectId },
+    });
+
+    if (existing) {
+      existing.role = payload.role || existing.role;
+      existing.isActive = true;
+      if (payload.notes !== undefined) existing.notes = payload.notes;
+      const saved = await this.repo.save(existing);
+      return this.toDto(saved);
+    }
+
+    const entity = this.repo.create({
+      userId: payload.userId,
+      userFullName: payload.user?.fullName || '',
+      userEmail: payload.user?.email || '',
+      projectId: payload.projectId,
+      projectName: payload.project?.name || '',
+      role: payload.role || 'TEAM_MEMBER',
+      notes: payload.notes || null,
+      assignedBy: payload.assignedBy || null,
       isActive: true,
-      createdAt: new Date().toISOString(),
-      notes: payload.notes,
-    };
-    this.assignments.push(newAssignment);
-    return newAssignment;
+    });
+
+    const saved = await this.repo.save(entity);
+    this.logger.log(`Assigned user ${payload.userId} to project ${payload.projectId} as ${payload.role}`);
+    return this.toDto(saved);
   }
 
-  bulkAssign(payload: any) {
-    const created: any[] = [];
+  async bulkAssign(payload: any) {
+    const results: any[] = [];
     if (payload.assignments && Array.isArray(payload.assignments)) {
       for (const a of payload.assignments) {
-        created.push(this.assign({ ...a, notes: a.notes || payload.notes }));
+        results.push(await this.assign({ ...a, notes: a.notes || payload.notes }));
       }
     }
-    return created;
+    return results;
   }
 
-  update(id: string, data: any) {
-    const idx = this.assignments.findIndex(a => a.id === id);
-    if (idx !== -1) {
-      this.assignments[idx] = { ...this.assignments[idx], ...data };
-      return this.assignments[idx];
+  async update(id: string, data: any) {
+    const row = await this.repo.findOne({ where: { id } });
+    if (!row) return null;
+    Object.assign(row, data);
+    const saved = await this.repo.save(row);
+    return this.toDto(saved);
+  }
+
+  async remove(userId: string, projectId: string) {
+    const row = await this.repo.findOne({ where: { userId, projectId } });
+    if (!row) return false;
+    await this.repo.remove(row);
+    return true;
+  }
+
+  private countRoles(rows: RoleAssignment[]) {
+    const counts: Record<string, number> = { ADMIN: 0, PROJECT_MANAGER: 0, TEAM_MEMBER: 0, CLIENT: 0 };
+    for (const r of rows) {
+      if (counts[r.role] !== undefined) counts[r.role]++;
     }
-    return null;
+    return counts;
   }
 
-  remove(userId: string, projectId: string) {
-    const initialLen = this.assignments.length;
-    this.assignments = this.assignments.filter(a => !(a.user.id === userId && a.project.id === projectId));
-    return this.assignments.length < initialLen;
+  private toDto(r: RoleAssignment) {
+    return {
+      id: r.id,
+      user: { id: r.userId, fullName: r.userFullName, email: r.userEmail },
+      project: { id: r.projectId, name: r.projectName },
+      role: r.role,
+      isActive: r.isActive,
+      notes: r.notes,
+      assignedBy: r.assignedBy,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    };
   }
 }

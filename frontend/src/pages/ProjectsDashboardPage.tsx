@@ -3,11 +3,11 @@ import { projectsService, type ProjectDashboard } from '../api/projects.service'
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { 
-    Search, 
-    Briefcase, 
-    Users, 
-    ArrowRight, 
+import {
+    Search,
+    Briefcase,
+    Users,
+    ArrowRight,
     LayoutDashboard,
     LogOut,
     Filter
@@ -50,7 +50,7 @@ export const ProjectsDashboardPage: React.FC = () => {
         navigate('/login');
     };
 
-    const filteredProjects = projects.filter(p => 
+    const filteredProjects = projects.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.projectId.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -75,9 +75,9 @@ export const ProjectsDashboardPage: React.FC = () => {
                         <p className="text-xs font-bold text-slate-900 leading-tight">Chef de Projet</p>
                         <p className="text-[10px] text-slate-400 font-medium">Session Active</p>
                     </div>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={handleLogout}
                         className="h-10 px-4 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
                     >
@@ -96,12 +96,12 @@ export const ProjectsDashboardPage: React.FC = () => {
                             Pilotez et analysez l'avancement de vos projets en temps réel.
                         </p>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <div className="relative flex-1 md:w-80">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <Input 
-                                placeholder="Rechercher un projet..." 
+                            <Input
+                                placeholder="Rechercher un projet..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-11 h-12 bg-white border-slate-200 rounded-2xl shadow-sm focus:ring-primary-500/20 text-sm font-medium transition-all"
@@ -147,8 +147,8 @@ export const ProjectsDashboardPage: React.FC = () => {
                                         </TableRow>
                                     ) : (
                                         filteredProjects.map((p) => (
-                                            <TableRow 
-                                                key={p.projectId} 
+                                            <TableRow
+                                                key={p.projectId}
                                                 className="hover:bg-primary-50/30 transition-all duration-300 border-b border-slate-50 cursor-pointer group/row"
                                                 onClick={() => navigate(`/projects/${p.projectId}`)}
                                             >
@@ -164,11 +164,10 @@ export const ProjectsDashboardPage: React.FC = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-6 py-6 font-medium">
-                                                    <Badge className={`rounded-xl px-3 py-1 text-[10px] uppercase font-black tracking-widest shadow-sm ${
-                                                        p.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                                                        p.status === 'PLANNING' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                                                        'bg-slate-50 text-slate-500 border-slate-100'
-                                                    }`}>
+                                                    <Badge className={`rounded-xl px-3 py-1 text-[10px] uppercase font-black tracking-widest shadow-sm ${p.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                            p.status === 'PLANNING' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                                'bg-slate-50 text-slate-500 border-slate-100'
+                                                        }`}>
                                                         {p.status}
                                                     </Badge>
                                                 </TableCell>
@@ -192,9 +191,9 @@ export const ProjectsDashboardPage: React.FC = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-6 text-right">
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="sm" 
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         className="h-10 w-10 p-0 rounded-xl hover:bg-primary-600 hover:text-white transition-all shadow-none group-hover/row:scale-110"
                                                     >
                                                         <ArrowRight className="w-5 h-5" />

@@ -5,7 +5,10 @@ import { CommunicationModule } from './features/communication/communication.modu
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../.env', '../../.env'],
+    }),
     DatabaseModule,
     CommunicationModule,
   ],

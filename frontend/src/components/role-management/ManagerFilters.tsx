@@ -1,11 +1,11 @@
 import React from 'react';
 import { Filter, ShieldCheck, Briefcase } from 'lucide-react';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import type { Project, RoleConfigType, RoleAssignment } from './types';
 

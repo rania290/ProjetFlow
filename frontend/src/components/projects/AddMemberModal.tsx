@@ -160,31 +160,39 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                     </ScrollArea>
                 </div>
 
-                <DialogFooter className="px-8 py-6 bg-white border-t border-slate-100 flex items-center justify-between shadow-[0_-8px_20px_rgba(0,0,0,0.02)]">
-                    <div className="flex items-center gap-6">
-                        <div className="flex flex-col gap-1.5 flex-1 max-w-[120px]">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-1">TJM (DT)</label>
-                            <Input 
-                                type="number" 
-                                min={0} 
-                                value={tjm} 
-                                onChange={e => setTjm(parseInt(e.target.value) || 0)}
-                                className="h-10 rounded-xl border-slate-100 bg-slate-50/50 font-black text-xs text-indigo-600 text-center"
-                            />
-                        </div>
-
-                        <div className="flex gap-3">
-                            <Button variant="ghost" onClick={onClose} className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">
-                                Annuler
-                            </Button>
-                            
+                <DialogFooter className="px-8 py-6 bg-white border-t border-slate-100 flex items-center shadow-[0_-8px_20px_rgba(0,0,0,0.02)] sm:justify-start">
+                    <div className="flex items-center w-full">
+                        {/* LEFT: Buttons */}
+                        <div className="flex gap-2">
                             <Button 
                                 onClick={handleAdd}
                                 disabled={!selectedId || isLoading}
-                                className="h-11 px-8 rounded-xl bg-indigo-600 hover:bg-black text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="h-9 px-5 rounded-lg bg-indigo-600 hover:bg-black text-white font-black text-[10px] uppercase tracking-[0.1em] shadow-md shadow-indigo-500/20 transition-all disabled:opacity-50 flex items-center gap-1.5"
                             >
-                                <Check className="w-4 h-4" /> Ajouter
+                                <Check className="w-3.5 h-3.5" /> Ajouter
                             </Button>
+
+                            <Button variant="ghost" onClick={onClose} className="h-9 px-4 rounded-lg font-black text-[9px] uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50">
+                                Fermer
+                            </Button>
+                        </div>
+
+                        {/* RIGHT: TJM */}
+                        <div className="flex items-center gap-2 ml-auto">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pt-0.5">TJM</label>
+                            <div className="relative">
+                                <Input 
+                                    type="number" 
+                                    min={0} 
+                                    value={tjm} 
+                                    onChange={e => setTjm(parseInt(e.target.value) || 0)}
+                                    className="h-9 w-20 rounded-lg border-slate-200 bg-slate-50/50 font-black text-xs text-indigo-600 text-right pr-6 focus:ring-indigo-500/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                    placeholder="0"
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-slate-400 select-none">
+                                    DT
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </DialogFooter>

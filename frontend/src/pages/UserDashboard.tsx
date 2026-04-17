@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api-client';
+import { projectsService } from '../api/projects.service';
 import { useAuth } from '../hooks/useAuth';
 import {
   User,
@@ -83,11 +84,11 @@ const STATUS_CONFIG = {
 export const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth(); // Utiliser le user du authStore au lieu de useState
-  
+
   // Debug: Vérifier ce que contient le user
   console.log('Dashboard - User du authStore:', user);
   console.log('Dashboard - User profilePhoto:', user?.profilePhoto);
-  
+
   const [stats, setStats] = useState<UserStats>({
     tasksCompleted: 0,
     tasksPending: 0,
@@ -117,10 +118,10 @@ export const UserDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Ne plus récupérer les infos utilisateur depuis l'API
       // Utiliser le user du authStore qui contient déjà la photo de profil
-      
+
       // Récupérer les statistiques (simulation)
       setStats({
         tasksCompleted: 12,
@@ -143,19 +144,9 @@ export const UserDashboard: React.FC = () => {
         }
       ]);
 
-      // Récupérer les projets de l'utilisateur (simulation)
-      setProjects([
-        {
-          id: 'proj-1',
-          name: 'Projet Flow',
-          description: 'Application de gestion de projet',
-          type: 'WEB_APPLICATION',
-          status: 'ACTIVE',
-          progress: 75,
-          deadline: '2024-02-01',
-          team: ['Alice', 'Bob', 'Charlie']
-        }
-      ]);
+      // Récupérer les projets de l'utilisateur (backend réel)
+      const data = await projectsService.getAll();
+      setProjects(data as any);
 
       // Récupérer les notifications (simulation)
       setNotifications([
@@ -168,7 +159,7 @@ export const UserDashboard: React.FC = () => {
           read: false
         }
       ]);
-      
+
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
     } finally {
@@ -179,9 +170,9 @@ export const UserDashboard: React.FC = () => {
   const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
     try {
       await api.put(`/tasks/${taskId}/status`, { status: newStatus });
-      
+
       // Mettre à jour localement
-      setTasks(tasks.map(task => 
+      setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
 
@@ -207,7 +198,7 @@ export const UserDashboard: React.FC = () => {
   const markNotificationAsRead = async (notificationId: string) => {
     try {
       await api.put(`/notifications/${notificationId}/read`);
-      setNotifications(notifications.map(notif => 
+      setNotifications(notifications.map(notif =>
         notif.id === notificationId ? { ...notif, read: true } : notif
       ));
     } catch (err) {
@@ -219,11 +210,11 @@ export const UserDashboard: React.FC = () => {
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase());
+      task.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = taskFilter === 'all' || task.status === taskFilter || (taskFilter === 'DONE' && task.status === 'DONE');
     const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
     const matchesProject = projectFilter === 'all' || task.projectId === projectFilter;
-    
+
     return matchesSearch && matchesStatus && matchesPriority && matchesProject;
   });
 
@@ -352,7 +343,7 @@ export const UserDashboard: React.FC = () => {
                 <button className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
                   <Settings className="w-5 h-5" />
                 </button>
-                
+
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                   <button
                     onClick={() => navigate('/profile')}
@@ -520,7 +511,7 @@ export const UserDashboard: React.FC = () => {
                     const PriorityIcon = PRIORITY_CONFIG[task.priority].icon;
                     const daysUntilDue = getDaysUntilDue(task.dueDate);
                     const isOverdue = daysUntilDue < 0;
-                    
+
                     return (
                       <motion.div
                         key={task.id}
@@ -539,9 +530,9 @@ export const UserDashboard: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            
+
                             <p className="text-sm text-slate-600 mb-3 line-clamp-2">{task.description}</p>
-                            
+
                             <div className="flex items-center gap-4 text-xs text-slate-500">
                               <span className="flex items-center gap-1">
                                 <Briefcase className="w-3 h-3" />
@@ -549,7 +540,7 @@ export const UserDashboard: React.FC = () => {
                               </span>
                               <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-600 font-medium' : ''}`}>
                                 <Calendar className="w-3 h-3" />
-                                {isOverdue 
+                                {isOverdue
                                   ? `En retard de ${Math.abs(daysUntilDue)} jour(s)`
                                   : daysUntilDue <= 3
                                     ? `Dans ${daysUntilDue} jour(s)`
@@ -564,7 +555,7 @@ export const UserDashboard: React.FC = () => {
                               <PriorityIcon className="w-3 h-3 inline mr-1" />
                               {PRIORITY_CONFIG[task.priority].label}
                             </span>
-                            
+
                             <select
                               value={task.status}
                               onChange={(e) => updateTaskStatus(task.id, e.target.value as Task['status'])}
@@ -605,7 +596,7 @@ export const UserDashboard: React.FC = () => {
                   projects.map((project, index) => {
                     const daysUntilDeadline = getDaysUntilDue(project.deadline);
                     const isOverdue = daysUntilDeadline < 0;
-                    
+
                     return (
                       <motion.div
                         key={project.id}
@@ -641,13 +632,13 @@ export const UserDashboard: React.FC = () => {
                             <div className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
-                                {isOverdue 
+                                {isOverdue
                                   ? `Terminé il y a ${Math.abs(daysUntilDeadline)} jour(s)`
                                   : `Dans ${daysUntilDeadline} jour(s)`
                                 }
                               </span>
                             </div>
-                            
+
                             <div className="flex -space-x-2">
                               {project.members.slice(0, 3).map((member) => (
                                 <div

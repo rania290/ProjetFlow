@@ -22,7 +22,13 @@ async function bootstrap() {
 
   // Configuration CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+        callback(null, true);
+      } else {
+        callback(null, process.env.FRONTEND_URL || 'http://localhost:3000');
+      }
+    },
     credentials: true,
   });
 
@@ -39,7 +45,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   // Démarrage
-  const port = process.env.CLIENT_PORTAL_PORT || 3003;
+  const port = process.env.PORT || process.env.CLIENT_PORTAL_PORT || 3003;
   await app.listen(port);
   console.log(`🚀 Client Portal Service running on port ${port}`);
   console.log(`📚 Swagger documentation available at http://localhost:${port}/api`);

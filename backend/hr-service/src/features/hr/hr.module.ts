@@ -23,8 +23,10 @@ import { LeaveLoggerMiddleware } from "../../middleware/leave-logger.middleware"
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         return new Redis({
-          host: configService.get('REDIS_HOST') || 'localhost',
+          host: configService.get('REDIS_HOST') || '127.0.0.1',
           port: configService.get('REDIS_PORT') || 6379,
+          connectTimeout: 5000,
+          maxRetriesPerRequest: 0,
         });
       },
     },

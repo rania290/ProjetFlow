@@ -24,7 +24,7 @@ export class JwtAuthGuard implements CanActivate {
             // In a real production environment, you would use a shared secret
             // or call the auth-service to verify the token.
             // For this demo, we'll use the secret from the config.
-            const secret = this.configService.get<string>('JWT_SECRET') || 'super-secret-key';
+            const secret = this.configService.get<string>('JWT_SECRET') || 'dev-secret';
             const decoded = jwt.verify(token, secret);
             request.user = decoded;
             return true;

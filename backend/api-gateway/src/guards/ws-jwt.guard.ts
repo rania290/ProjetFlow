@@ -20,7 +20,7 @@ export class WsJwtGuard implements CanActivate {
       }
 
       const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-      const secret = this.configService.get<string>('JWT_SECRET') || 'super-secret-key';
+      const secret = this.configService.get<string>('JWT_SECRET') || 'dev-secret';
 
       const decoded = jwt.verify(token, secret) as any;
       this.logger.log(`WebSocket Authentication successful for user ${decoded.sub}`);

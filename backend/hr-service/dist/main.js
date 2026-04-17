@@ -19,10 +19,10 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup("/api/v1/docs", app, document);
-    const port = Number(process.env.PORT) || 3004;
+    const port = (process.env.PORT && Number(process.env.PORT) !== 3000) ? Number(process.env.PORT) : 3004;
     await app.listen(port);
-    console.log(`HR Service running on port ${port}`);
+    console.log(`🚀 HR Service is READY on port ${port}`);
     console.log(`📚 Swagger documentation available at http://localhost:${port}/api/v1/docs`);
 }
-bootstrap();
+bootstrap().catch(err => console.error("HR Bootstrap Error:", err));
 //# sourceMappingURL=main.js.map

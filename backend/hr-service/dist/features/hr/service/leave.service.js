@@ -68,7 +68,7 @@ let LeaveService = class LeaveService {
                 rejectionReason: null,
                 calendarSynced: false,
             });
-            const created = await this.leaveRepository.save(entity);
+            const created = (await this.leaveRepository.save(entity));
             try {
                 (0, leave_utils_1.sendLeaveRequestNotification)(created);
                 if (created.managerId) {

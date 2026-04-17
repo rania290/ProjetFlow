@@ -56,12 +56,30 @@ export class ProjectsProxyController {
       delete axiosConfig.headers['content-length'];
 
       if (req.method !== 'GET' && req.method !== 'HEAD') {
-        axiosConfig.data = req.body;
+        if (req.headers['content-type']?.includes('multipart/form-data')) {
+          // Use rawBody buffer for multipart requests to avoid stream corruption
+          axiosConfig.data = (req as any).rawBody;
+          axiosConfig.maxContentLength = Infinity;
+          axiosConfig.maxBodyLength = Infinity;
+        } else {
+          axiosConfig.data = req.body;
+        }
+      }
+
+      // Inject user identity headers for RBAC if user is authenticated
+      const user = (req as any).user;
+      if (user) {
+        axiosConfig.headers['x-user-id'] = user.sub || user.id;
+        axiosConfig.headers['x-user-role'] = user.role || 'USER';
       }
 
       const response = await axios(axiosConfig);
 
       Object.keys(response.headers).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.startsWith('access-control-')) {
+          return;
+        }
         res.setHeader(key, response.headers[key] as string);
       });
 

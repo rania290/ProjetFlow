@@ -58,7 +58,7 @@ export class LeaveService {
         calendarSynced: false,
       });
 
-      const created = await this.leaveRepository.save(entity);
+      const created = (await this.leaveRepository.save(entity)) as LeaveRequest;
 
       // Multi-channel notification: Legacy Console + Redis Real-time
       try {

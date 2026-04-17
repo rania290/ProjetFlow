@@ -256,21 +256,24 @@ body {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.03),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(92, 124, 250, 0.25);
-  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(92, 124, 250, 0.35);
+  background: rgba(255, 255, 255, 0.85);
   box-shadow:
-    0 0 0 1px rgba(92, 124, 250, 0.08),
-    0 20px 60px -15px rgba(92, 124, 250, 0.12),
-    0 4px 16px rgba(0, 0, 0, 0.04);
-  transform: translateY(-2px);
+    0 0 0 1px rgba(92, 124, 250, 0.1),
+    0 24px 70px -15px rgba(92, 124, 250, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px) scale(1.01);
 }
 
 .shimmer-effect {
@@ -310,6 +313,18 @@ body {
     radial-gradient(ellipse at 20% 50%, rgba(92, 124, 250, 0.12) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 20%, rgba(190, 75, 219, 0.08) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 80%, rgba(66, 99, 235, 0.06) 0%, transparent 50%);
+}
+
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .noise-overlay {
@@ -419,13 +434,13 @@ body {
   margin-bottom: 0.25rem;
 }
 
-.ProseMirror ul[data-type="taskList"] li > label {
+.ProseMirror ul[data-type="taskList"] li>label {
   flex: 0 0 auto;
   user-select: none;
   margin-top: 0.25rem;
 }
 
-.ProseMirror ul[data-type="taskList"] li > div {
+.ProseMirror ul[data-type="taskList"] li>div {
   flex: 1 1 auto;
 }
 
@@ -517,9 +532,11 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-    ChevronDown, ChevronRight, GripVertical, Plus, 
-    MessageSquare, AlertCircle, MoreHorizontal, 
+import {
+    ChevronDown, ChevronRight, GripVertical, Plus,
+    MessageSquare, AlertCircle, MoreHorizontal,
     Clock, CheckCircle2, Circle, HelpCircle, List
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,9 +25,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
-    DropdownMenuTrigger 
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 
 interface ProjectTableBoardProps {
@@ -170,7 +170,7 @@ export const ProjectTableBoard: React.FC<ProjectTableBoardProps> = ({
                                             </TableCell>
                                         </TableRow>
                                     )}
-                                    
+
                                     {/* Spacer between groups */}
                                     <TableRow className="h-4 border-none hover:bg-transparent">
                                         <TableCell colSpan={6} className="p-0 border-none"></TableCell>
@@ -203,8 +203,8 @@ const TaskRow: React.FC<{
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     return (
-        <motion.tr 
-            initial={{ opacity: 0, x: -10 }} 
+        <motion.tr
+            initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className={`group transition-all duration-300 border-none hover:bg-slate-50/30 ${isFocused ? 'bg-primary-50/20' : 'bg-white'} ${isSubtask ? 'bg-slate-50/10' : ''}`}
         >
@@ -229,9 +229,9 @@ const TaskRow: React.FC<{
                             value={title}
                             onChange={e => setTitle(e.target.value)}
                             onFocus={() => setIsFocused(true)}
-                            onBlur={() => { 
+                            onBlur={() => {
                                 setIsFocused(false);
-                                if (title !== task.title) onUpdateTaskTitle(task.id, title) 
+                                if (title !== task.title) onUpdateTaskTitle(task.id, title)
                             }}
                             className="w-full h-9 px-2 py-1.5 text-sm font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-100 focus:border-primary-500 rounded-lg transition-all outline-none placeholder:text-slate-300 tracking-tight"
                             placeholder="Titre de la tâche..."
@@ -324,8 +324,8 @@ const TaskRow: React.FC<{
                 >
                     <SelectTrigger className="w-full h-10 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-black rounded-xl transition-all uppercase tracking-tighter">
                         <div className={`flex items-center gap-2 ${PRIORITY_CONFIG[task.priority].color} bg-white shadow-sm border ${PRIORITY_CONFIG[task.priority].border} rounded-lg px-2 py-1`}>
-                           <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'CRITICAL' ? 'bg-red-500 animate-pulse' : task.priority === 'HIGH' ? 'bg-orange-500' : task.priority === 'MEDIUM' ? 'bg-blue-500' : 'bg-slate-400'}`} />
-                           {PRIORITY_CONFIG[task.priority].label}
+                            <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'CRITICAL' ? 'bg-red-500 animate-pulse' : task.priority === 'HIGH' ? 'bg-orange-500' : task.priority === 'MEDIUM' ? 'bg-blue-500' : 'bg-slate-400'}`} />
+                            {PRIORITY_CONFIG[task.priority].label}
                         </div>
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1.5">
@@ -344,9 +344,9 @@ const TaskRow: React.FC<{
             {/* Actions */}
             <TableCell className="text-right py-4 px-8 border-none">
                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={onOpenDetails}
                         className="h-8 pr-3 pl-2 rounded-lg text-[10px] font-black text-slate-400 hover:text-primary-600 hover:bg-primary-50/50 transition-all uppercase tracking-widest gap-2 flex items-center group/btn"
                     >
@@ -360,14 +360,14 @@ const TaskRow: React.FC<{
                             <MoreHorizontal className="w-4 h-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-48 p-2 rounded-2xl border-slate-100 shadow-2xl" align="end">
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={onDuplicate}
                                 className="rounded-xl text-xs font-bold px-3 py-2 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
                             >
                                 Dupliquer la tâche
                             </DropdownMenuItem>
                             <div className="h-px bg-slate-100 my-1" />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => setShowDeleteConfirm(true)}
                                 className="rounded-xl text-xs font-bold px-3 py-2 text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                             >

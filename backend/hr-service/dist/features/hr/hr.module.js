@@ -40,8 +40,10 @@ exports.HrModule = HrModule = __decorate([
                 inject: [config_1.ConfigService],
                 useFactory: (configService) => {
                     return new ioredis_1.default({
-                        host: configService.get('REDIS_HOST') || 'localhost',
+                        host: configService.get('REDIS_HOST') || '127.0.0.1',
                         port: configService.get('REDIS_PORT') || 6379,
+                        connectTimeout: 5000,
+                        maxRetriesPerRequest: 0,
                     });
                 },
             },

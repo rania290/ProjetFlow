@@ -41,8 +41,12 @@ export class AuthProxyController {
 
       const response = await axios(axiosConfig);
 
-      // Propagate headers
+      // Propagate headers (excluding CORS headers handled by the Gateway)
       Object.keys(response.headers).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.startsWith('access-control-')) {
+          return;
+        }
         res.setHeader(key, response.headers[key] as string);
       });
 

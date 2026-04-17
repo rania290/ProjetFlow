@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { RoleAssignmentsService } from '../service/role-assignments.service';
 
@@ -27,8 +27,8 @@ export class RoleAssignmentsController {
 
   @Get('project/:id/members')
   @ApiOperation({ summary: 'Get members of a project' })
-  getProjectMembers(@Param('id') projectId: string) {
-    return this.roleAssignmentsService.getProjectMembers(projectId);
+  getProjectMembers(@Param('id') projectId: string, @Query('role') role?: string) {
+    return this.roleAssignmentsService.getProjectMembers(projectId, role);
   }
 
   @Post('assign')
@@ -51,8 +51,8 @@ export class RoleAssignmentsController {
 
   @Delete('remove')
   @ApiOperation({ summary: 'Remove a role assignment' })
-  remove(@Body('userId') userId: string, @Body('projectId') projectId: string) {
-    const success = this.roleAssignmentsService.remove(userId, projectId);
+  async remove(@Body('userId') userId: string, @Body('projectId') projectId: string) {
+    const success = await this.roleAssignmentsService.remove(userId, projectId);
     return { success, message: success ? 'Removed' : 'Not found' };
   }
 }

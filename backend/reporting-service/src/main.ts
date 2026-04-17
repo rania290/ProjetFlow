@@ -15,11 +15,13 @@ async function bootstrap() {
         }),
     );
 
+    /*
     // Configuration CORS
     app.enableCors({
         origin: process.env.FRONTEND_URL || 'http://localhost:3000',
         credentials: true,
     });
+    */
 
     // Configuration Swagger
     const config = new DocumentBuilder()
@@ -34,7 +36,7 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, document);
 
     // Démarrage
-    const port = process.env.REPORTING_PORT || 3005;
+    const port = process.env.PORT || 3005;
     await app.listen(port);
     console.log(`🚀 Reporting Service running on port ${port}`);
     console.log(`📚 Swagger documentation available at http://localhost:${port}/api`);

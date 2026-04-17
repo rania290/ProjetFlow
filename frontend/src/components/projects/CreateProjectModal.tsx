@@ -339,7 +339,7 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                             value={form.budget} 
                                             onChange={e => set('budget', e.target.value)}
                                             placeholder="ex: 45000"
-                                            className="h-11 rounded-xl border-slate-200"
+                                            className="h-11 rounded-xl border-slate-200 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                         />
                                     </div>
                                 </div>

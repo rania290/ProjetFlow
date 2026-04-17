@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { ChartComponent, useChartData, THEME } from '../../components/charts/ChartComponent';
 import { ShieldCheck, BarChart3, Users, CheckSquare, Trash2, AlertCircle, Shield, Settings, Download, Loader2, Target, TrendingUp, Clock, Activity, Briefcase, MousePointer2 } from 'lucide-react';
 import { useStore } from '../../store/projectStore';
 import { projectsService } from '../../api/projects.service';
+import { reportingService, type GlobalAnalytics } from '../../api/reporting.service';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
@@ -25,120 +26,73 @@ export const AdminDashboard: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [analytics, setAnalytics] = useState<GlobalAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const { state, dispatch } = useStore();
   const chartData = useChartData();
 
-  const DEFAULT_TJM = 450; // Mock default fallback
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const data = await reportingService.getGlobalAnalytics();
+        setAnalytics(data);
+      } catch (error) {
+        console.error('Error fetching admin analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
 
-  const projectCosts = state.projects.map(p => {
-    const projectTasks = state.tasks.filter(t => t.projectId === p.id);
-    let spent = 0;
-    let estimatedCost = 0;
+  if (loading) {
+      return (
+          <AppLayout title="Dashboard Administrateur">
+              <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                  <Loader2 className="w-12 h-12 text-primary-600 animate-spin" />
+                  <p className="text-slate-500 font-medium animate-pulse">Chargement de la console analytics...</p>
+              </div>
+          </AppLayout>
+      );
+  }
 
-    projectTasks.forEach(task => {
-        const member = p.members?.find(m => m.id === task.assigneeId);
-        const tjm = member?.tjm || DEFAULT_TJM; // Real daily rate if member assigned, else default
-        
-        // 1 Story point = 1 Day of work = 1 * TJM
-        const taskEffort = task.storyPoints || (task.estimatedHours ? task.estimatedHours / 8 : 1);
-        const taskCost = taskEffort * tjm;
-        
-        estimatedCost += taskCost;
+  const { summary, resources, projects } = analytics || {
+      summary: { totalProjects: 0, totalBudget: 0, totalTasks: 0, completionRate: 0, tasksByStatus: { TODO: 0, IN_PROGRESS: 0, IN_TEST: 0, DONE: 0 } },
+      resources: [],
+      projects: []
+  };
 
-        // Add to spent based on current progress of the task
-        if (task.status === 'DONE') {
-            spent += taskCost;
-        } else if (task.status === 'IN_TEST') {
-            spent += taskCost * 0.9;
-        } else if (task.status === 'IN_PROGRESS') {
-            spent += taskCost * 0.5;
-        }
-    });
-
-    // Handle case where project has no tasks but has a budget to track
-    if (projectTasks.length === 0) {
-        // Fallback backward compat calculation if no tasks exist
-        spent = (p.budget || 0) * ((p.progress || 0) / 100);
-        estimatedCost = p.budget || 0;
-    }
-
+  const projectCosts = projects.map(p => {
+    const consumed = p.budget * (p.progress / 100);
     return {
       name: p.name,
       budget: p.budget || 0,
-      spent: spent,
-      remaining: (p.budget || 0) - spent,
-      estimatedCost: estimatedCost
+      spent: consumed,
+      remaining: (p.budget || 0) - consumed,
+      estimatedCost: p.budget || 0
     };
   });
 
-  const totalBudget = projectCosts.reduce((acc, p) => acc + (Number(p.budget) || 0), 0);
-  const totalSpent = projectCosts.reduce((acc, p) => acc + (Number(p.spent) || 0), 0);
-  const totalEstimatedCost = projectCosts.reduce((acc, p) => acc + (Number(p.estimatedCost) || 0), 0);
+  const totalBudget = summary.totalBudget;
+  const totalSpent = summary.totalBudget * (summary.completionRate / 100);
+  const totalEstimatedCost = summary.totalBudget;
 
-  // Real Resource Workload (Charge)
-  const resourceChargeMap = new Map<string, any>();
-  
-  state.projects.forEach(p => {
-      p.members?.forEach(m => {
-          if (!resourceChargeMap.has(m.id)) {
-              resourceChargeMap.set(m.id, {
-                  id: m.id,
-                  name: m.fullName,
-                  avatar: m.avatar,
-                  role: m.role,
-                  assignedHours: 0,
-                  completedHours: 0,
-                  tasksCount: 0,
-                  activeProjects: new Set<string>()
-              });
-          }
-          resourceChargeMap.get(m.id).activeProjects.add(p.name);
-      });
-  });
+  const realResources = resources.map(r => ({
+      ...r,
+      efficiency: Math.round((r.completedPoints / Math.max(r.assignedPoints, 1)) * 100),
+      remainingHours: Math.max(0, Math.round((r.assignedPoints - r.completedPoints) * 8)), // Assumption: 1 point = 8h
+      workloadStatus: r.load > 90 ? 'OVERLOADED' : r.load > 60 ? 'OPTIMAL' : 'AVAILABLE',
+      activeProjectsArray: r.projects
+  }));
 
-  state.tasks.forEach(task => {
-      if (task.assigneeId && resourceChargeMap.has(task.assigneeId)) {
-          const resource = resourceChargeMap.get(task.assigneeId);
-          const taskHours = task.estimatedHours || (task.storyPoints ? task.storyPoints * 8 : 8);
-          
-          resource.tasksCount += 1;
-          resource.assignedHours += taskHours;
-
-          if (task.status === 'DONE') {
-              resource.completedHours += taskHours;
-          } else if (task.status === 'IN_TEST') {
-              resource.completedHours += taskHours * 0.9;
-          } else if (task.status === 'IN_PROGRESS') {
-              resource.completedHours += taskHours * 0.5;
-          }
-      }
-  });
-
-  const realResources = Array.from(resourceChargeMap.values()).map(r => {
-      const remainingHours = Math.max(0, Math.round(r.assignedHours - r.completedHours));
-      const efficiency = r.assignedHours > 0 ? Math.round((r.completedHours / r.assignedHours) * 100) : 100;
-      
-      let workloadStatus = 'OPTIMAL';
-      if (remainingHours > 40) workloadStatus = 'OVERLOADED';
-      else if (remainingHours < 10 && remainingHours > 0) workloadStatus = 'AVAILABLE_SOON';
-      else if (remainingHours === 0) workloadStatus = 'AVAILABLE';
-
-      return { ...r, efficiency, remainingHours, workloadStatus, activeProjectsArray: Array.from(r.activeProjects) };
-  });
-
-  const totalAssignedHours = Math.round(realResources.reduce((acc, r) => acc + r.assignedHours, 0));
-  const totalCompletedHours = Math.round(realResources.reduce((acc, r) => acc + r.completedHours, 0));
-  const averageGlobalEfficiency = totalAssignedHours > 0 ? Math.round((totalCompletedHours / totalAssignedHours) * 100) : 100;
+  const totalAssignedHours = Math.round(realResources.reduce((acc, r) => acc + r.assignedPoints * 8, 0));
+  const totalCompletedHours = Math.round(realResources.reduce((acc, r) => acc + r.completedPoints * 8, 0));
+  const averageGlobalEfficiency = summary.completionRate;
   
   // Real Avancement Data
-  const projectsNames = state.projects.map(p => p.name);
-  const projectsProgress = state.projects.map(p => {
-    const pTasks = state.tasks.filter(t => t.projectId === p.id);
-    if (!pTasks.length) return p.progress || 0;
-    const done = pTasks.filter(t => t.status === 'DONE').length;
-    return Math.round((done / pTasks.length) * 100);
-  });
+  const projectsNames = projects.map(p => p.name);
+  const projectsProgress = projects.map(p => p.progress);
 
   const realProjectProgressData = {
     labels: projectsNames.length ? projectsNames : ['Aucun projet'],
@@ -155,23 +109,23 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const tasksByStatusCount = {
-    'À faire': state.tasks.filter(t => t.status === 'TODO').length,
-    'En cours': state.tasks.filter(t => t.status === 'IN_PROGRESS').length,
-    'En test': state.tasks.filter(t => t.status === 'IN_TEST').length,
-    'Terminées': state.tasks.filter(t => t.status === 'DONE').length,
+    'À faire': summary.tasksByStatus.TODO,
+    'En cours': summary.tasksByStatus.IN_PROGRESS,
+    'En test': summary.tasksByStatus.IN_TEST,
+    'Terminées': summary.tasksByStatus.DONE,
   };
 
-  const hasTasks = state.tasks.length > 0;
+  const hasTasks = summary.totalTasks > 0;
   const realTaskStatusData = {
     labels: hasTasks ? Object.keys(tasksByStatusCount) : ['Aucune tâche'],
     datasets: [{
       data: hasTasks ? Object.values(tasksByStatusCount) : [1],
-      backgroundColor: hasTasks ? [
+      backgroundColor: [
         '#94a3b8', // Todo: Slate-400
         '#6366f1', // In Progress: Indigo-500
         '#a855f7', // In Test: Purple-500
         '#10b981'  // Done: Emerald-500
-      ] : ['#e2e8f0'],
+      ],
       borderWidth: 4,
       borderColor: '#ffffff',
       hoverOffset: 15,
@@ -179,12 +133,10 @@ export const AdminDashboard: React.FC = () => {
     }]
   };
 
-  const totalTasksCount = state.tasks.length;
-  const completedTasksCount = state.tasks.filter(t => t.status === 'DONE').length;
-  const criticalActiveTasksCount = state.tasks.filter(t => t.priority === 'CRITICAL' && t.status !== 'DONE').length;
-  const globalCompletion = state.projects.length 
-      ? Math.round(projectsProgress.reduce((acc, val) => acc + val, 0) / state.projects.length) 
-      : 0;
+  const totalTasksCount = summary.totalTasks;
+  const completedTasksCount = summary.tasksByStatus.DONE;
+  const criticalActiveTasksCount = 0; // Backend to provide in future
+  const globalCompletion = summary.completionRate;
 
   const reportData = {
     avancement: {

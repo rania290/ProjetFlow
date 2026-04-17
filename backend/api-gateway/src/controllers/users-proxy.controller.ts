@@ -66,6 +66,10 @@ export class UsersProxyController {
       const response = await axios(axiosConfig);
 
       Object.keys(response.headers).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.startsWith('access-control-')) {
+          return;
+        }
         res.setHeader(key, response.headers[key] as string);
       });
 

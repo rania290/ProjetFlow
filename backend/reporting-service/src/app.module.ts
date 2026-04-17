@@ -7,6 +7,7 @@ import { ReportingModule } from './features/reporting/reporting.module';
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            envFilePath: ['.env', '../.env', '../../.env'],
         }),
         TypeOrmModule.forRoot({
             type: 'postgres',
@@ -15,7 +16,8 @@ import { ReportingModule } from './features/reporting/reporting.module';
             username: process.env.DB_USERNAME || 'postgres',
             password: process.env.DB_PASSWORD || 'postgres',
             database: process.env.DB_NAME || 'reporting_db',
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            entities: [__dirname + '/features/reporting/model/*.entity{.ts,.js}'],
+            autoLoadEntities: true,
             synchronize: true,
         }),
         ReportingModule,

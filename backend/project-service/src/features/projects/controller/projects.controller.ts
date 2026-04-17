@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Headers } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from '../service/projects.service';
 import { CreateProjectDto, UpdateProjectDto } from '../dto/projects.dto';
@@ -17,8 +17,14 @@ export class ProjectsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all projects' })
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Headers('x-user-id') userId: string, @Headers('x-user-role') role: string) {
+    return this.projectsService.findAll(userId, role);
+  }
+
+  @Get('dashboard/me')
+  @ApiOperation({ summary: 'Get dashboard projects for current logged-in user' })
+  getDashboardForMe(@Headers('x-user-id') userId: string, @Headers('x-user-role') role: string) {
+    return this.projectsService.getDashboardForMe(userId, role);
   }
 
   @Get(':id')
