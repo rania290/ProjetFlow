@@ -122,31 +122,55 @@ export const UserDashboard: React.FC = () => {
       // Ne plus récupérer les infos utilisateur depuis l'API
       // Utiliser le user du authStore qui contient déjà la photo de profil
 
-      // Récupérer les statistiques (simulation)
-      setStats({
-        tasksCompleted: 12,
-        tasksPending: 5,
-        projectsActive: 3,
-        weeklyProgress: 75
-      });
-
-      // Récupérer les tâches assignées (simulation)
-      setTasks([
-        {
-          id: '1',
-          title: 'Développer la page profil',
-          description: 'Implémenter l\'upload de photo',
-          projectId: 'proj-1',
-          projectName: 'Projet Flow',
-          priority: 'HIGH',
-          status: 'IN_PROGRESS',
-          deadline: '2024-01-25'
-        }
+      // Récupérer les projets et tâches réels via l'API
+      const [projectsData, tasksData] = await Promise.all([
+        projectsService.getAll(),
+        projectsService.getAllTasks().catch(() => []),
       ]);
 
-      // Récupérer les projets de l'utilisateur (backend réel)
-      const data = await projectsService.getAll();
-      setProjects(data as any);
+      const fetchedProjectsRaw = projectsData || [];
+      const projectIds = new Set(fetchedProjectsRaw.map((p: any) => p.id));
+      
+      // Filtrer les tâches pour ne garder que celles qui appartiennent aux projets de l'utilisateur
+      const fetchedTasks: Task[] = (tasksData || []).filter((t: any) => projectIds.has(t.projectId));
+
+      // Calculer l'avancement DYNAMIQUE pour chaque projet
+      const fetchedProjects = fetchedProjectsRaw.map((p: any) => {
+         const pTasks = fetchedTasks.filter(t => t.projectId === p.id);
+         let pEffort = 0;
+         pTasks.forEach(t => {
+             if (t.status === 'DONE') pEffort += 1;
+             else if (t.status === 'IN_TEST') pEffort += 0.9;
+             else if (t.status === 'IN_PROGRESS') pEffort += 0.5;
+         });
+         const calculatedProgress = pTasks.length > 0 ? Math.round((pEffort / pTasks.length) * 100) : (Number(p.progress) || 0);
+         return { ...p, progress: calculatedProgress };
+      });
+
+      setProjects(fetchedProjects as any);
+      setTasks(fetchedTasks);
+
+      // Calculer les statistiques réelles depuis les données récupérées
+      const doneTasks = fetchedTasks.filter((t: Task) => t.status === 'DONE').length;
+      const inProgressTasks = fetchedTasks.filter((t: Task) => t.status === 'IN_PROGRESS' || t.status === 'IN_TEST').length;
+      const todoTasks = fetchedTasks.filter((t: Task) => t.status === 'TODO').length;
+      const activeProjects = fetchedProjects.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE' || p.status === 'PLANNED').length;
+      
+      // Calculate weighted progress for the dashboard (same formula as Admin)
+      let completedEffort = 0;
+      fetchedTasks.forEach((t: Task) => {
+          if (t.status === 'DONE') completedEffort += 1;
+          else if (t.status === 'IN_TEST') completedEffort += 0.9;
+          else if (t.status === 'IN_PROGRESS') completedEffort += 0.5;
+      });
+      const weeklyProgress = fetchedTasks.length > 0 ? Math.round((completedEffort / fetchedTasks.length) * 100) : 0;
+
+      setStats({
+        tasksCompleted: doneTasks,
+        tasksPending: inProgressTasks + todoTasks,
+        projectsActive: activeProjects || fetchedProjects.length,
+        weeklyProgress,
+      });
 
       // Récupérer les notifications (simulation)
       setNotifications([

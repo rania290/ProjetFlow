@@ -12,8 +12,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 export const HRValidationsPage = () => {
   const { user } = useAuth();
   const employeeId = user?.id ?? 'unknown';
+  const role = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'HR_ADMIN'
+    ? 'HR_ADMIN' : user?.role === 'PROJECT_MANAGER' || user?.role === 'MANAGER'
+      ? 'MANAGER' : 'EMPLOYEE';
 
-  const { data: pendingLeaves, isLoading, refetch } = useLeaveRequests(employeeId, 'MANAGER');
+  // Si HR_ADMIN, on ne filtre pas par validatorId pour voir toutes les demandes en attente
+  const validatorId = role === 'HR_ADMIN' ? undefined : employeeId;
+  const { data: pendingLeaves, isLoading, refetch } = useLeaveRequests(validatorId, 'MANAGER');
   const [reviewId, setReviewId] = useState<string | null>(null);
   const { approveLeave, rejectLeave, isReviewing } = useLeaveActions();
 
@@ -30,10 +35,6 @@ export const HRValidationsPage = () => {
     setReviewId(null);
     refetch();
   }, [rejectLeave, employeeId, refetch]);
-
-  const role = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'HR_ADMIN'
-    ? 'HR_ADMIN' : user?.role === 'PROJECT_MANAGER' || user?.role === 'MANAGER'
-      ? 'MANAGER' : 'EMPLOYEE';
 
   return (
     <AppLayout title="Validations RH" subtitle="Approuvez ou rejetez les demandes de votre équipe">

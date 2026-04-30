@@ -92,6 +92,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         if (!form || !form.title.trim()) return;
         onUpdate({
             ...form,
+            dueDate: form.dueDate || undefined,
             tags: tagsString.split(',').map(t => t.trim()).filter(Boolean),
         });
         onClose();
@@ -139,9 +140,9 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                             <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <Type className="w-3.5 h-3.5" /> Désignation de la tâche
                             </Label>
-                            <Input 
+                            <Input
                                 value={form.title}
-                                onChange={e => setForm({...form, title: e.target.value})}
+                                onChange={e => setForm({ ...form, title: e.target.value })}
                                 className="h-11 rounded-xl border-slate-100 bg-slate-50/30 text-sm font-bold focus-visible:ring-indigo-500/20"
                             />
                         </div>
@@ -149,7 +150,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Statut</Label>
-                                <Select value={form.status} onValueChange={(v) => setForm({...form, status: v as TaskStatus})}>
+                                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as TaskStatus })}>
                                     <SelectTrigger className="h-11 rounded-xl border-slate-100 bg-slate-50/30 font-bold text-xs">
                                         <div className="flex items-center gap-2">
                                             <div className={cn("w-2 h-2 rounded-full", STATUS_CONFIG[form.status].dot)} />
@@ -170,7 +171,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                             </div>
                             <div className="space-y-3">
                                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Priorité</Label>
-                                <Select value={form.priority} onValueChange={(v) => setForm({...form, priority: v as TaskPriority})}>
+                                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as TaskPriority })}>
                                     <SelectTrigger className="h-11 rounded-xl border-slate-100 bg-slate-50/30 font-bold text-xs">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -188,9 +189,9 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
 
                     <div className="space-y-2">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Description / Notes</Label>
-                        <Textarea 
+                        <Textarea
                             value={form.description}
-                            onChange={e => setForm({...form, description: e.target.value})}
+                            onChange={e => setForm({ ...form, description: e.target.value })}
                             rows={4}
                             className="rounded-xl border-slate-100 bg-slate-50/30 text-xs font-medium italic resize-none"
                             placeholder="Écrivez des notes détaillées..."
@@ -200,9 +201,9 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Sprint assigné</Label>
-                            <Select 
-                                value={form.sprintId ?? 'unassigned'} 
-                                onValueChange={(v) => setForm({...form, sprintId: v === 'unassigned' ? undefined : v})}
+                            <Select
+                                value={form.sprintId ?? 'unassigned'}
+                                onValueChange={(v) => setForm({ ...form, sprintId: v === 'unassigned' ? undefined : v })}
                             >
                                 <SelectTrigger className="h-11 rounded-xl border-slate-100 bg-slate-50/30 font-bold text-[11px]">
                                     <SelectValue placeholder="Choisir un sprint">
@@ -224,11 +225,11 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                         </div>
                         <div className="space-y-3">
                             <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Story Points</Label>
-                            <Input 
+                            <Input
                                 type="number"
                                 min={0}
                                 value={form.storyPoints}
-                                onChange={e => setForm({...form, storyPoints: Math.max(0, parseInt(e.target.value) || 0)})}
+                                onChange={e => setForm({ ...form, storyPoints: Math.max(0, parseInt(e.target.value) || 0) })}
                                 className="h-11 rounded-xl border-slate-100 bg-slate-50/30 font-black text-sm text-indigo-600"
                             />
                         </div>
@@ -238,7 +239,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Mots-clés (Tags)</Label>
                         <div className="relative">
                             <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
-                            <Input 
+                            <Input
                                 value={tagsString}
                                 onChange={e => setTagsString(e.target.value)}
                                 className="pl-9 h-11 rounded-xl border-slate-100 bg-slate-50/30 text-xs font-bold"
@@ -252,7 +253,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                     <Button variant="ghost" onClick={onClose} className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">
                         Fermer
                     </Button>
-                    <Button 
+                    <Button
                         onClick={handleUpdate}
                         className="h-10 px-6 rounded-xl bg-indigo-600 hover:bg-black text-white font-black text-[10px] uppercase tracking-[0.1em] shadow-lg shadow-indigo-500/10 transition-all"
                     >

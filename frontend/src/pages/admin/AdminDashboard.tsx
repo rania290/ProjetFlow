@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { ChartComponent, useChartData, THEME } from '../../components/charts/ChartComponent';
-import { ShieldCheck, BarChart3, Users, CheckSquare, Trash2, AlertCircle, Shield, Settings, Download, Loader2, Target, TrendingUp, Clock, Activity, Briefcase, MousePointer2 } from 'lucide-react';
+import { ShieldCheck, BarChart3, Users, CheckSquare, Trash2, AlertCircle, Shield, Settings, Download, Loader2, Target, TrendingUp, Clock, Activity, Briefcase } from 'lucide-react';
 import { useStore } from '../../store/projectStore';
 import { projectsService } from '../../api/projects.service';
 import { reportingService, type GlobalAnalytics } from '../../api/reporting.service';
@@ -22,6 +22,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 
 export const AdminDashboard: React.FC = () => {
+  const [showCriticalPanel, setShowCriticalPanel] = useState(false);
   const [selectedReport, setSelectedReport] = useState('avancement');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -32,19 +33,149 @@ export const AdminDashboard: React.FC = () => {
   const { state, dispatch } = useStore();
   const chartData = useChartData();
 
+  // Compute analytics from local store as a reliable fallback
+  const computeFromStore = (): GlobalAnalytics => {
+    const tasks = state.tasks || [];
+    const storeProjects = state.projects || [];
+    const tasksByStatus = {
+      TODO: tasks.filter(t => t.status === 'TODO').length,
+      IN_PROGRESS: tasks.filter(t => t.status === 'IN_PROGRESS').length,
+      IN_TEST: tasks.filter(t => t.status === 'IN_TEST').length,
+      DONE: tasks.filter(t => t.status === 'DONE').length,
+    };
+    const totalTasks = tasks.length;
+    const now = new Date();
+    const delayedTasksCount = tasks.filter(t =>
+      t.status !== 'DONE' && (
+        (t.dueDate && new Date(t.dueDate) < now) ||
+        t.priority === 'CRITICAL'
+      )
+    ).length;
+
+    const completionRate = totalTasks > 0 
+      ? Math.round(((tasksByStatus.DONE + tasksByStatus.IN_TEST * 0.9 + tasksByStatus.IN_PROGRESS * 0.5) / totalTasks) * 100) 
+      : 0;
+    const totalBudget = storeProjects.reduce((acc, p) => acc + (Number(p.budget) || 0), 0);
+    return {
+      summary: { 
+        totalProjects: storeProjects.length, 
+        totalBudget, 
+        totalTasks, 
+        completionRate, 
+        delayedTasksCount,
+        tasksByStatus,
+        invoices: { totalAmount: 0, paidAmount: 0, totalInvoices: 0 }
+      },
+      resources: (() => {
+        const resourceMap = new Map<string, any>();
+        
+        // 1. Gather all members from all projects
+        storeProjects.forEach(p => {
+          (p.members || []).forEach(m => {
+            if (!resourceMap.has(m.id)) {
+              resourceMap.set(m.id, {
+                id: m.id,
+                name: m.fullName,
+                avatar: m.avatar,
+                role: m.role || 'Collaborateur',
+                assignedPoints: 0,
+                completedPoints: 0,
+                tasksCount: 0,
+                projects: new Set([p.id])
+              });
+            } else {
+              resourceMap.get(m.id).projects.add(p.id);
+            }
+          });
+        });
+
+        // 2. Add tasks data to members
+        tasks.forEach(t => {
+           if (t.assigneeId) {
+             let res = resourceMap.get(t.assigneeId);
+             if (!res) {
+               res = {
+                  id: t.assigneeId,
+                  name: t.assigneeName || 'Inconnu',
+                  avatar: t.assigneeAvatar,
+                  role: 'Collaborateur',
+                  assignedPoints: 0,
+                  completedPoints: 0,
+                  tasksCount: 0,
+                  projects: new Set([t.projectId])
+               };
+               resourceMap.set(t.assigneeId, res);
+             }
+             res.tasksCount += 1;
+             const points = t.storyPoints || t.estimatedHours || 3; // default points if none set
+             res.assignedPoints += points;
+             if (t.status === 'DONE') {
+               res.completedPoints += points;
+             }
+             res.projects.add(t.projectId);
+           }
+        });
+
+        return Array.from(resourceMap.values()).map(r => ({
+          ...r,
+          projects: r.projects.size,
+          // load is an absolute estimation based on points
+          // 40 points considered full capacity (approx 1 sprint)
+          load: Math.min(100, Math.round((r.assignedPoints / 40) * 100))
+        }));
+      })(),
+      projects: storeProjects.map(p => {
+        const projectTasks = tasks.filter(t => t.projectId === p.id);
+        const doneTasks = projectTasks.filter(t => t.status === 'DONE').length;
+        
+        let completedEffort = 0;
+        projectTasks.forEach(t => {
+            if (t.status === 'DONE') completedEffort += 1;
+            else if (t.status === 'IN_TEST') completedEffort += 0.9;
+            else if (t.status === 'IN_PROGRESS') completedEffort += 0.5;
+        });
+
+        const calculatedProgress = projectTasks.length > 0 
+          ? Math.round((completedEffort / projectTasks.length) * 100) 
+          : 0;
+
+        return {
+          id: p.id,
+          name: p.name,
+          progress: calculatedProgress,
+          status: p.status,
+          budget: Number(p.budget) || 0,
+          spentAmount: 0
+        };
+      }),
+    };
+  };
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const data = await reportingService.getGlobalAnalytics();
         setAnalytics(data);
       } catch (error) {
-        console.error('Error fetching admin analytics:', error);
+        console.warn('[Dashboard] Reporting API unavailable, using local store fallback:', error);
+        // Fallback: use local store data so charts still display correctly
+        setAnalytics(computeFromStore());
       } finally {
         setLoading(false);
       }
     };
     fetchAnalytics();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-sync with store changes if we are using the fallback (analytics came from store)
+  useEffect(() => {
+    if (!loading && analytics && analytics.summary.totalProjects === state.projects.length) {
+      // Refresh local analytics when store changes (e.g. new project added)
+      setAnalytics(prev => prev ? { ...prev, ...computeFromStore() } : null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.projects, state.tasks]);
 
   if (loading) {
       return (
@@ -57,14 +188,19 @@ export const AdminDashboard: React.FC = () => {
       );
   }
 
-  const { summary, resources, projects } = analytics || {
-      summary: { totalProjects: 0, totalBudget: 0, totalTasks: 0, completionRate: 0, tasksByStatus: { TODO: 0, IN_PROGRESS: 0, IN_TEST: 0, DONE: 0 } },
-      resources: [],
-      projects: []
-  };
+  const { summary, resources, projects } = analytics ?? computeFromStore();
+
+  // Build list of truly critical tasks for the detail panel
+  const now = new Date();
+  const criticalTasksList = state.tasks.filter(t =>
+    t.status !== 'DONE' && (
+      (t.dueDate && new Date(t.dueDate) < now) ||
+      t.priority === 'CRITICAL'
+    )
+  );
 
   const projectCosts = projects.map(p => {
-    const consumed = p.budget * (p.progress / 100);
+    const consumed = p.spentAmount || 0;
     return {
       name: p.name,
       budget: p.budget || 0,
@@ -75,7 +211,7 @@ export const AdminDashboard: React.FC = () => {
   });
 
   const totalBudget = summary.totalBudget;
-  const totalSpent = summary.totalBudget * (summary.completionRate / 100);
+  const totalSpent = summary.invoices?.totalAmount || 0;
   const totalEstimatedCost = summary.totalBudget;
 
   const realResources = resources.map(r => ({
@@ -135,7 +271,7 @@ export const AdminDashboard: React.FC = () => {
 
   const totalTasksCount = summary.totalTasks;
   const completedTasksCount = summary.tasksByStatus.DONE;
-  const criticalActiveTasksCount = 0; // Backend to provide in future
+  const criticalActiveTasksCount = criticalTasksList.length; // read directly from live state.tasks
   const globalCompletion = summary.completionRate;
 
   const reportData = {
@@ -367,7 +503,7 @@ export const AdminDashboard: React.FC = () => {
                   +12%
                 </div>
               </div>
-              <p className="text-[11px] text-slate-400 font-black mb-1 uppercase tracking-[0.1em]">Volume de Tâches</p>
+              <p className="text-[11px] text-slate-400 font-black mb-1 uppercase tracking-[0.1em]">Volume Global de Tâches</p>
               <div className="flex items-end justify-between">
                 <p className="text-4xl font-black text-slate-900 font-display">{reportData.avancement.totalTasks}</p>
                 <div className="text-right">
@@ -401,26 +537,93 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </GlassCard>
 
-            <GlassCard className={`p-6 border-white/40 ${reportData.avancement.delayedTasks > 0 ? 'ring-2 ring-red-100' : ''}`} delay={0.3}>
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-2.5 rounded-xl ring-4 ${reportData.avancement.delayedTasks > 0 ? 'bg-red-50 text-red-600 ring-red-50/50' : 'bg-slate-50 text-slate-600 ring-slate-50/50'}`}>
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-                {reportData.avancement.delayedTasks > 0 && (
-                  <div className="animate-bounce p-1 rounded-full bg-red-500 text-white">
-                    <MousePointer2 className="w-3 h-3" />
+            <GlassCard
+              className={`p-6 border-white/40 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                reportData.avancement.delayedTasks > 0
+                  ? 'ring-2 ring-red-200 hover:ring-red-300'
+                  : 'hover:ring-2 hover:ring-slate-100'
+              }`}
+              delay={0.3}
+            >
+              <button
+                onClick={() => setShowCriticalPanel(v => !v)}
+                className="w-full text-left"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`p-2.5 rounded-xl ring-4 ${
+                    reportData.avancement.delayedTasks > 0
+                      ? 'bg-red-50 text-red-600 ring-red-50/50'
+                      : 'bg-slate-50 text-slate-600 ring-slate-50/50'
+                  }`}>
+                    <AlertCircle className="w-5 h-5" />
                   </div>
+                  {reportData.avancement.delayedTasks > 0 && (
+                    <span className="animate-pulse px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-[9px] font-black uppercase tracking-wider border border-red-200">
+                      {showCriticalPanel ? 'Masquer ▲' : 'Voir détail ▼'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 font-black mb-1 uppercase tracking-[0.1em]">Alertes Critiques</p>
+                <div className="flex items-end justify-between">
+                  <p className={`text-4xl font-black font-display ${
+                    reportData.avancement.delayedTasks > 0 ? 'text-red-500' : 'text-slate-400'
+                  }`}>
+                    {reportData.avancement.delayedTasks}
+                  </p>
+                  <span className={`text-[10px] font-black px-2 py-1 rounded-lg border ${
+                    reportData.avancement.delayedTasks > 0
+                      ? 'bg-red-50 text-red-700 border-red-100'
+                      : 'bg-slate-50 text-slate-500 border-slate-200'
+                  }`}>
+                    {reportData.avancement.delayedTasks > 0 ? 'En retard / Critique' : 'Aucune alerte'}
+                  </span>
+                </div>
+              </button>
+
+              {/* Expandable critical tasks list */}
+              <AnimatePresence>
+                {showCriticalPanel && criticalTasksList.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-4 pt-4 border-t border-red-100 space-y-2">
+                      {criticalTasksList.slice(0, 8).map(t => {
+                        const proj = state.projects.find(p => p.id === t.projectId);
+                        const isOverdue = t.dueDate && new Date(t.dueDate) < now;
+                        return (
+                          <div key={t.id} className="flex items-start justify-between gap-2 p-2 rounded-xl bg-red-50/60 border border-red-100/80">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-black text-slate-800 truncate">{t.title}</p>
+                              <p className="text-[9px] font-bold text-slate-400 truncate">{proj?.name ?? 'Projet inconnu'}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md border ${
+                                t.priority === 'CRITICAL'
+                                  ? 'bg-red-100 text-red-700 border-red-200'
+                                  : 'bg-orange-50 text-orange-700 border-orange-100'
+                              }`}>
+                                {t.priority === 'CRITICAL' ? 'CRITIQUE' : 'HAUTE'}
+                              </span>
+                              {isOverdue && (
+                                <span className="text-[8px] font-bold text-red-500">
+                                  ⚠ {new Date(t.dueDate!).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {criticalTasksList.length > 8 && (
+                        <p className="text-[9px] font-black text-red-400 text-center pt-1">+{criticalTasksList.length - 8} autres tâches critiques</p>
+                      )}
+                    </div>
+                  </motion.div>
                 )}
-              </div>
-              <p className="text-[11px] text-slate-400 font-black mb-1 uppercase tracking-[0.1em]">Alertes Critiques</p>
-              <div className="flex items-end justify-between">
-                <p className={`text-4xl font-black font-display ${reportData.avancement.delayedTasks > 0 ? 'text-red-500' : 'text-slate-900'}`}>
-                  {reportData.avancement.delayedTasks}
-                </p>
-                <span className={`text-[10px] font-black px-2 py-1 rounded-lg border ${reportData.avancement.delayedTasks > 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                  Priorité Haute
-                </span>
-              </div>
+              </AnimatePresence>
             </GlassCard>
           </div>
 
@@ -430,9 +633,9 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
                     <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
-                    Progression Individuelle
+                    Progression du Portefeuille
                   </h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Avancement par projet actif</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Avancement par projet actif sur l'entreprise</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-black text-indigo-600 leading-none">{globalCompletion}%</p>

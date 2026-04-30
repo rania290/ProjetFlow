@@ -14,8 +14,19 @@ export class AuthContextMiddleware implements NestMiddleware {
       try {
         const decoded = this.jwtService.decode(token) as any;
         if (decoded) {
-          req.headers['x-user-id'] = decoded.sub || decoded.id;
-          req.headers['x-user-role'] = decoded.role;
+          const userId = decoded.sub || decoded.id;
+          const originalRole = (decoded.role || '').toUpperCase();
+          
+          // Map global roles to internal service roles to prevent 403 Forbidden
+          let roles = [originalRole];
+          if (originalRole === 'ADMIN' || originalRole === 'ROOT') {
+            roles = [...roles, 'EMPLOYEE', 'HR_ADMIN', 'MANAGER', 'SUPERADMIN'];
+          }
+          const rolesString = Array.from(new Set(roles)).join(',');
+
+          req.headers['x-user-id'] = userId;
+          req.headers['x-user-role'] = originalRole;
+          req.headers['x-user-roles'] = rolesString;
         }
       } catch (error) {
         console.warn('[AuthContext] Failed to decode token:', error.message);

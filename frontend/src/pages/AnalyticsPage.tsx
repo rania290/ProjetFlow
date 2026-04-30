@@ -3,11 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     TrendingUp, BarChart3, Users,
     CheckCircle2, Target, Printer,
-    CalendarOff, AlertCircle, Loader2
+    AlertCircle, Loader2, AlertTriangle, Clock
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useStore } from '../store/projectStore';
 import { reportingService, type GlobalAnalytics } from '../api/reporting.service';
+
+export interface ProjectAnalytics {
+    id: string;
+    name: string;
+    type: string;
+    progress: number;
+    status: string;
+    budget: number;
+    totalTasks: number;
+    doneTasks: number;
+    overdueTasks: number;
+    spentAmount: number;
+}
 
 export const AnalyticsPage: React.FC = () => {
     const { state } = useStore();
@@ -41,7 +54,7 @@ export const AnalyticsPage: React.FC = () => {
     }
 
     const { summary, resources, projects } = analytics || {
-        summary: { totalProjects: 0, totalBudget: 0, totalTasks: 0, completionRate: 0, tasksByStatus: { TODO: 0, IN_PROGRESS: 0, IN_TEST: 0, DONE: 0 } },
+        summary: { totalProjects: 0, totalBudget: 0, totalTasks: 0, completionRate: 0, delayedTasksCount: 0, criticalTasksCount: 0, tasksByStatus: { TODO: 0, IN_PROGRESS: 0, IN_TEST: 0, DONE: 0 } },
         resources: [],
         projects: []
     };
@@ -105,10 +118,10 @@ export const AnalyticsPage: React.FC = () => {
                 {/* KPI Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {[
-                        { label: 'Budget total', value: `${(totalBudget / 1000).toFixed(0)}kDT`, sub: `${summary.totalProjects} projets`, icon: <Target className="w-5 h-5" />, color: 'from-amber-500 to-amber-600' },
-                        { label: 'Taux complétion', value: `${completionRate}%`, sub: `${tasksByStatus.DONE}/${summary.totalTasks} tâches`, icon: <CheckCircle2 className="w-5 h-5" />, color: 'from-primary-500 to-primary-600' },
-                        { label: 'Story Points', value: `${summary.totalTasks * 3}`, sub: `en cours d'analyse`, icon: <TrendingUp className="w-5 h-5" />, color: 'from-violet-500 to-violet-600' },
-                        { label: 'Performances RH', value: `94%`, sub: `Indice Productivité`, icon: <Users className="w-5 h-5" />, color: 'from-emerald-500 to-emerald-600' },
+                        { label: 'Budget total', value: `${(totalBudget / 1000).toFixed(0)}k DT`, sub: `${summary.totalProjects} projets actifs`, icon: <Target className="w-5 h-5" />, color: 'from-amber-500 to-amber-600' },
+                        { label: '% Réalisé Global', value: `${completionRate}%`, sub: `${tasksByStatus.DONE}/${summary.totalTasks} tâches`, icon: <CheckCircle2 className="w-5 h-5" />, color: 'from-primary-500 to-primary-600' },
+                        { label: 'Volume de Tâches', value: `${summary.totalTasks}`, sub: `${tasksByStatus.IN_PROGRESS} en cours`, icon: <TrendingUp className="w-5 h-5" />, color: 'from-violet-500 to-violet-600' },
+                        { label: 'Alertes Critiques', value: `${(summary as any).criticalTasksCount || 0}`, sub: `${(summary as any).delayedTasksCount || 0} en retard`, icon: <AlertTriangle className="w-5 h-5" />, color: (summary as any).criticalTasksCount > 0 ? 'from-red-500 to-red-600' : 'from-emerald-500 to-emerald-600' },
                         { label: 'Intervenants', value: `${resources.length}`, sub: `Équipe active`, icon: <Users className="w-5 h-5" />, color: 'from-blue-400 to-blue-500' },
                     ].map((kpi, i) => (
                         <motion.div key={kpi.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
@@ -255,40 +268,56 @@ export const AnalyticsPage: React.FC = () => {
                     {/* ===== PROJECTS PROGRESS & FINANCES ===== */}
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-6">
 
-                        {/* Progress Tracker */}
+                        {/* Progress Tracker — Avancement par projet actif */}
                         <div>
                             <div className="flex items-center gap-2 mb-4">
                                 <TrendingUp className="w-4 h-4 text-emerald-500" />
-                                <h3 className="text-sm font-bold text-slate-800">Avancement par projet</h3>
+                                <h3 className="text-sm font-bold text-slate-800">Avancement par projet actif</h3>
+                                <span className="ml-auto text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{projects.length} projets</span>
                             </div>
-                            <div className="space-y-4">
-                                {projects.sort((a, b) => b.progress - a.progress).map((p, i) => (
-                                    <div key={p.id} className="space-y-1.5">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span
-                                                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${(p.type === 'WEB_APPLICATION' || p.type === 'MOBILE_APP')
-                                                        ? 'bg-primary-100 text-primary-600'
-                                                        : 'bg-accent-100 text-accent-600'
-                                                        }`}
-                                                >
-                                                    {p.type}
-                                                </span>
-                                                <span className="text-xs font-medium text-slate-700 truncate max-w-[150px]">{p.name}</span>
+                            {projects.length === 0 ? (
+                                <div className="text-center py-8 text-slate-400 text-xs italic">Aucun projet actif trouvé.</div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {[...projects].sort((a, b) => b.progress - a.progress).map((p, i) => (
+                                        <div key={p.id} className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                                        p.status === 'IN_PROGRESS' ? 'bg-primary-100 text-primary-600'
+                                                        : p.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-600'
+                                                        : p.status === 'SUSPENDED' ? 'bg-red-100 text-red-600'
+                                                        : 'bg-slate-100 text-slate-500'
+                                                    }`}>
+                                                        {p.status === 'IN_PROGRESS' ? 'EN COURS' : p.status === 'COMPLETED' ? 'TERMINÉ' : p.status === 'SUSPENDED' ? 'SUSPENDU' : p.status || 'PLANIFIÉ'}
+                                                    </span>
+                                                    <span className="text-xs font-medium text-slate-700 truncate max-w-[140px]">{p.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {(p as any).overdueTasks > 0 && (
+                                                        <span className="flex items-center gap-0.5 text-[9px] text-red-500 font-bold">
+                                                            <Clock className="w-3 h-3" />{(p as any).overdueTasks}
+                                                        </span>
+                                                    )}
+                                                    <span className="text-xs font-bold text-slate-600">{p.progress}%</span>
+                                                </div>
                                             </div>
-                                            <span className="text-xs font-bold text-slate-600">{p.progress}%</span>
+                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${p.progress}%` }}
+                                                    transition={{ duration: 0.8, delay: i * 0.1 }}
+                                                    className={`h-full rounded-full ${p.progress === 100 ? 'bg-emerald-500' : p.status === 'SUSPENDED' ? 'bg-red-400' : 'bg-gradient-to-r from-primary-500 to-accent-500'}`}
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-slate-400">
+                                                <span>{(p as any).doneTasks || 0}/{(p as any).totalTasks || 0} tâches terminées</span>
+                                                <span>{Number(p.budget || 0).toLocaleString('fr-FR')} DT alloué</span>
+                                            </div>
                                         </div>
-                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${p.progress}%` }}
-                                                transition={{ duration: 0.8, delay: i * 0.1 }}
-                                                className={`h-full rounded-full ${p.progress === 100 ? 'bg-emerald-500' : p.status === 'SUSPENDED' ? 'bg-red-400' : 'bg-gradient-to-r from-primary-500 to-accent-500'}`}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Financial Report */}
@@ -401,19 +430,26 @@ export const AnalyticsPage: React.FC = () => {
                             <div className="p-8 text-center text-slate-400 text-xs italic">
                                 Aucun membre d'équipe assigné aux projets actifs.
                             </div>
-                        ) : resources.map((member, i) => (
-                            <div key={member.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors">
-                                <div className={`w-8 h-8 rounded-xl bg-gradient-to-br from-primary-400 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                                    {member.avatar ? <img src={member.avatar} alt="" className="w-full h-full rounded-xl object-cover" /> : member.name.charAt(0)}
-                                </div>
-                                <div className="w-36">
-                                    <p className="text-xs font-semibold text-slate-800">{member.name}</p>
-                                    <p className="text-[10px] text-slate-400">{member.role}</p>
-                                </div>
-                                <div className="w-16 text-center">
-                                    <p className="text-xs font-bold text-slate-700">{member.tasksCount}</p>
-                                    <p className="text-[9px] text-slate-400">tâches</p>
-                                </div>
+                        ) : resources.map((member, i) => {
+                            const initials = member.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+                            return (
+                                <div key={member.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-primary-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 shadow-sm relative group/avatar`}>
+                                        {member.avatar ? (
+                                            <img src={member.avatar} alt="" className="w-full h-full rounded-xl object-cover" />
+                                        ) : (
+                                            <span className="tracking-tighter">{initials || '?'}</span>
+                                        )}
+                                        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
+                                    </div>
+                                    <div className="w-40">
+                                        <p className="text-xs font-bold text-slate-800 truncate">{member.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium truncate">{member.role}</p>
+                                    </div>
+                                    <div className="w-16 text-center">
+                                        <p className="text-xs font-bold text-slate-700">{member.tasksCount}</p>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">tâches</p>
+                                    </div>
                                 <div className="w-16 text-center">
                                     <p className="text-xs font-bold text-primary-600">{Math.round(member.assignedPoints)}</p>
                                     <p className="text-[9px] text-slate-400">points</p>
@@ -434,7 +470,8 @@ export const AnalyticsPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        );
+                    })}
                     </div>
                 </div>
             </div>

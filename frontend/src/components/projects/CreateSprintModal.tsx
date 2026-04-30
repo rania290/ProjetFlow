@@ -5,9 +5,9 @@ import {
     ChevronRight, Check, AlertCircle, Info,
     BarChart3, Clock, Rocket
 } from 'lucide-react';
-import { 
-    Dialog, DialogContent, DialogHeader, 
-    DialogTitle, DialogDescription, DialogFooter 
+import {
+    Dialog, DialogContent, DialogHeader,
+    DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,7 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                             </div>
                             <div>
                                 <DialogTitle className="text-xl font-black text-slate-900 leading-none uppercase tracking-tight">Nouveau Sprint</DialogTitle>
-                                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic">{STEPS[step-1]}</DialogDescription>
+                                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic">{STEPS[step - 1]}</DialogDescription>
                             </div>
                         </div>
                     </div>
@@ -77,8 +77,8 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                                     <div className={cn(
                                         "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black transition-all",
                                         step > i + 1 ? "bg-emerald-500 text-white" :
-                                        step === i + 1 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" :
-                                        "bg-slate-200 text-slate-400"
+                                            step === i + 1 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" :
+                                                "bg-slate-200 text-slate-400"
                                     )}>
                                         {step > i + 1 ? <Check className="w-2.5 h-2.5" /> : i + 1}
                                     </div>
@@ -101,10 +101,10 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                         <Zap className="w-3.5 h-3.5" /> Nom de l'itération
                                     </Label>
-                                    <Input 
-                                        autoFocus 
-                                        value={form.name} 
-                                        onChange={e => setForm({...form, name: e.target.value})}
+                                    <Input
+                                        autoFocus
+                                        value={form.name}
+                                        onChange={e => setForm({ ...form, name: e.target.value })}
                                         className="h-12 rounded-xl text-sm font-bold border-slate-100 bg-slate-50/30 focus-visible:ring-indigo-500/20"
                                         placeholder="ex: Sprint Alpha 1.0"
                                     />
@@ -114,19 +114,19 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                             <Calendar className="w-3.5 h-3.5" /> Date début
                                         </Label>
-                                        <Input 
-                                            type="date" 
-                                            value={form.startDate} 
-                                            onChange={e => setForm({...form, startDate: e.target.value})}
+                                        <Input
+                                            type="date"
+                                            value={form.startDate}
+                                            onChange={e => setForm({ ...form, startDate: e.target.value })}
                                             className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date Clôture</Label>
-                                        <Input 
-                                            type="date" 
-                                            value={form.endDate} 
-                                            onChange={e => setForm({...form, endDate: e.target.value})}
+                                        <Input
+                                            type="date"
+                                            value={form.endDate}
+                                            onChange={e => setForm({ ...form, endDate: e.target.value })}
                                             className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
                                         />
                                     </div>
@@ -140,10 +140,10 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                         <Target className="w-3.5 h-3.5" /> Objectif Principal
                                     </Label>
-                                    <Textarea 
+                                    <Textarea
                                         autoFocus
-                                        value={form.goal} 
-                                        onChange={e => setForm({...form, goal: e.target.value})}
+                                        value={form.goal}
+                                        onChange={e => setForm({ ...form, goal: e.target.value })}
                                         rows={4}
                                         className="rounded-xl text-xs border-slate-100 bg-slate-50/30 resize-none italic font-medium"
                                         placeholder="Décrivez l'impact attendu de ce sprint..."
@@ -164,9 +164,9 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                     <Button variant="ghost" onClick={step === 1 ? onClose : () => setStep(1)} className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">
                         {step === 1 ? 'Annuler' : 'Précédent'}
                     </Button>
-                    
-                    <Button 
-                        onClick={step === 1 ? handleNext : handleCreate} 
+
+                    <Button
+                        onClick={step === 1 ? handleNext : handleCreate}
                         className="h-11 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-lg shadow-indigo-500/20 group transition-all"
                     >
                         {step === 1 ? 'Suivant' : 'Lancer le Sprint'}

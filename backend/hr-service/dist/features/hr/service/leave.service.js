@@ -40,6 +40,7 @@ let LeaveService = class LeaveService {
         const durationDays = (0, leave_utils_1.calculateWorkingDays)(start, end);
         if (durationDays <= 0)
             throw new common_1.BadRequestException("Leave duration must be at least 1 working day (check if dates fall on weekends)");
+        console.log(`[HR Service] Start createLeaveRequest for employee ${dto.employeeId}`);
         const overlap = await this.leaveRepository.findOne({
             where: {
                 employeeId: dto.employeeId,
@@ -48,9 +49,11 @@ let LeaveService = class LeaveService {
                 endDate: (0, typeorm_2.MoreThanOrEqual)(start),
             },
         });
+        console.log(`[HR Service] Overlap check completed. Overlap found: ${!!overlap}`);
         if (overlap)
             throw new common_1.BadRequestException("Overlapping leave request already exists for these dates");
         try {
+            console.log(`[HR Service] Creating entity...`);
             const entity = this.leaveRepository.create({
                 employeeId: dto.employeeId,
                 employeeName: dto.employeeName,
@@ -68,8 +71,11 @@ let LeaveService = class LeaveService {
                 rejectionReason: null,
                 calendarSynced: false,
             });
+            console.log(`[HR Service] Saving to DB...`);
             const created = (await this.leaveRepository.save(entity));
+            console.log(`[HR Service] Saved to DB with ID: ${created.id}`);
             try {
+                console.log(`[HR Service] Sending notifications...`);
                 (0, leave_utils_1.sendLeaveRequestNotification)(created);
                 if (created.managerId) {
                     await this.publishNotification(created.managerId, {

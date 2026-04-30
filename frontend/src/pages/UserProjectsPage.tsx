@@ -79,21 +79,29 @@ export const UserProjectsPage: React.FC = () => {
   const [selectedProjectForSettings, setSelectedProjectForSettings] = useState<GlobalProject | null>(null);
 
   const mappedProjects = useMemo(() => {
-    return state.projects.map((p): Project => {
-      let role: Project['role'] = 'TEAM_MEMBER';
-      if (p.managerId === user?.id) role = 'PROJECT_MANAGER';
-      if (user?.role === 'ADMIN') role = 'ADMIN';
+    return state.projects
+      .filter(p => {
+        const isMember = (p.members || []).some(m => m.id === user?.id);
+        const isManager = p.managerId === user?.id;
+        const isClient = user?.role === 'CLIENT' && p.clientName === user?.fullName; // Basic client check
+        const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+        return isAdmin || isMember || isManager || isClient;
+      })
+      .map((p): Project => {
+        let role: Project['role'] = 'TEAM_MEMBER';
+        if (p.managerId === user?.id) role = 'PROJECT_MANAGER';
+        if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') role = 'ADMIN';
 
-      return {
-        id: p.id,
-        name: p.name,
-        role,
-        isActive: p.status === 'IN_PROGRESS',
-        assignedAt: p.startDate || p.createdAt || new Date().toISOString(),
-        expiresAt: p.endDate || undefined,
-        _source: p
-      };
-    });
+        return {
+          id: p.id,
+          name: p.name,
+          role,
+          isActive: p.status === 'IN_PROGRESS',
+          assignedAt: p.startDate || p.createdAt || new Date().toISOString(),
+          expiresAt: p.endDate || undefined,
+          _source: p
+        };
+      });
   }, [state.projects, user]);
 
   const userProjects = useMemo(() => {

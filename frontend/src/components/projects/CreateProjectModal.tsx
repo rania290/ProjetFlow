@@ -140,8 +140,8 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 status: form.status,
                 clientName: form.clientName.trim() || undefined,
                 budget: form.budget ? Number(form.budget) : 0,
-                startDate: form.startDate,
-                endDate: form.endDate,
+                startDate: form.startDate || undefined,
+                endDate: form.endDate || undefined,
                 progress: 0,
             };
 

@@ -22,14 +22,22 @@ async function bootstrap() {
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
-      'http://localhost:3001',
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174',
-      'http://127.0.0.1:5176',
+      'http://localhost:3000', // Swagger/Gateway itself
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Accept', 
+      'X-Requested-With', 
+      'x-user-id', 
+      'x-user-role',
+      'Origin',
+      'Access-Control-Allow-Origin'
+    ],
   });
 
   app.useGlobalPipes(
@@ -63,7 +71,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '127.0.0.1');
   console.log(
     `🚀 API Gateway running on: http://localhost:${process.env.PORT ?? 3000}`,
   );

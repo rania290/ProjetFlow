@@ -21,5 +21,8 @@ var LeaveRole;
     LeaveRole["EMPLOYEE"] = "EMPLOYEE";
     LeaveRole["MANAGER"] = "MANAGER";
     LeaveRole["HR_ADMIN"] = "HR_ADMIN";
+    LeaveRole["ADMIN"] = "ADMIN";
+    LeaveRole["ROOT"] = "ROOT";
+    LeaveRole["SUPERADMIN"] = "SUPERADMIN";
 })(LeaveRole || (exports.LeaveRole = LeaveRole = {}));
 //# sourceMappingURL=leave.constants.js.map

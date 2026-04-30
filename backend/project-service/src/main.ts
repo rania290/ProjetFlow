@@ -16,7 +16,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || process.env.PROJECT_PORT || 3002;
-  await app.listen(port);
+  await app.listen(port, '127.0.0.1');
   console.log(`🚀 Project service running on: http://localhost:${port}`);
   console.log(`📚 Swagger UI: http://localhost:${port}/api/docs`);
 }

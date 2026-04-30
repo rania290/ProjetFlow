@@ -78,11 +78,11 @@ export const ProjectTableBoard: React.FC<ProjectTableBoardProps> = ({
                     <TableHeader className="bg-slate-50/50 backdrop-blur-md sticky top-0 z-10 border-b border-slate-100">
                         <TableRow className="hover:bg-transparent border-none">
                             <TableHead className="w-12"></TableHead>
-                            <TableHead className="w-[45%] text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-4">Désignation de la tâche</TableHead>
-                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-4">Assigné à</TableHead>
-                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-4">Statut actuel</TableHead>
-                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-4">Niveau de Priorité</TableHead>
-                            <TableHead className="w-24 text-right px-8 py-4"></TableHead>
+                            <TableHead className="w-[45%] text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-2">Désignation de la tâche</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-2">Assigné à</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-2">Statut actuel</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-6 py-2">Niveau de Priorité</TableHead>
+                            <TableHead className="w-24 text-right px-8 py-2"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="border-none">
@@ -172,7 +172,7 @@ export const ProjectTableBoard: React.FC<ProjectTableBoardProps> = ({
                                     )}
 
                                     {/* Spacer between groups */}
-                                    <TableRow className="h-4 border-none hover:bg-transparent">
+                                    <TableRow className="h-2 border-none hover:bg-transparent">
                                         <TableCell colSpan={6} className="p-0 border-none"></TableCell>
                                     </TableRow>
                                 </React.Fragment>
@@ -208,7 +208,7 @@ const TaskRow: React.FC<{
             animate={{ opacity: 1, x: 0 }}
             className={`group transition-all duration-300 border-none hover:bg-slate-50/30 ${isFocused ? 'bg-primary-50/20' : 'bg-white'} ${isSubtask ? 'bg-slate-50/10' : ''}`}
         >
-            <TableCell className="w-12 text-center py-4 pl-6 border-none">
+            <TableCell className="w-12 text-center py-1.5 pl-6 border-none">
                 {!isSubtask && (
                     <div className="flex justify-center opacity-0 group-hover:opacity-100 cursor-grab text-slate-300 hover:text-slate-500 transition-all">
                         <GripVertical className="w-4 h-4" />
@@ -222,7 +222,7 @@ const TaskRow: React.FC<{
             </TableCell>
 
             {/* Title / Description */}
-            <TableCell className={`py-4 px-6 border-none ${isSubtask ? 'pl-12' : ''}`}>
+            <TableCell className={`py-1.5 px-6 border-none ${isSubtask ? 'pl-12' : ''}`}>
                 <div className="flex items-center gap-4 w-full">
                     <div className="flex-1 group/input relative">
                         <input
@@ -233,7 +233,7 @@ const TaskRow: React.FC<{
                                 setIsFocused(false);
                                 if (title !== task.title) onUpdateTaskTitle(task.id, title)
                             }}
-                            className="w-full h-9 px-2 py-1.5 text-sm font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-100 focus:border-primary-500 rounded-lg transition-all outline-none placeholder:text-slate-300 tracking-tight"
+                            className="w-full h-7 px-2 py-1 text-sm font-bold text-slate-900 bg-transparent border-b-2 border-transparent hover:border-slate-100 focus:border-primary-500 rounded-lg transition-all outline-none placeholder:text-slate-300 tracking-tight"
                             placeholder="Titre de la tâche..."
                         />
                         {(task.storyPoints ?? 0) > 0 && (
@@ -248,12 +248,12 @@ const TaskRow: React.FC<{
             </TableCell>
 
             {/* Assignee */}
-            <TableCell className="py-4 px-6 border-none">
+            <TableCell className="py-1.5 px-6 border-none">
                 <Select
                     value={(task.assigneeId as string | undefined) || 'unassigned'}
                     onValueChange={(val) => onAssigneeChange(task.id, val === 'unassigned' ? undefined : val)}
                 >
-                    <SelectTrigger className="w-full h-10 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-semibold rounded-xl transition-all">
+                    <SelectTrigger className="w-full h-8 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-semibold rounded-xl transition-all">
                         {task.assigneeId ? (
                             <div className="flex items-center gap-2.5">
                                 <Avatar className="w-6 h-6 border-2 border-white shadow-sm">
@@ -289,12 +289,12 @@ const TaskRow: React.FC<{
             </TableCell>
 
             {/* Status */}
-            <TableCell className="py-4 px-6 border-none">
+            <TableCell className="py-1.5 px-6 border-none">
                 <Select
                     value={task.status}
                     onValueChange={(val) => onStatusChange(task.id, val as TaskStatus)}
                 >
-                    <SelectTrigger className="w-full h-10 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-bold rounded-xl transition-all">
+                    <SelectTrigger className="w-full h-8 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-bold rounded-xl transition-all">
                         <Badge variant="outline" className={`rounded-lg py-1 px-3 border-transparent ${task.status === 'DONE' ? 'bg-emerald-50 text-emerald-700' : task.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
                             {task.status === 'DONE' ? 'Terminé' : task.status === 'IN_PROGRESS' ? 'En cours' : task.status === 'IN_TEST' ? 'En test' : 'À faire'}
                         </Badge>
@@ -317,12 +317,12 @@ const TaskRow: React.FC<{
             </TableCell>
 
             {/* Priority */}
-            <TableCell className="py-4 px-6 border-none">
+            <TableCell className="py-1.5 px-6 border-none">
                 <Select
                     value={task.priority}
                     onValueChange={(val) => onPriorityChange(task.id, val as TaskPriority)}
                 >
-                    <SelectTrigger className="w-full h-10 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-black rounded-xl transition-all uppercase tracking-tighter">
+                    <SelectTrigger className="w-full h-8 border-transparent hover:bg-slate-50 hover:border-slate-100 focus:ring-0 shadow-none text-xs font-black rounded-xl transition-all uppercase tracking-tighter">
                         <div className={`flex items-center gap-2 ${PRIORITY_CONFIG[task.priority].color} bg-white shadow-sm border ${PRIORITY_CONFIG[task.priority].border} rounded-lg px-2 py-1`}>
                             <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'CRITICAL' ? 'bg-red-500 animate-pulse' : task.priority === 'HIGH' ? 'bg-orange-500' : task.priority === 'MEDIUM' ? 'bg-blue-500' : 'bg-slate-400'}`} />
                             {PRIORITY_CONFIG[task.priority].label}
@@ -342,7 +342,7 @@ const TaskRow: React.FC<{
             </TableCell>
 
             {/* Actions */}
-            <TableCell className="text-right py-4 px-8 border-none">
+            <TableCell className="text-right py-1.5 px-8 border-none">
                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
                     <Button
                         variant="ghost"

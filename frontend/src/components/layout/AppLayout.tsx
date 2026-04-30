@@ -51,7 +51,7 @@ const NAV_ITEMS = [
 
     { id: 'analytics', label: 'Reporting', icon: <BarChart3 className="w-4 h-4" />, path: '/analytics' },
 
-    { id: 'client-portal', label: 'Portail Client', icon: <Sparkles className="w-4 h-4" />, path: '/client-portal' },
+    { id: 'client-portal', label: 'Portail Client', icon: <Sparkles className="w-4 h-4" />, path: '/client-portal', roles: ['ADMIN', 'SUPER_ADMIN', 'PROJECT_MANAGER'] },
 
     { id: 'hr', label: 'Ressources Humaines', icon: <HeartPulse className="w-4 h-4" />, path: '/hr' },
 
@@ -114,20 +114,62 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
     const jwtToken = localStorage.getItem('token');
 
-    // Hydrate store with real projects from backend
+    // Hydrate store with projects AND tasks from backend.
+    // SET_TASKS reducer merges intelligently — local priority/status changes are preserved.
+    // Effect to clear store if user changes (security)
     React.useEffect(() => {
-        const fetchProjects = async () => {
-            if (jwtToken) {
+        if (user?.id) {
+            const lastUserId = localStorage.getItem('last_user_id');
+            if (lastUserId && lastUserId !== user.id) {
+                console.log('User change detected, wiping local storage residue...');
+                dispatch({ type: 'WIPE_DATA' });
+            }
+            localStorage.setItem('last_user_id', user.id);
+        }
+    }, [user?.id, dispatch]);
+
+    React.useEffect(() => {
+
+        const fetchData = async () => {
+            if (jwtToken && user) {
                 try {
-                    const data = await projectsService.getAll();
-                    dispatch({ type: 'SET_PROJECTS', projects: data });
+                    const [projectsData, tasksData, sprintsData] = await Promise.all([
+                        projectsService.getAll().catch(() => []),
+                        projectsService.getAllTasks().catch(() => []),
+                        projectsService.getAllSprints().catch(() => []),
+                    ]);
+
+                    // FILTERING LOGIC: If not admin, only keep related projects
+                    let filteredProjects = projectsData;
+                    if (!isAdminUser) {
+                        filteredProjects = projectsData.filter(p => 
+                            p.managerId === user.id || 
+                            (p.members || []).some((m: any) => m.id === user.id || m.email === user.email) ||
+                            (p.clientName === user.fullName && user.role === 'CLIENT')
+                        );
+                    }
+
+
+                    const projectIds = new Set(filteredProjects.map(p => p.id));
+
+                    // Filter tasks and sprints based on visible projects
+                    const filteredTasks = tasksData.filter(t => projectIds.has(t.projectId));
+                    const filteredSprints = sprintsData.filter(s => projectIds.has(s.projectId));
+
+                    dispatch({ type: 'SET_PROJECTS', projects: filteredProjects });
+                    dispatch({ type: 'SET_TASKS', tasks: filteredTasks });
+                    dispatch({ type: 'SET_SPRINTS', sprints: filteredSprints });
+                    
+                    console.log(`Sync complete: ${filteredProjects.length} projects visible for ${user.fullName}`);
                 } catch (err) {
-                    console.error('Failed to load projects in layout', err);
+                    console.error('Failed to load data in layout — local data preserved:', err);
                 }
             }
         };
-        fetchProjects();
-    }, [jwtToken, dispatch]);
+
+        fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [jwtToken]);
 
 
     const handleLogout = async () => {
@@ -149,7 +191,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
 
 
-    const allActiveProjects = state.projects.filter(p => ['IN_PROGRESS', 'PLANNED'].includes(p.status));
+    const allActiveProjects = state.projects.filter(p => {
+        const isMember = (p.members || []).some(m => m.id === user?.id);
+        const isManager = p.managerId === user?.id;
+        const matchesStatus = ['IN_PROGRESS', 'PLANNED'].includes(p.status);
+        return matchesStatus && (isAdminUser || isMember || isManager);
+    });
 
 
 
@@ -432,7 +479,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
 
                                     </div>
 
-                                    {NAV_ITEMS.map(item => {
+                                    {NAV_ITEMS.filter(item => !item.roles || (user?.role && item.roles.includes(user.role))).map(item => {
+
 
                                         const isActive = item.path === '/projects'
                                             ? location.pathname === item.path
@@ -684,7 +732,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                 {/* Top bar */}
 
                 <header
-                    className="flex items-center justify-between px-6 py-3 flex-shrink-0 glass-strong z-10 sticky top-0 shadow-sm"
+                    className="flex items-center justify-between px-6 py-3 flex-shrink-0 glass-strong z-50 sticky top-0 shadow-sm"
                     style={{ borderBottom: '1px solid rgba(92, 124, 250, 0.15)' }}
                 >
 

@@ -42,6 +42,8 @@ import { BacklogView as MultiBacklogView } from '../components/projects/BacklogV
 import { SprintsView } from '../components/projects/SprintsView';
 import { SprintReportModal } from '../components/projects/SprintReportModal';
 import { ProjectDashboardView } from '../components/projects/ProjectDashboardView';
+import { projectsService } from '../api/projects.service';
+
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
@@ -161,10 +163,10 @@ const FIBONACCI_POINTS = [0, 1, 2, 3, 5, 8, 13, 21];
 
 
 const STATUS_CONFIG: Record<string, { label: string, color: string }> = {
-  PLANNED: { label: 'PLANIFIÉ', color: 'bg-slate-100 text-slate-600 border-slate-200' },
-  IN_PROGRESS: { label: 'EN COURS', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  DELIVERED: { label: 'LIVRÉ', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-  SUSPENDED: { label: 'SUSPENDU', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+    PLANNED: { label: 'PLANIFIÉ', color: 'bg-slate-100 text-slate-600 border-slate-200' },
+    IN_PROGRESS: { label: 'EN COURS', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    DELIVERED: { label: 'LIVRÉ', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    SUSPENDED: { label: 'SUSPENDU', color: 'bg-amber-50 text-amber-800 border-amber-200' },
 };
 
 // ===== MAIN PAGE =====
@@ -277,12 +279,25 @@ export const ProjectDetailPage: React.FC = () => {
 
 
         return () => {
-
             window.removeEventListener('openCreateSprintModal', handleOpenCreateSprintModal);
-
         };
-
     }, []);
+
+    // Load tasks from API
+    React.useEffect(() => {
+        if (!projectId) return;
+
+        const loadTasks = async () => {
+            try {
+                const tasks = await projectsService.getAllTasks(projectId);
+                dispatch({ type: 'SET_TASKS', tasks });
+            } catch (error) {
+                console.error("Failed to load project tasks:", error);
+            }
+        };
+        loadTasks();
+    }, [projectId, dispatch]);
+
 
 
 
@@ -337,9 +352,9 @@ export const ProjectDetailPage: React.FC = () => {
         >
 
             <div className="absolute top-4 right-20 z-50">
-               <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-lg ${STATUS_CONFIG[project.status]?.color || 'bg-white text-slate-600'}`}>
-                  {STATUS_CONFIG[project.status]?.label || project.status}
-               </span>
+                <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-lg ${STATUS_CONFIG[project.status]?.color || 'bg-white text-slate-600'}`}>
+                    {STATUS_CONFIG[project.status]?.label || project.status}
+                </span>
             </div>
 
             <div className="flex flex-col h-full">
@@ -393,17 +408,17 @@ export const ProjectDetailPage: React.FC = () => {
                         {/* Members with enhanced keys and styling */}
                         <div className="flex -space-x-2 ml-auto">
                             {(project.members || []).map((m, idx) => (
-                                <div 
-                                    key={m.id || `member-${idx}`} 
+                                <div
+                                    key={m.id || `member-${idx}`}
                                     title={m.fullName}
                                     className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-white flex items-center justify-center text-indigo-600 text-[10px] font-black shadow-sm transition-transform hover:scale-110 hover:z-20"
                                 >
                                     {m.avatar || m.fullName.charAt(0)}
                                 </div>
                             ))}
-                            <button 
-                                onClick={() => setShowAddMember(true)} 
-                                className="w-8 h-8 rounded-xl bg-slate-50 border-2 border-white flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all z-10 shadow-sm" 
+                            <button
+                                onClick={() => setShowAddMember(true)}
+                                className="w-8 h-8 rounded-xl bg-slate-50 border-2 border-white flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all z-10 shadow-sm"
                                 title="Ajouter des membres"
                             >
                                 <Plus className="w-4 h-4" />
@@ -608,37 +623,61 @@ export const ProjectDetailPage: React.FC = () => {
 
                                         assignees={project.members || []}
 
-                                        onStatusChange={(taskId, status) => dispatch({ type: 'UPDATE_TASK_STATUS', id: taskId, status })}
-
-                                        onAssigneeChange={(taskId, assigneeId) => {
-
-                                            const t = state.tasks.find(x => x.id === taskId);
-
+                                        onStatusChange={async (taskId, status) => {
+                                            const t = state.tasks.find(x => String(x.id) === String(taskId));
                                             if (t) {
-
-                                                const m = (project.members || []).find(x => x.id === assigneeId);
-
-                                                dispatch({ type: 'UPDATE_TASK', task: { ...t, assigneeId, assigneeName: m?.fullName, assigneeAvatar: m?.avatar } });
-
+                                                dispatch({ type: 'UPDATE_TASK_STATUS', id: taskId, status });
+                                                try {
+                                                    await projectsService.updateTask(taskId, { status });
+                                                } catch (e) {
+                                                    console.error("Failed to sync task status:", e);
+                                                }
                                             }
-
                                         }}
 
-                                        onPriorityChange={(taskId, priority) => {
+                                        onAssigneeChange={async (taskId, assigneeId) => {
+                                            const t = state.tasks.find(x => String(x.id) === String(taskId));
+                                            if (t) {
+                                                const m = assigneeId ? (project.members || []).find(x => String(x.id) === String(assigneeId)) : undefined;
+                                                const updatedTask = { 
+                                                    ...t, 
+                                                    assigneeId: assigneeId, 
+                                                    assigneeName: m?.fullName || undefined, 
+                                                    assigneeAvatar: m?.avatar || undefined 
+                                                };
+                                                dispatch({ type: 'UPDATE_TASK', task: updatedTask });
+                                                try {
+                                                    await projectsService.updateTask(taskId, { assigneeId });
+                                                } catch (e) {
+                                                    console.error("Failed to sync task assignee:", e);
+                                                }
+                                            }
+                                        }}
 
+                                        onPriorityChange={async (taskId, priority) => {
                                             const t = state.tasks.find(x => x.id === taskId);
-
-                                            if (t) dispatch({ type: 'UPDATE_TASK', task: { ...t, priority } });
-
+                                            if (t) {
+                                                dispatch({ type: 'UPDATE_TASK', task: { ...t, priority } });
+                                                try {
+                                                    await projectsService.updateTask(taskId, { priority });
+                                                } catch (e) {
+                                                    console.error("Failed to sync task priority:", e);
+                                                }
+                                            }
                                         }}
 
-                                        onUpdateTaskTitle={(taskId, title) => {
-
+                                        onUpdateTaskTitle={async (taskId, title) => {
                                             const t = state.tasks.find(x => x.id === taskId);
-
-                                            if (t) dispatch({ type: 'UPDATE_TASK', task: { ...t, title } });
-
+                                            if (t) {
+                                                dispatch({ type: 'UPDATE_TASK', task: { ...t, title } });
+                                                try {
+                                                    await projectsService.updateTask(taskId, { title });
+                                                } catch (e) {
+                                                    console.error("Failed to sync task title:", e);
+                                                }
+                                            }
                                         }}
+
 
                                         onAddTask={(status) => {
 
@@ -1189,16 +1228,6 @@ export const ProjectDetailPage: React.FC = () => {
         </AppLayout>
 
     );
-
 };
-
-
-
-
-
-
-
-
-
 
 

@@ -17,5 +17,8 @@ export enum LeaveRole {
   EMPLOYEE = "EMPLOYEE",
   MANAGER = "MANAGER",
   HR_ADMIN = "HR_ADMIN",
+  ADMIN = "ADMIN",
+  ROOT = "ROOT",
+  SUPERADMIN = "SUPERADMIN",
 }
 

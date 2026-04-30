@@ -370,7 +370,7 @@ body {
 
 .ProseMirror {
   outline: none !important;
-  min-height: 200px;
+  min-height: 40px;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {

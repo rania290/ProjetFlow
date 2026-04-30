@@ -9,7 +9,7 @@ import { TooltipProvider } from './components/ui/tooltip';
 import { Loader2, Construction } from 'lucide-react';
 
 // Lazy load pages
-const RegisterPage = lazy(() => import('./pages/RegisterPage').then(module => ({ default: module.RegisterPage })));
+
 const LoginPage = lazy(() => import('./pages/LoginPage').then(module => ({ default: module.LoginPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const ProjectsListPage = lazy(() => import('./pages/ProjectsListPage').then(module => ({ default: module.ProjectsListPage })));
@@ -89,7 +89,7 @@ function App() {
               <Suspense fallback={<LoadingScreen />}>
                 <Routes>
                   {/* Public Auth Routes */}
-                  <Route path="/register" element={<RegisterPage />} />
+
                   <Route path="/login" element={<LoginPage />} />
 
                   {/* Protected Main App Routes */}

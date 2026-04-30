@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Headers } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService } from '../service/analytics.service';
 
@@ -9,7 +9,10 @@ export class AnalyticsController {
 
     @Get('global')
     @ApiOperation({ summary: 'Get global analytics data from projects and tasks' })
-    async getGlobalAnalytics() {
-        return this.analyticsService.getGlobalAnalytics();
+    async getGlobalAnalytics(
+        @Headers('x-user-id') userId?: string,
+        @Headers('x-user-role') role?: string
+    ) {
+        return this.analyticsService.getGlobalAnalytics(userId, role);
     }
 }

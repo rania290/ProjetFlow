@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Save, FolderKanban, Zap, Calendar, DollarSign,
+    X, Save, FolderKanban, Zap, Calendar,
     Tag, FileText, Users, ChevronRight, Trash2, AlertTriangle, Shield, Folder, Check
 } from 'lucide-react';
 import { useStore } from '../../store/projectStore';
@@ -239,15 +239,6 @@ export const ProjectSettingsModal: React.FC<Props> = ({ project, onClose }) => {
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-100 pl-2">Budget Financier</Label>
-                                        <Input
-                                            type="number"
-                                            value={form.budget}
-                                            onChange={e => set('budget', e.target.value)}
-                                            className="h-12 rounded-xl font-black text-sm text-indigo-600 border-slate-100 bg-slate-50/30"
-                                        />
-                                    </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">

@@ -8,27 +8,28 @@ export class LeaveRequest {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ name: "employee_id" })
+  @Column({ name: "employee_id", nullable: true })
   @Index()
   employeeId!: string;
 
-  @Column({ name: "employee_name" })
+  @Column({ name: "employee_name", nullable: true })
   employeeName!: string;
 
   @Column({
     type: "enum",
     enum: LeaveType,
-    name: "type"
+    name: "type",
+    nullable: true
   })
   type!: LeaveType;
 
-  @Column({ name: "start_date", type: "timestamp" })
+  @Column({ name: "start_date", type: "timestamp", nullable: true })
   startDate!: Date;
 
-  @Column({ name: "end_date", type: "timestamp" })
+  @Column({ name: "end_date", type: "timestamp", nullable: true })
   endDate!: Date;
 
-  @Column({ name: "duration_days", type: "integer" })
+  @Column({ name: "duration_days", type: "integer", nullable: true })
   durationDays!: number;
 
   @Column({ name: "motif", type: "text", default: "" })

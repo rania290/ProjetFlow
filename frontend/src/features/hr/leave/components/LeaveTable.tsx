@@ -59,17 +59,17 @@ export const LeaveTable: React.FC<LeaveTableProps> = ({
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-50 text-pink-600 text-[10px] font-bold border border-pink-100 shadow-sm">
-                      {leave.employeeName.substring(0, 2).toUpperCase()}
+                      {(leave.employeeName || 'U').substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <span className="block text-sm font-bold text-slate-800 tracking-tight">{leave.employeeName}</span>
-                      <span className="text-[10px] text-slate-400 font-medium">#{leave.id.substring(0, 8)}</span>
+                      <span className="block text-sm font-bold text-slate-800 tracking-tight">{leave.employeeName || 'Employé Inconnu'}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">#{(leave.id || '').substring(0, 8)}</span>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg">
-                    {leave.type.replace('_', ' ')}
+                    {(leave.type || 'INCONNU').replace('_', ' ')}
                   </Badge>
                 </td>
                 <td className="px-6 py-4">

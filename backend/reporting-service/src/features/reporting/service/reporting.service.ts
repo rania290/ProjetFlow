@@ -47,6 +47,13 @@ export class ReportingService {
 
         const invoices = await queryBuilder.getMany();
 
+        const byProject: Record<string, number> = {};
+        invoices.forEach(inv => {
+            if (inv.projectId) {
+                byProject[inv.projectId] = (byProject[inv.projectId] || 0) + Number(inv.total);
+            }
+        });
+
         const stats = {
             totalInvoices: invoices.length,
             totalAmount: invoices.reduce((sum, inv) => sum + Number(inv.total), 0),
@@ -56,6 +63,7 @@ export class ReportingService {
                 .reduce((sum, inv) => sum + Number(inv.total), 0),
             paidInvoices: invoices.filter(inv => inv.status === REPORTING_CONSTANTS.INVOICE_STATUS.PAID).length,
             overdueInvoices: invoices.filter(inv => inv.status === REPORTING_CONSTANTS.INVOICE_STATUS.OVERDUE).length,
+            byProject,
         };
 
         return stats;

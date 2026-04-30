@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Plus, CheckSquare, Zap, Calendar, 
-    Tag, FileText, Users, ChevronRight, Check, 
+    X, Plus, CheckSquare, Zap, Calendar,
+    Tag, FileText, Users, ChevronRight, Check,
     AlertCircle, Info, Target, Layout, Type
 } from 'lucide-react';
-import { 
-    Dialog, DialogContent, DialogHeader, 
-    DialogTitle, DialogDescription, DialogFooter 
+import {
+    Dialog, DialogContent, DialogHeader,
+    DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-    Select, SelectContent, SelectItem, 
-    SelectTrigger, SelectValue 
+import {
+    Select, SelectContent, SelectItem,
+    SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import type { Task, TaskStatus, TaskPriority, TaskType, Sprint } from '@/types/project.types';
+import { projectsService } from '@/api/projects.service';
+import { Loader2 } from 'lucide-react';
 
 interface CreateTaskModalProps {
     isOpen: boolean;
@@ -52,6 +54,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         tags: [] as string[],
     });
     const [tagInput, setTagInput] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -77,18 +80,25 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         setStep(prev => prev + 1);
     };
 
-    const handleCreate = () => {
-        const newTask: Task = {
-            id: `t${Date.now()}`,
-            projectId,
-            sprintId,
-            ...form,
-            createdAt: new Date().toISOString(),
-            comments: [],
-        };
-        onCreated(newTask);
-        onClose();
-        setStep(1); // Reset
+    const handleCreate = async () => {
+        setIsSubmitting(true);
+        try {
+            const taskData = {
+                projectId,
+                sprintId: sprintId || undefined,
+                ...form,
+                dueDate: form.dueDate || undefined,
+            };
+            const createdTask = await projectsService.createTask(taskData);
+            onCreated(createdTask);
+            onClose();
+            setStep(1);
+        } catch (error) {
+            console.error('Failed to create task:', error);
+            // Optionally add error feedback here
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const currentType = TYPE_OPTIONS.find(t => t.id === form.type) || TYPE_OPTIONS[1];
@@ -108,7 +118,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                             </div>
                             <div>
                                 <DialogTitle className="text-xl font-black text-slate-900 leading-none uppercase tracking-tight">Nouvelle Tâche</DialogTitle>
-                                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic">{STEPS[step-1]}</DialogDescription>
+                                <DialogDescription className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic">{STEPS[step - 1]}</DialogDescription>
                             </div>
                         </div>
                     </div>
@@ -121,8 +131,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                     <div className={cn(
                                         "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all",
                                         step > i + 1 ? "bg-emerald-500 text-white" :
-                                        step === i + 1 ? "bg-primary-600 text-white shadow-lg shadow-primary-500/20" :
-                                        "bg-slate-200 text-slate-400"
+                                            step === i + 1 ? "bg-primary-600 text-white shadow-lg shadow-primary-500/20" :
+                                                "bg-slate-200 text-slate-400"
                                     )}>
                                         {step > i + 1 ? <Check className="w-3 h-3" /> : i + 1}
                                     </div>
@@ -145,10 +155,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                         <Type className="w-3.5 h-3.5" /> Titre de la tâche <span className="text-red-500">*</span>
                                     </Label>
-                                    <Input 
-                                        autoFocus 
-                                        value={form.title} 
-                                        onChange={e => setForm({...form, title: e.target.value})}
+                                    <Input
+                                        autoFocus
+                                        value={form.title}
+                                        onChange={e => setForm({ ...form, title: e.target.value })}
                                         className="h-12 rounded-xl text-sm font-bold border-slate-100 bg-slate-50/30 focus-visible:ring-primary-500/20"
                                         placeholder="ex: Design du système de navigation..."
                                     />
@@ -159,7 +169,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                         {TYPE_OPTIONS.map(t => (
                                             <button
                                                 key={t.id}
-                                                onClick={() => setForm({...form, type: t.id})}
+                                                onClick={() => setForm({ ...form, type: t.id })}
                                                 className={cn(
                                                     "relative text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 group",
                                                     form.type === t.id ? "border-primary-600 bg-primary-50/50" : "border-slate-50 bg-white hover:border-slate-100"
@@ -185,7 +195,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Priorité</Label>
-                                        <Select value={form.priority} onValueChange={(v) => setForm({...form, priority: v as TaskPriority})}>
+                                        <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v as TaskPriority })}>
                                             <SelectTrigger className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -199,20 +209,20 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Story Points</Label>
-                                        <Input 
-                                            type="number" 
+                                        <Input
+                                            type="number"
                                             min={0}
-                                            value={form.storyPoints} 
-                                            onChange={e => setForm({...form, storyPoints: Math.max(0, parseInt(e.target.value) || 0)})}
+                                            value={form.storyPoints}
+                                            onChange={e => setForm({ ...form, storyPoints: Math.max(0, parseInt(e.target.value) || 0) })}
                                             className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</Label>
-                                    <Textarea 
-                                        value={form.description} 
-                                        onChange={e => setForm({...form, description: e.target.value})}
+                                    <Textarea
+                                        value={form.description}
+                                        onChange={e => setForm({ ...form, description: e.target.value })}
                                         rows={3}
                                         className="rounded-xl text-xs border-slate-100 bg-slate-50/30 resize-none italic font-medium"
                                         placeholder="Détails sur la tâche..."
@@ -220,10 +230,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Échéance</Label>
-                                    <Input 
-                                        type="date" 
-                                        value={form.dueDate} 
-                                        onChange={e => setForm({...form, dueDate: e.target.value})}
+                                    <Input
+                                        type="date"
+                                        value={form.dueDate}
+                                        onChange={e => setForm({ ...form, dueDate: e.target.value })}
                                         className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
                                     />
                                 </div>
@@ -266,13 +276,20 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     <Button variant="ghost" onClick={onClose} className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">
                         {step === 1 ? 'Annuler' : 'Précédent'}
                     </Button>
-                    
+
                     <Button 
                         onClick={step < 3 ? handleNext : handleCreate} 
-                        className="h-11 px-8 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-lg shadow-primary-500/20 group transition-all"
+                        disabled={isSubmitting}
+                        className="h-11 px-8 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-lg shadow-primary-500/20 flex items-center gap-2 group transition-all"
                     >
-                        {step < 3 ? 'Suivant' : 'Créer la tâche'}
-                        {step < 3 && <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
+                        {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {step < 3 ? (
+                            <>
+                                Suivant <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </>
+                        ) : (
+                            'Créer la Tâche'
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FolderKanban, Plus, Users, CheckCircle2,
     Clock, AlertTriangle, Zap, Bot, ArrowUpRight,
-    CalendarDays, Target, Activity, Sparkles
+    CalendarDays, Target, Activity, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
+import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/projectStore';
+
 import type { Project } from '../types/project.types';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { projectsService } from '../api/projects.service';
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
     PLANNED: { label: 'Planifié', color: 'text-slate-500', bg: 'bg-slate-100' },
@@ -31,9 +34,21 @@ const PRIORITY_BADGES = {
 
 export const DashboardPage: React.FC = () => {
     const { state, dashboardStats, dispatch } = useStore();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [showCreateModal, setShowCreateModal] = useState(false);
 
+    const canSeeClientPortal = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'PROJECT_MANAGER';
+
+
+    useEffect(() => {
+        // We rely on AppLayout for global data sync to avoid race conditions and ensure filtering.
+        // If the store is empty, we can trigger a manual sync here if needed, 
+        // but it must be FILTERED.
+    }, [dispatch]);
+
+
+    // Use current updated state instead of stale state
     const criticalTasks = state.tasks.filter(t => t.priority === 'CRITICAL' || (t.priority === 'HIGH' && t.status !== 'DONE'));
 
     return (
@@ -82,7 +97,16 @@ export const DashboardPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-3">
-                            {state.projects.map((p, i) => (
+                            {state.projects
+                                .filter(p => {
+                                    const isMember = (p.members || []).some(m => m.id === user?.id || m.email === user?.email);
+                                    const isManager = p.managerId === user?.id;
+                                    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
+                                    const isClient = user?.role === 'CLIENT' && p.clientName === user?.fullName;
+                                    return isAdmin || isMember || isManager || isClient;
+                                })
+
+                                .map((p, i) => (
                                 <ProjectRow key={p.id} project={p} index={i} onOpen={() => {
                                     dispatch({ type: 'SELECT_PROJECT', id: p.id });
                                     navigate(`/projects/${p.id}`);
@@ -120,19 +144,22 @@ export const DashboardPage: React.FC = () => {
                         </Card>
 
                         {/* Portail Client Shortcut */}
-                        <div className="bg-white rounded-2xl border border-indigo-100 p-5 shadow-sm shadow-indigo-50 group hover:border-indigo-300 transition-all cursor-pointer"
-                            onClick={() => navigate('/client-portal')}>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                                    <Sparkles className="w-4 h-4" />
+                        {canSeeClientPortal && (
+                            <div className="bg-white rounded-2xl border border-indigo-100 p-5 shadow-sm shadow-indigo-50 group hover:border-indigo-300 transition-all cursor-pointer"
+                                onClick={() => navigate('/client-portal')}>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                                        <Sparkles className="w-4 h-4" />
+                                    </div>
+                                    <span className="font-bold text-sm text-slate-800">Portail Client</span>
+                                    <ArrowUpRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                                 </div>
-                                <span className="font-bold text-sm text-slate-800">Portail Client</span>
-                                <ArrowUpRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                                <p className="text-[11px] text-slate-500 leading-relaxed">
+                                    Accédez à l'interface dédiée pour vos clients. Validez les livrables et gérez le support.
+                                </p>
                             </div>
-                            <p className="text-[11px] text-slate-500 leading-relaxed">
-                                Accédez à l'interface dédiée pour vos clients. Validez les livrables et gérez le support.
-                            </p>
-                        </div>
+                        )}
+
 
                         {/* Tâches urgentes */}
                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">

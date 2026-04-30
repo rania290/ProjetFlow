@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsOptional, IsString, IsEnum, IsNumber, IsDateString, IsUUID } from 'class-validator';
-import { TaskStatus, TaskPriority } from '../constants/tasks.constants';
+import { TaskStatus, TaskPriority, TaskType } from '../constants/tasks.constants';
 
 export class CreateTaskDto {
   @IsNotEmpty()
@@ -21,6 +21,14 @@ export class CreateTaskDto {
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
+
+  @IsOptional()
+  @IsEnum(TaskType)
+  type?: TaskType;
+
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 
   @IsOptional()
   @IsString()
@@ -59,6 +67,14 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
+
+  @IsOptional()
+  @IsEnum(TaskType)
+  type?: TaskType;
+
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 
   @IsOptional()
   @IsString()

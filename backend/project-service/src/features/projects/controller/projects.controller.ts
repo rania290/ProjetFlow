@@ -7,12 +7,16 @@ import { ProjectStatus } from '../constants/projects.constants';
 @ApiTags('projects')
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(private readonly projectsService: ProjectsService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
-  create(@Body() createProjectDto: CreateProjectDto) {
-    return this.projectsService.create(createProjectDto);
+  create(
+    @Body() createProjectDto: CreateProjectDto,
+    @Headers('x-user-id') userId: string,
+    @Headers('x-user-role') role: string
+  ) {
+    return this.projectsService.create(createProjectDto, userId, role);
   }
 
   @Get()
@@ -43,6 +47,12 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Update project status' })
   updateStatus(@Param('id') id: string, @Param('status') status: ProjectStatus) {
     return this.projectsService.updateStatus(id, status as ProjectStatus);
+  }
+
+  @Delete('all')
+  @ApiOperation({ summary: 'Delete all projects and their associated data' })
+  deleteAll() {
+    return this.projectsService.deleteAll();
   }
 
   @Delete(':id')

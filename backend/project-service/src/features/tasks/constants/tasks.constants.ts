@@ -11,3 +11,10 @@ export enum TaskPriority {
   HIGH = 'HIGH',
   CRITICAL = 'CRITICAL',
 }
+
+export enum TaskType {
+  STORY = 'STORY',
+  TASK = 'TASK',
+  BUG = 'BUG',
+  IMPROVEMENT = 'IMPROVEMENT',
+}

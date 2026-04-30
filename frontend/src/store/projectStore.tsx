@@ -1,15 +1,34 @@
-import React, { createContext, useContext, useReducer, type ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { Project, Task, Sprint, DashboardStats, ProjectStatus, TaskStatus, Ticket, TicketStatus, TicketMessage } from '../types/project.types';
 
 // ==============================
-// MOCK DATA
+// PERSISTENCE HELPERS
 // ==============================
 
-const MOCK_TASKS: Task[] = [];
-const MOCK_SPRINTS: Sprint[] = [];
-const MOCK_TICKETS: Ticket[] = [];
+const LS_KEYS = {
+    projects: 'vaerdia_projects_v1',
+    tasks:    'vaerdia_tasks_v1',
+    sprints:  'vaerdia_sprints_v1',
+    tickets:  'vaerdia_tickets_v1',
+};
 
-const INITIAL_MOCK_PROJECTS: Project[] = [];
+function loadFromLS<T>(key: string, fallback: T): T {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return JSON.parse(raw) as T;
+    } catch {
+        return fallback;
+    }
+}
+
+function saveToLS<T>(key: string, value: T): void {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+        // quota exceeded – silently ignore
+    }
+}
 
 // ==============================
 // STORE ACTIONS
@@ -41,19 +60,31 @@ type Action =
     | { type: 'DELETE_PROJECT'; id: string }
     | { type: 'ADD_PROJECT_MEMBER'; projectId: string; member: any }
     | { type: 'SET_PROJECTS'; projects: Project[] }
+    | { type: 'SET_TASKS'; tasks: Task[] }
+    | { type: 'SET_SPRINTS'; sprints: Sprint[] }
+
     | { type: 'ADD_TICKET'; ticket: Ticket }
     | { type: 'UPDATE_TICKET'; ticket: Ticket }
     | { type: 'UPDATE_TICKET_STATUS'; id: string; status: TicketStatus }
     | { type: 'ADD_TICKET_MESSAGE'; ticketId: string; message: TicketMessage }
+    | { type: 'SET_SPRINTS'; sprints: Sprint[] }
+    | { type: 'WIPE_DATA' }
     | { type: 'TOGGLE_SIDEBAR' };
+
 
 // Safety recalculated progress
 const recalculateProgress = (projects: Project[] = [], tasks: Task[] = []): Project[] => {
     return (projects || []).map(project => {
         const projectTasks = (tasks || []).filter(t => t.projectId === project.id);
         if (projectTasks.length === 0) return { ...project, progress: 0 };
-        const doneTasks = projectTasks.filter(t => t.status === 'DONE');
-        return { ...project, progress: Math.round((doneTasks.length / projectTasks.length) * 100) };
+        
+        let completedEffort = 0;
+        projectTasks.forEach(t => {
+             if (t.status === 'DONE') completedEffort += 1;
+             else if (t.status === 'IN_TEST') completedEffort += 0.9;
+             else if (t.status === 'IN_PROGRESS') completedEffort += 0.5;
+        });
+        return { ...project, progress: Math.round((completedEffort / projectTasks.length) * 100) };
     });
 };
 
@@ -78,7 +109,7 @@ function reducer(state: StoreState, action: Action): StoreState {
                 tasks: nextTasks,
                 projects: recalculateProgress(safeProjects, nextTasks),
                 sprints: safeSprints.map(s => ({
-                    ...s, 
+                    ...s,
                     tasks: (s.tasks || []).map(t => t.id === action.task.id ? action.task : t)
                 }))
             };
@@ -156,9 +187,72 @@ function reducer(state: StoreState, action: Action): StoreState {
                 tasks: (state.tasks || []).filter(t => t.projectId !== action.id)
             };
         }
-        case 'SET_PROJECTS':
-            return { ...state, projects: recalculateProgress(action.projects, safeTasks) };
-        case 'ADD_TICKET':
+        case 'SET_PROJECTS': {
+            const localProjects = safeProjects;
+            const mergedProjects = action.projects.map(apiProject => {
+                const local = localProjects.find(p => p.id === apiProject.id);
+                if (local) {
+                    return {
+                        ...apiProject,
+                        viewMode: local.viewMode ?? apiProject.viewMode,
+                        type: local.type ?? apiProject.type,
+                        clientName: local.clientName ?? apiProject.clientName,
+                        budget: local.budget ?? apiProject.budget,
+                        members: local.members?.length ? local.members : (apiProject.members || []),
+                        tags: local.tags?.length ? local.tags : (apiProject.tags || []),
+                    };
+                }
+                return apiProject;
+            });
+            const apiIds = new Set(action.projects.map(p => p.id));
+            const localOnlyProjects = localProjects.filter(p => !apiIds.has(p.id));
+            const finalProjects = [...mergedProjects, ...localOnlyProjects];
+            return { ...state, projects: recalculateProgress(finalProjects, safeTasks) };
+        }
+
+        case 'SET_TASKS': {
+            // Smart merge: preserve locally-modified fields for existing tasks
+            const localTasks = safeTasks;
+            const mergedTasks = action.tasks.map(apiTask => {
+                const local = localTasks.find(t => t.id === apiTask.id);
+                if (local) {
+                    return {
+                        ...apiTask,
+                        priority:    local.priority,
+                        status:      local.status,
+                        title:       local.title,
+                        description: local.description ?? apiTask.description,
+                        storyPoints: local.storyPoints ?? apiTask.storyPoints,
+                        dueDate:     local.dueDate ?? apiTask.dueDate,
+                        tags:        local.tags?.length ? local.tags : (apiTask.tags || []),
+                        sprintId:    local.sprintId ?? apiTask.sprintId,
+                        assigneeId:  local.assigneeId !== undefined ? local.assigneeId : apiTask.assigneeId,
+                        assigneeName: local.assigneeName !== undefined ? local.assigneeName : apiTask.assigneeName,
+                        assigneeAvatar: local.assigneeAvatar !== undefined ? local.assigneeAvatar : apiTask.assigneeAvatar,
+                    };
+                }
+                return apiTask;
+            });
+            // Keep tasks created locally that the API doesn't know about
+            const apiIds = new Set(action.tasks.map(t => t.id));
+            const localOnlyTasks = localTasks.filter(t => !apiIds.has(t.id));
+            const finalTasks = [...mergedTasks, ...localOnlyTasks];
+            return { ...state, tasks: finalTasks, projects: recalculateProgress(safeProjects, finalTasks) };
+        }
+        case 'SET_SPRINTS': {
+            const localSprints = safeSprints;
+            const mergedSprints = action.sprints.map(apiSprint => {
+                const local = localSprints.find(s => s.id === apiSprint.id);
+                if (local) {
+                    return { ...apiSprint, ...local };
+                }
+                return apiSprint;
+            });
+            const apiIds = new Set(action.sprints.map(s => s.id));
+            const localOnlySprints = localSprints.filter(s => !apiIds.has(s.id));
+            return { ...state, sprints: [...mergedSprints, ...localOnlySprints] };
+        }
+
             return { ...state, tickets: [action.ticket, ...(state.tickets || [])] };
         case 'UPDATE_TICKET':
             return { ...state, tickets: (state.tickets || []).map(t => t.id === action.ticket.id ? action.ticket : t) };
@@ -173,7 +267,17 @@ function reducer(state: StoreState, action: Action): StoreState {
                     updatedAt: new Date().toISOString()
                 } : t)
             };
+        case 'WIPE_DATA':
+            return {
+                ...state,
+                projects: [],
+                tasks: [],
+                sprints: [],
+                selectedProjectId: null,
+                selectedSprintId: null,
+            };
         case 'TOGGLE_SIDEBAR':
+
             return { ...state, sidebarOpen: !state.sidebarOpen };
         default:
             return state;
@@ -199,15 +303,23 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(reducer, {
-        projects: INITIAL_MOCK_PROJECTS,
-        tasks: MOCK_TASKS,
-        sprints: MOCK_SPRINTS,
-        tickets: MOCK_TICKETS,
+        projects: loadFromLS<Project[]>(LS_KEYS.projects, []),
+        tasks:    loadFromLS<Task[]>(LS_KEYS.tasks, []),
+        sprints:  loadFromLS<Sprint[]>(LS_KEYS.sprints, []),
+        tickets:  loadFromLS<Ticket[]>(LS_KEYS.tickets, []),
         selectedProjectId: null,
         selectedSprintId: null,
         sidebarOpen: true,
         workspaceName: 'Mon Espace de Travail',
     });
+
+    // Persist every state change to localStorage
+    useEffect(() => {
+        saveToLS(LS_KEYS.projects, state.projects);
+        saveToLS(LS_KEYS.tasks,    state.tasks);
+        saveToLS(LS_KEYS.sprints,  state.sprints);
+        saveToLS(LS_KEYS.tickets,  state.tickets);
+    }, [state.projects, state.tasks, state.sprints, state.tickets]);
 
     const safeProjects = state.projects || [];
     const safeTasks = state.tasks || [];
@@ -235,10 +347,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const dashboardStats: DashboardStats = {
         totalProjects: safeProjects.length,
-        activeProjects: safeProjects.filter(p => p.status === 'IN_PROGRESS').length,
+        activeProjects: safeProjects.filter(p => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE').length,
         totalTasks: safeTasks.length,
         completedTasks: safeTasks.filter(t => t.status === 'DONE').length,
-        teamMembers: 1,
+        teamMembers: new Set(safeProjects.flatMap(p => (p.members || []).map(m => m.id))).size || 0,
         upcomingDeadlines: safeTasks.filter(t => t.dueDate && new Date(t.dueDate) <= new Date(Date.now() + 7 * 24 * 3600 * 1000)).length,
     };
 

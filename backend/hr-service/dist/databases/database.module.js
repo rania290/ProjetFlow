@@ -23,7 +23,7 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                 password: process.env.DB_PASSWORD || 'postgres',
                 database: process.env.DB_NAME || 'hr_db',
                 autoLoadEntities: true,
-                synchronize: process.env.NODE_ENV === 'development',
+                synchronize: true,
                 logging: false,
                 retryAttempts: 2,
                 retryDelay: 1000,

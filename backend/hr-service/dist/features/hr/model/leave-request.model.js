@@ -38,32 +38,33 @@ __decorate([
     __metadata("design:type", String)
 ], LeaveRequest.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "employee_id" }),
+    (0, typeorm_1.Column)({ name: "employee_id", nullable: true }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], LeaveRequest.prototype, "employeeId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "employee_name" }),
+    (0, typeorm_1.Column)({ name: "employee_name", nullable: true }),
     __metadata("design:type", String)
 ], LeaveRequest.prototype, "employeeName", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: "enum",
         enum: leave_constants_1.LeaveType,
-        name: "type"
+        name: "type",
+        nullable: true
     }),
     __metadata("design:type", String)
 ], LeaveRequest.prototype, "type", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "start_date", type: "timestamp" }),
+    (0, typeorm_1.Column)({ name: "start_date", type: "timestamp", nullable: true }),
     __metadata("design:type", Date)
 ], LeaveRequest.prototype, "startDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "end_date", type: "timestamp" }),
+    (0, typeorm_1.Column)({ name: "end_date", type: "timestamp", nullable: true }),
     __metadata("design:type", Date)
 ], LeaveRequest.prototype, "endDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: "duration_days", type: "integer" }),
+    (0, typeorm_1.Column)({ name: "duration_days", type: "integer", nullable: true }),
     __metadata("design:type", Number)
 ], LeaveRequest.prototype, "durationDays", void 0);
 __decorate([

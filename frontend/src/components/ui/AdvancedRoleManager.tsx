@@ -14,6 +14,8 @@ import type {
   UserProjectRolesResponse 
 } from '../role-management/types';
 import { ROLE_CONFIG } from '../role-management/types';
+import { useStore } from '../../store/projectStore';
+
 
 import { UserCentricView } from '../role-management/UserCentricView';
 import { ProjectCentricView } from '../role-management/ProjectCentricView';
@@ -23,6 +25,8 @@ import { ManagerFilters } from '../role-management/ManagerFilters';
 import { DeleteConfirmModal } from '../role-management/Modals';
 
 export const AdvancedRoleManager: React.FC = () => {
+  const { state } = useStore();
+
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -56,12 +60,18 @@ export const AdvancedRoleManager: React.FC = () => {
       ]);
 
       setUsers(usersRes.data);
-      setProjects(projectsRes.data && projectsRes.data.length > 0 ? projectsRes.data : [
-        { id: '1', name: 'Projet Alpha', status: 'ACTIVE' },
-        { id: '2', name: 'Projet Beta', status: 'COMPLETED' }
-      ]);
+      
+      // Smart Merge: combine backend projects with store projects (which contains local ones)
+      const apiProjects = projectsRes.data || [];
+      const storeProjects = state.projects || [];
+      const apiIds = new Set(apiProjects.map((p: any) => p.id));
+      const localOnly = storeProjects.filter(p => !apiIds.has(p.id));
+      setProjects([...apiProjects, ...localOnly]);
+      
       setAllAssignments(assignmentsRes.data);
+
     } catch (err) {
+      console.error('[AdvancedRoleManager] Load error:', err);
       setError('Erreur lors du chargement des données');
     } finally {
       setLoading(false);

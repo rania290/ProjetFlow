@@ -115,6 +115,14 @@ export class RoleAssignmentsService {
     return true;
   }
 
+  async removeByProject(projectId: string) {
+    const rows = await this.repo.find({ where: { projectId } });
+    if (rows.length > 0) {
+      this.logger.log(`Removing ${rows.length} assignments for project ${projectId}`);
+      await this.repo.remove(rows);
+    }
+  }
+
   private countRoles(rows: RoleAssignment[]) {
     const counts: Record<string, number> = { ADMIN: 0, PROJECT_MANAGER: 0, TEAM_MEMBER: 0, CLIENT: 0 };
     for (const r of rows) {
