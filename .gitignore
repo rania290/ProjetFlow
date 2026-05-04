@@ -1,0 +1,30 @@
+# Databases
+pgsql/
+redis/
+
+# Dependencies
+node_modules/
+dist/
+.next/
+build/
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+*.log
+docker-compose.override.yml
