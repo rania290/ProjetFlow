@@ -5,7 +5,6 @@ import { useLeaveRequests } from '../../features/hr/leave/hooks/useLeaveRequests
 import { useLeaveActions } from '../../features/hr/leave/hooks/useLeaveActions';
 import { LeaveCard } from '../../features/hr/leave/components/LeaveCard';
 import { LeaveRequestForm } from '../../features/hr/leave/components/LeaveRequestForm';
-import { ReviewModal } from '../../features/hr/leave/components/ReviewModal';
 import { LeaveDetailsModal } from '../../features/hr/leave/components/LeaveDetailsModal';
 import { EmptyLeaveState } from '../../features/hr/leave/components/EmptyLeaveState';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -27,35 +26,38 @@ export const HRMyLeavesPage = () => {
   const [filter, setFilter] = useState<LeaveFilter>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
-  const [reviewId, setReviewId] = useState<string | null>(null);
   const [viewId, setViewId] = useState<string | null>(null);
 
   const { submitLeave, isSubmitting, approveLeave, rejectLeave, isReviewing, deleteLeave, isDeleting } = useLeaveActions();
 
   const filtered = filter === 'all' ? leaves : leaves.filter(l => l.status === filter);
-  const leaveToReview = leaves.find(l => l.id === reviewId) ?? null;
   const leaveToView = leaves.find(l => l.id === viewId) ?? null;
 
   const handleSubmit = useCallback(async (data: any) => {
+    const profileManagerIds = (user as any)?.managerIds || [];
+    const fallbackManagerId = user?.managerId;
+    const allManagerIds = Array.from(new Set([...profileManagerIds, fallbackManagerId].filter(Boolean)));
+
     await submitLeave({
       ...data,
       employeeId,
       employeeName,
-      managerId: user?.managerId
+      managerId: allManagerIds[0] || null,
+      managerIds: allManagerIds,
     });
     setIsFormOpen(false);
     refetch();
-  }, [submitLeave, employeeId, employeeName, user?.managerId, refetch]);
+  }, [submitLeave, employeeId, employeeName, user?.managerId, (user as any)?.managerIds, refetch]);
 
   const handleApprove = useCallback(async (id: string) => {
     await approveLeave(id, employeeId);
-    setReviewId(null);
+    setViewId(null);
     refetch();
   }, [approveLeave, employeeId, refetch]);
 
   const handleReject = useCallback(async (id: string, reason: string) => {
     await rejectLeave(id, employeeId, reason);
-    setReviewId(null);
+    setViewId(null);
     refetch();
   }, [rejectLeave, employeeId, refetch]);
 
@@ -72,8 +74,9 @@ export const HRMyLeavesPage = () => {
     { id: 'REJECTED', label: 'Rejetées' },
   ];
 
-  const role = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'HR_ADMIN'
-    ? 'HR_ADMIN' : user?.role === 'PROJECT_MANAGER' || user?.role === 'MANAGER'
+  const userRole = (user?.role || '').toUpperCase();
+  const role = (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'ROOT' || userRole === 'RH' || userRole === 'HR_ADMIN')
+    ? 'HR_ADMIN' : (userRole === 'PROJECT_MANAGER' || userRole === 'MANAGER' || userRole === 'CHEF' || userRole === 'CHEF DE PROJET')
       ? 'MANAGER' : 'EMPLOYEE';
 
   return (
@@ -89,8 +92,8 @@ export const HRMyLeavesPage = () => {
                   key={f.id}
                   onClick={() => setFilter(f.id)}
                   className={`rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest font-black transition-all duration-300 ${filter === f.id
-                    ? 'bg-pink-600 text-white shadow-lg shadow-pink-100'
-                    : 'text-slate-400 hover:bg-white hover:text-pink-600'
+                    ? 'bg-amber-800 text-white shadow-lg shadow-amber-100'
+                    : 'text-slate-400 hover:bg-white hover:text-amber-800'
                     }`}
                 >
                   {f.label}
@@ -100,10 +103,10 @@ export const HRMyLeavesPage = () => {
 
             {/* View switcher */}
             <div className="hidden sm:flex gap-1.5 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-100">
-              <button onClick={() => setViewMode('table')} className={`p-2 rounded-xl transition-all ${viewMode === 'table' ? 'bg-white text-pink-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              <button onClick={() => setViewMode('table')} className={`p-2 rounded-xl transition-all ${viewMode === 'table' ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                 <ClipboardList className="w-4 h-4" />
               </button>
-              <button onClick={() => setViewMode('cards')} className={`p-2 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-white text-pink-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+              <button onClick={() => setViewMode('cards')} className={`p-2 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
                 <LayoutDashboard className="w-4 h-4" />
               </button>
             </div>
@@ -111,7 +114,7 @@ export const HRMyLeavesPage = () => {
 
           <button
             onClick={() => setIsFormOpen(true)}
-            className="group flex items-center gap-3 rounded-2xl bg-pink-600 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-900 transition-all shadow-xl shadow-pink-100"
+            className="group flex items-center gap-3 rounded-2xl bg-amber-800 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-stone-900 transition-all shadow-xl shadow-amber-100"
           >
             <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-500" />
             Nouvelle demande
@@ -152,26 +155,17 @@ export const HRMyLeavesPage = () => {
               </motion.div>
             ) : viewMode === 'table' ? (
               <motion.div key="table" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <LeaveTable leaves={filtered} role={role} onReview={setReviewId} onView={setViewId} />
+                <LeaveTable leaves={filtered} role={role} onView={setViewId} />
               </motion.div>
             ) : (
               <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filtered.map((leave, idx) => (
-                  <LeaveCard key={leave.id} leave={leave} role={role === 'EMPLOYEE' ? 'EMPLOYEE' : 'MANAGER'} onReview={setReviewId} onView={setViewId} index={idx} />
+                  <LeaveCard key={leave.id} leave={leave} role={role === 'EMPLOYEE' ? 'EMPLOYEE' : 'MANAGER'} onView={setViewId} index={idx} />
                 ))}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        <ReviewModal
-          leave={leaveToReview}
-          open={!!reviewId}
-          onClose={() => setReviewId(null)}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          isReviewing={isReviewing}
-        />
 
         <LeaveDetailsModal
           isOpen={!!viewId}
@@ -179,6 +173,10 @@ export const HRMyLeavesPage = () => {
           leave={leaveToView}
           onCancel={role === 'EMPLOYEE' ? handleCancelLeave : undefined}
           isDeleting={isDeleting}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          isReviewing={isReviewing}
+          role={role as any}
         />
       </div>
     </AppLayout>

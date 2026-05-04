@@ -18,9 +18,19 @@ export class AuthContextMiddleware implements NestMiddleware {
           const originalRole = (decoded.role || '').toUpperCase();
           
           // Map global roles to internal service roles to prevent 403 Forbidden
+          const EMPLOYEE_EQUIVALENT_ROLES = [
+            'DEVELOPER', 'DESIGNER', 'TESTER', 'PROJECT_MANAGER',
+            'TEAM_MEMBER', 'MANAGER', 'EMPLOYEE',
+          ];
+          const ADMIN_ROLES = ['ADMIN', 'ROOT', 'SUPER_ADMIN', 'SUPERADMIN'];
+
           let roles = [originalRole];
-          if (originalRole === 'ADMIN' || originalRole === 'ROOT') {
-            roles = [...roles, 'EMPLOYEE', 'HR_ADMIN', 'MANAGER', 'SUPERADMIN'];
+          if (ADMIN_ROLES.includes(originalRole)) {
+            // Admins get all roles
+            roles = [...ADMIN_ROLES, 'EMPLOYEE', 'HR_ADMIN', 'MANAGER', ...EMPLOYEE_EQUIVALENT_ROLES];
+          } else if (EMPLOYEE_EQUIVALENT_ROLES.includes(originalRole)) {
+            // Regular employees/team members always get EMPLOYEE role for HR service
+            roles = [...roles, 'EMPLOYEE'];
           }
           const rolesString = Array.from(new Set(roles)).join(',');
 

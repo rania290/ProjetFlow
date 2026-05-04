@@ -21,6 +21,7 @@ class CreateLeaveDto {
     endDate;
     motif;
     managerId;
+    managerIds;
 }
 exports.CreateLeaveDto = CreateLeaveDto;
 __decorate([

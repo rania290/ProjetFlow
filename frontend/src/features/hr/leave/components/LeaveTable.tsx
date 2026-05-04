@@ -58,7 +58,7 @@ export const LeaveTable: React.FC<LeaveTableProps> = ({
               <tr key={leave.id} className="group hover:bg-slate-50/50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-pink-50 text-pink-600 text-[10px] font-bold border border-pink-100 shadow-sm">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-100 shadow-sm">
                       {(leave.employeeName || 'U').substring(0, 2).toUpperCase()}
                     </div>
                     <div>
@@ -81,7 +81,7 @@ export const LeaveTable: React.FC<LeaveTableProps> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4 text-center">
-                  <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-pink-50 text-pink-700 text-xs font-black">
+                  <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-amber-50 text-amber-800 text-xs font-black">
                     {leave.durationDays}
                   </span>
                 </td>
@@ -119,14 +119,6 @@ export const LeaveTable: React.FC<LeaveTableProps> = ({
                       >
                         <Eye className="h-4 w-4" /> Voir détails
                       </DropdownMenuItem>
-                      {(role === 'MANAGER' || role === 'HR_ADMIN') && leave.status === 'PENDING' && (
-                        <DropdownMenuItem
-                          onClick={() => onReview?.(leave.id)}
-                          className="gap-2 text-xs font-bold text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded-lg cursor-pointer"
-                        >
-                          <ShieldCheck className="h-4 w-4" /> Valider / Refuser
-                        </DropdownMenuItem>
-                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>

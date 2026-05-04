@@ -57,17 +57,22 @@ export class AppModule implements NestModule {
           router: (req: any) => {
             const url = req.originalUrl || req.url || '';
             if (url.includes('/api/auth') || url.includes('/api/users')) return 'http://127.0.0.1:3001';
-            if (url.includes('/api/projects') || url.includes('/api/tasks') || url.includes('/api/sprints') || 
+            if (url.includes('/api/task-timelogs') || url.includes('/api/storage') || 
+                url.includes('/api/projects') || url.includes('/api/tasks') || url.includes('/api/sprints') || 
                 url.includes('/api/role-assignments') || url.includes('/api/permissions')) return 'http://127.0.0.1:3002';
             if (url.includes('/api/client-portal')) return 'http://127.0.0.1:3003';
             if (url.includes('/api/hr')) return 'http://127.0.0.1:3004';
             if (url.includes('/api/reporting')) return 'http://127.0.0.1:3005';
             if (url.includes('/api/communication')) return 'http://127.0.0.1:3006';
+            if (url.includes('/api/aura')) return 'http://127.0.0.1:3007';
             return 'http://127.0.0.1:3000';
           },
           pathRewrite: (path, req: any) => {
             const url = req.originalUrl || path || '';
             
+            // 0. Task Timelogs (Specific route)
+            if (url.includes('/api/task-timelogs')) return url.replace('/api/task-timelogs', '/task-timelogs');
+
             // 1. Auth & Users
             if (url.includes('/api/auth')) return url.replace('/api/auth', '/auth');
             if (url.includes('/api/users')) return url.replace('/api/users', '/users');
@@ -78,6 +83,8 @@ export class AppModule implements NestModule {
             if (url.includes('/api/sprints')) return url.replace('/api/sprints', '/sprints');
             if (url.includes('/api/role-assignments')) return url.replace('/api/role-assignments', '/role-assignments');
             if (url.includes('/api/permissions')) return url.replace('/api/permissions', '/permissions');
+            if (url.includes('/api/storage/files')) return url.replace('/api/storage/files', '/storage/files');
+            if (url.includes('/api/storage')) return url.replace('/api/storage', '/storage');
             
             // 3. Client Portal
             if (url.includes('/api/client-portal')) return url.replace('/api/client-portal', '');
@@ -86,12 +93,15 @@ export class AppModule implements NestModule {
             if (url.includes('/api/reporting')) return url.replace('/api/reporting', '');
             
             // 5. HR: Map /api/hr/* -> /api/v1/hr/*
-            if (url.includes('/api/hr')) {
+            if (url.includes('/api/hr') && !url.includes('/api/v1/hr')) {
                return url.replace('/api/hr', '/api/v1/hr').replace('//', '/');
             }
             
             // 6. Communication
             if (url.includes('/api/communication')) return url.replace('/api/communication', '/communication');
+            
+            // 7. Aura
+            if (url.includes('/api/aura')) return url.replace('/api/aura', '/aura');
             
             return url;
           },
@@ -104,6 +114,8 @@ export class AppModule implements NestModule {
               
               if (userId) proxyReq.setHeader('x-user-id', userId);
               if (role) proxyReq.setHeader('x-user-role', role);
+              const roles = req.headers['x-user-roles'];
+              if (roles) proxyReq.setHeader('x-user-roles', roles);
             },
             proxyRes: (proxyRes, req: any, res: any) => {
               console.log(`[Gateway Proxy Response] ${req.method} ${req.originalUrl} -> STATUS: ${proxyRes.statusCode}`);
@@ -120,11 +132,12 @@ export class AppModule implements NestModule {
             },
             error: (err, req, res: any) => {
               console.error('[Gateway Proxy ERROR]:', err.message);
-              if (res.status && !res.headersSent) {
-                res.status(502).json({
-                  message: 'Gateway Error: service unavailable',
+              if (!res.headersSent) {
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  message: 'Gateway Error: upstream service unavailable',
                   error: err.message,
-                });
+                }));
               }
             },
           },

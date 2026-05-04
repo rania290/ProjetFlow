@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/projectStore';
 import type { Task, TaskStatus } from '../types/project.types';
+import { TaskTimerButton } from '../components/tasks/TaskTimerButton';
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string; dot: string }> = {
     TODO: { label: 'À faire', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-300' },
@@ -280,11 +281,16 @@ const TaskRow: React.FC<{
             )}
 
             {/* Assignee */}
-            {task.assigneeName && (
-                <div className="w-6 h-6 rounded-full bg-indigo-100 border border-white flex items-center justify-center text-[10px] font-black text-indigo-700 flex-shrink-0" title={task.assigneeName}>
-                    {task.assigneeName.charAt(0).toUpperCase()}
+            <div className="flex items-center gap-2">
+                <div onClick={e => e.stopPropagation()}>
+                    <TaskTimerButton task={{ id: task.id, title: task.title, projectId: task.projectId }} />
                 </div>
-            )}
+                {task.assigneeName && (
+                    <div className="w-6 h-6 rounded-full bg-indigo-100 border border-white flex items-center justify-center text-[10px] font-black text-indigo-700 flex-shrink-0" title={task.assigneeName}>
+                        {task.assigneeName.charAt(0).toUpperCase()}
+                    </div>
+                )}
+            </div>
         </motion.div>
     );
 };
@@ -364,6 +370,9 @@ const BoardView: React.FC<{
                                                         {new Date(task.dueDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                                                     </span>
                                                 )}
+                                                <div onClick={e => e.stopPropagation()}>
+                                                    <TaskTimerButton task={{ id: task.id, title: task.title, projectId: task.projectId }} />
+                                                </div>
                                                 {task.assigneeName && (
                                                     <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[9px] font-black text-indigo-700" title={task.assigneeName}>
                                                         {task.assigneeName.charAt(0)}

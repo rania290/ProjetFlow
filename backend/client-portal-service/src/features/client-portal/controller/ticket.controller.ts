@@ -16,7 +16,7 @@ export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
-  @Roles('ADMIN', 'PROJECT_MANAGER', 'TEAM_MEMBER')
+  @Roles('ADMIN', 'PROJECT_MANAGER', 'TEAM_MEMBER', 'CLIENT')
   @ApiOperation({ summary: 'Créer un nouveau ticket' })
   @ApiResponse({ status: 201, description: 'Ticket créé avec succès.' })
   create(@Body() createTicketDto: CreateTicketDto, @Request() req) {
@@ -69,7 +69,7 @@ export class TicketController {
   }
 
   @Post(':id/comments')
-  @Roles('ADMIN', 'PROJECT_MANAGER', 'TEAM_MEMBER')
+  @Roles('ADMIN', 'PROJECT_MANAGER', 'TEAM_MEMBER', 'CLIENT')
   @ApiOperation({ summary: 'Ajouter un commentaire à un ticket' })
   @ApiResponse({ status: 201, description: 'Commentaire ajouté avec succès.' })
   addComment(@Param('id') id: string, @Body() commentDto: TicketCommentDto, @Request() req) {

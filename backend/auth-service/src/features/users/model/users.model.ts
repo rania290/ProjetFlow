@@ -40,8 +40,9 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ nullable: true })
-  managerId: string;
+  @Column("simple-array", { nullable: true })
+  managerIds: string[];
+
 
   /**
    * Optional: Actually relate the manager for easier tree building later

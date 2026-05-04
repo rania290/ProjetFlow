@@ -8,16 +8,20 @@ import { LeaveController } from "./controller/leave.controller";
 import { LeaveRequest } from "./model/leave-request.model";
 import { LeaveService } from "./service/leave.service";
 import { LeaveLoggerMiddleware } from "../../middleware/leave-logger.middleware";
+import { TimeTrackingController } from "./controller/time-tracking.controller";
+import { TimeTrackingService } from "./service/time-tracking.service";
+import { TimeTrackingSession } from "./model/time-tracking.model";
 
 @Module({
   imports: [
     DatabaseModule,
     EventEmitterModule.forRoot(),
-    TypeOrmModule.forFeature([LeaveRequest]),
+    TypeOrmModule.forFeature([LeaveRequest, TimeTrackingSession]),
   ],
-  controllers: [LeaveController],
+  controllers: [LeaveController, TimeTrackingController],
   providers: [
     LeaveService,
+    TimeTrackingService,
     {
       provide: 'REDIS_CLIENT',
       inject: [ConfigService],

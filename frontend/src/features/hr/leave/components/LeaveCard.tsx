@@ -37,7 +37,8 @@ export const LeaveCard = ({ leave, role, onReview, onView, index = 0 }: LeaveCar
   const getBorderColor = () => {
     switch (leave.status) {
       case 'PENDING': return 'border-l-amber-400'
-      case 'APPROVED': return 'border-l-emerald-400'
+      case 'CHEF_APPROVED': return 'border-l-blue-400'
+      case 'FULLY_APPROVED': return 'border-l-emerald-400'
       case 'REJECTED': return 'border-l-red-400'
       default: return 'border-l-gray-400'
     }
@@ -59,7 +60,7 @@ export const LeaveCard = ({ leave, role, onReview, onView, index = 0 }: LeaveCar
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10 border border-slate-200">
-              <AvatarFallback className="bg-pink-50 text-pink-600 text-sm font-bold">
+              <AvatarFallback className="bg-amber-50 text-amber-800 text-sm font-bold">
                 {getInitials(leave.employeeName)}
               </AvatarFallback>
             </Avatar>
@@ -88,33 +89,14 @@ export const LeaveCard = ({ leave, role, onReview, onView, index = 0 }: LeaveCar
 
           <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-pink-500" />
+              <Calendar className="w-3.5 h-3.5 text-amber-700" />
               <span>Du {formatDate(leave.startDate)} au {formatDate(leave.endDate)}</span>
             </div>
             <span className="px-2 py-0.5 bg-slate-100 rounded-full text-slate-600">{leave.durationDays} jour{leave.durationDays > 1 ? 's' : ''} ouvré{leave.durationDays > 1 ? 's' : ''}</span>
           </div>
         </div>
 
-        {leave.status === 'PENDING' && (role === 'MANAGER' || role === 'HR_ADMIN') && onReview && (
-          <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-            <Button
-              onClick={() => onReview(leave.id)}
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
-            >
-              <CheckCircle className="w-4 h-4 mr-1.5" />
-              Approuver
-            </Button>
-            <Button
-              onClick={() => onReview(leave.id)}
-              size="sm"
-              className="bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl border-0 shadow-sm"
-            >
-              <XCircle className="w-4 h-4 mr-1.5" />
-              Rejeter
-            </Button>
-          </div>
-        )}
+
       </Card>
     </motion.div>
   )

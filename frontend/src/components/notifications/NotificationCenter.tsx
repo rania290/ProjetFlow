@@ -49,6 +49,18 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ token })
 
     useSocketNotifications({ token, onNotification: handleNotification });
 
+    // Listen for local frontend events
+    useEffect(() => {
+        const handleLocalNotify = (e: Event) => {
+            const customEvent = e as CustomEvent<AppNotification>;
+            if (customEvent.detail) {
+                handleNotification(customEvent.detail);
+            }
+        };
+        window.addEventListener('app-notify', handleLocalNotify);
+        return () => window.removeEventListener('app-notify', handleLocalNotify);
+    }, [handleNotification]);
+
     const unreadCount = notifications.filter(n => !n.read).length;
 
     const markAllRead = () => {

@@ -65,17 +65,17 @@ export const EmployeeDirectory = ({ users, isLoading: usersLoading }: EmployeeDi
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
       {/* Search & Filter Toolbar */}
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white shadow-xl shadow-pink-100/20">
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white/50 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white shadow-xl shadow-amber-100/20">
         <div className="relative w-full md:max-w-md group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-pink-500 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-amber-700 transition-colors" />
           <Input 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Rechercher un collaborateur..."
-            className="h-12 w-full pl-12 rounded-2xl border-slate-100 bg-white/60 shadow-sm focus:ring-2 focus:ring-pink-500/20 font-medium text-xs transition-all hover:bg-white"
+            className="h-12 w-full pl-12 rounded-2xl border-slate-100 bg-white/60 shadow-sm focus:ring-2 focus:ring-amber-700/20 font-medium text-xs transition-all hover:bg-white"
           />
           {searchTerm && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-pink-400 animate-pulse">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-amber-700 animate-pulse">
               {filteredUsers.length} trouvé(s)
             </div>
           )}
@@ -89,8 +89,8 @@ export const EmployeeDirectory = ({ users, isLoading: usersLoading }: EmployeeDi
               onClick={() => setActiveCategory(cat.id)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
                 activeCategory === cat.id
-                  ? 'bg-pink-600 text-white shadow-lg shadow-pink-100'
-                  : 'text-slate-400 hover:text-pink-600 hover:bg-white'
+                  ? 'bg-amber-800 text-white shadow-lg shadow-amber-100'
+                  : 'text-slate-400 hover:text-amber-800 hover:bg-white'
               }`}
             >
               {cat.icon}

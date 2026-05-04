@@ -3,13 +3,16 @@ import {
     Search, Plus, Filter, MessageSquare,
     Clock, AlertCircle, CheckCircle2, X,
     ChevronRight, Send, Paperclip, Loader2,
-    Calendar, User, Tag, MessageCircle
+    Calendar, User, Tag, MessageCircle, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { useStore } from '../../store/projectStore';
 import { useAuth } from '../../hooks/useAuth';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { CreateTicketModal } from '../../components/client/CreateTicketModal';
+import { ticketsService } from '../../api/tickets.service';
+import { storageService } from '../../api/storage.service';
 import type { Ticket, TicketStatus, TicketPriority } from '../../types/project.types';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +51,28 @@ export const ClientTicketsPage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<TicketStatus | 'ALL'>('ALL');
     const [replyText, setReplyText] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [pendingAttachments, setPendingAttachments] = useState<any[]>([]);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        const loadTickets = async () => {
+            setIsLoading(true);
+            try {
+                const data = await ticketsService.getAll({}, user?.email);
+                dispatch({ type: 'SET_TICKETS', tickets: data as any });
+                if (data.length > 0 && !selectedTicketId) {
+                    setSelectedTicketId(data[0].id);
+                }
+            } catch (error) {
+                console.error('Failed to load tickets:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadTickets();
+    }, [dispatch, selectedTicketId]);
 
     const selectedTicket = state.tickets.find(t => t.id === selectedTicketId);
 
@@ -58,27 +83,64 @@ export const ClientTicketsPage: React.FC = () => {
         return matchesSearch && matchesStatus;
     });
 
-    const handleSendReply = () => {
-        if (!replyText.trim() || !selectedTicketId) return;
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
-        dispatch({
-            type: 'ADD_TICKET_MESSAGE',
-            ticketId: selectedTicketId,
-            message: {
-                id: Date.now().toString(),
-                authorId: user?.id || 'client-1',
-                authorName: user?.fullName || 'Client',
-                content: replyText,
-                createdAt: new Date().toISOString(),
-                isClient: true
+        setIsUploading(true);
+        try {
+            const newAttachments = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const result = await storageService.uploadFile(file);
+                newAttachments.push({
+                    name: file.name,
+                    url: result.url,
+                    size: file.size,
+                    type: file.type
+                });
             }
-        });
-        setReplyText('');
+            setPendingAttachments([...pendingAttachments, ...newAttachments]);
+            toast.success(`${files.length} fichier(s) prêt(s)`);
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast.error("Erreur lors de l'envoi des fichiers (Pièces jointes)");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const handleSendReply = async () => {
+        const hasContent = replyText.trim().length > 0;
+        const hasAttachments = pendingAttachments.length > 0;
+        
+        if ((!hasContent && !hasAttachments) || !selectedTicketId) return;
+
+        try {
+            const updatedTicket = await ticketsService.addComment(
+                selectedTicketId, 
+                replyText, 
+                pendingAttachments,
+                user?.email
+            );
+            dispatch({
+                type: 'UPDATE_TICKET',
+                ticket: updatedTicket
+            });
+            toast.success("Message envoyé !");
+            setReplyText('');
+            setPendingAttachments([]);
+        } catch (error: any) {
+            console.error('Failed to send reply:', error);
+            const errorMsg = error.response?.data?.message || error.message || "Erreur inconnue";
+            toast.error(`Erreur Base de données : ${errorMsg}`);
+        }
     };
 
     return (
         <AppLayout title="Support" subtitle="Gestion de vos tickets et assistance technique">
-            <div className="flex h-[calc(100vh-64px)] bg-slate-50/50">
+            <div className="absolute inset-0 flex bg-slate-50/50 overflow-hidden">
                 {/* Left Sidebar - Tickets List - High Density but Legible Text */}
                 <div className="w-[320px] border-r border-slate-100 bg-white flex flex-col flex-shrink-0 shadow-sm relative z-10 transition-all">
                     <div className="p-5 space-y-4 border-b border-slate-50">
@@ -150,7 +212,7 @@ export const ClientTicketsPage: React.FC = () => {
                 </div>
 
                 {/* Right Content - Chat Thread - Legible Text Maintained */}
-                <div className="flex-1 bg-white flex flex-col overflow-hidden">
+                <div className="flex-1 bg-white flex flex-col overflow-hidden relative">
                     {selectedTicket ? (
                         <>
                             {/* Chat Header - Higher Legibility */}
@@ -174,81 +236,171 @@ export const ClientTicketsPage: React.FC = () => {
                                     </Badge>
                                 </div>
                             </div>
-
-                            <ScrollArea className="flex-1 bg-slate-50/20">
+                            <ScrollArea className="flex-1 min-h-0 bg-slate-50/10">
                                 <div className="max-w-4xl mx-auto p-8">
-                                    {/* Info Header - Detailed but Compact */}
-                                    <div className="grid grid-cols-3 gap-6 mb-8 bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Agent VAERDIA</span>
-                                            <span className="text-sm font-black text-emerald-600 truncate">{selectedTicket.assigneeName || 'En attente'}</span>
+                                    {/* Info Header */}
+                                    <div className="grid grid-cols-3 gap-6 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agent Vaerdia</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                <p className="text-sm font-black text-emerald-600 uppercase tracking-tight">Support Actif</p>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Priorité</span>
-                                            <span className={`text-sm font-black uppercase ${PRIORITY_CONFIG[selectedTicket.priority].color}`}>{PRIORITY_CONFIG[selectedTicket.priority].label}</span>
+                                        <div className="space-y-1.5 border-x border-slate-50 px-6">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Priorité</p>
+                                            <p className={`text-sm font-black uppercase tracking-tight ${PRIORITY_CONFIG[selectedTicket.priority].color}`}>
+                                                {PRIORITY_CONFIG[selectedTicket.priority].label}
+                                            </p>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 leading-none">Dernière mise à jour</span>
-                                            <span className="text-sm font-black text-slate-700">{new Date(selectedTicket.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <div className="space-y-1.5 text-right">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dernière mise à jour</p>
+                                            <p className="text-sm font-black text-slate-700 uppercase tracking-tight">
+                                                {new Date(selectedTicket.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="mb-10">
-                                        <div className="p-5 bg-white rounded-2xl border border-slate-100 text-sm text-slate-600 leading-relaxed font-medium shadow-sm">
+                                    {/* Description Card */}
+                                    <div className="mb-10 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Info className="w-4 h-4 text-emerald-500" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description initiale</span>
+                                        </div>
+                                        <p className="text-sm text-slate-600 leading-relaxed font-medium">
                                             {selectedTicket.description}
-                                        </div>
+                                        </p>
                                     </div>
 
-                                    {/* Chat Thread - Legible Fonts (text-sm) */}
-                                    <div className="space-y-6">
-                                        {selectedTicket.messages.map(msg => (
-                                            <div key={msg.id} className={`flex gap-4 ${msg.isClient ? 'flex-row-reverse' : ''}`}>
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 shadow-sm transition-transform hover:scale-105 active:scale-95 ${msg.isClient ? 'bg-emerald-600 text-white shadow-emerald-500/20' : 'bg-white text-slate-400 border border-slate-100'}`}>
-                                                    {(msg.authorName || '?').substring(0, 1).toUpperCase()}
+                                    {/* Chat Thread */}
+                                    <div className="space-y-6 mb-4">
+                                        {(selectedTicket.messages || []).map((msg, idx) => (
+                                            <motion.div 
+                                                initial={{ opacity: 0, x: msg.isClient ? 20 : -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                key={msg.id} 
+                                                className={`flex gap-3 ${msg.isClient ? 'flex-row-reverse' : 'flex-row'}`}
+                                            >
+                                                {/* Avatar */}
+                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black flex-shrink-0 shadow-sm border ${
+                                                    msg.isClient 
+                                                        ? 'bg-emerald-600 text-white border-emerald-500' 
+                                                        : 'bg-white text-slate-400 border-slate-100'
+                                                }`}>
+                                                    {(msg.authorName || 'S').substring(0, 1).toUpperCase()}
                                                 </div>
-                                                <div className={`max-w-[80%] ${msg.isClient ? 'items-end' : 'items-start'} flex flex-col`}>
-                                                    <div className={`p-4 text-sm leading-relaxed font-medium shadow-sm rounded-2xl ${
+
+                                                {/* Message Bubble */}
+                                                <div className={`flex flex-col max-w-[70%] ${msg.isClient ? 'items-end' : 'items-start'}`}>
+                                                    <div className={`px-4 py-3 text-sm font-medium leading-relaxed shadow-sm rounded-2xl ${
                                                         msg.isClient 
                                                             ? 'bg-emerald-600 text-white rounded-tr-none' 
                                                             : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                                                     }`}>
                                                         {msg.content}
+                                                        
+                                                        {/* Attachments Display */}
+                                                        {msg.attachments && msg.attachments.length > 0 && (
+                                                            <div className="mt-3 space-y-2 border-t border-white/20 pt-2">
+                                                                {msg.attachments.map((file: any, fIdx: number) => (
+                                                                    <a 
+                                                                        key={fIdx}
+                                                                        href={file.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={`flex items-center gap-2 p-2 rounded-lg text-xs transition-colors ${
+                                                                            msg.isClient ? 'bg-white/10 hover:bg-white/20' : 'bg-slate-50 hover:bg-slate-100'
+                                                                        }`}
+                                                                    >
+                                                                        <Paperclip className="w-3 h-3" />
+                                                                        <span className="truncate max-w-[150px]">{file.name}</span>
+                                                                        <span className="opacity-50 ml-auto">{(file.size / 1024).toFixed(0)}KB</span>
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <span className="text-[10px] font-bold text-slate-300 mt-2 uppercase tracking-wide px-1.5">
-                                                        {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
+                                                    <div className="flex items-center gap-2 mt-1.5 px-1">
+                                                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">
+                                                            {msg.authorName} • {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         ))}
                                     </div>
                                 </div>
                             </ScrollArea>
 
-                            {/* Slim Reply Box - Restored Height for Legibility */}
-                            <div className="px-8 py-5 border-t border-slate-50 bg-white">
-                                <div className="relative max-w-4xl mx-auto">
-                                    <textarea
-                                        value={replyText}
-                                        onChange={e => setReplyText(e.target.value)}
-                                        placeholder="Taper votre message..."
-                                        className="w-full min-h-[80px] max-h-32 p-4 pr-14 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:bg-white transition-all resize-none shadow-inner"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleSendReply();
-                                            }
-                                        }}
-                                    />
-                                    <Button
-                                        onClick={handleSendReply}
-                                        disabled={!replyText.trim()}
-                                        size="icon"
-                                        className={`absolute right-3 bottom-3 w-10 h-10 rounded-xl transition-all shadow-md ${
-                                            replyText.trim() ? 'bg-emerald-600 text-white hover:scale-105 shadow-emerald-500/20' : 'bg-slate-100 text-slate-300'
-                                        }`}
-                                    >
-                                        <Send className="w-5 h-5" />
-                                    </Button>
+                            {/* Fixed Premium Reply Section */}
+                            <div className="p-6 bg-white border-t border-slate-50">
+                                <div className="max-w-4xl mx-auto">
+                                    {/* Pending Attachments Preview */}
+                                    {pendingAttachments.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {pendingAttachments.map((file, idx) => (
+                                                <div key={idx} className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
+                                                    <Paperclip className="w-3 h-3 text-emerald-600" />
+                                                    <span className="text-xs font-bold text-emerald-700 truncate max-w-[120px]">{file.name}</span>
+                                                    <button 
+                                                        onClick={() => setPendingAttachments(prev => prev.filter((_, i) => i !== idx))}
+                                                        className="hover:bg-emerald-100 p-0.5 rounded-full"
+                                                    >
+                                                        <X className="w-3 h-3 text-emerald-600" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="bg-slate-50 rounded-3xl p-2 border border-slate-100 transition-all focus-within:border-emerald-500/30 focus-within:ring-4 focus-within:ring-emerald-500/5 focus-within:bg-white">
+                                        <input 
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                            multiple
+                                        />
+                                        <textarea
+                                            value={replyText}
+                                            onChange={e => setReplyText(e.target.value)}
+                                            placeholder="Écrivez votre message ici..."
+                                            className="w-full min-h-[60px] max-h-40 p-3 bg-transparent border-none text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSendReply();
+                                                }
+                                            }}
+                                        />
+                                        <div className="flex items-center justify-between p-1 border-t border-slate-100/50">
+                                            <div className="flex gap-1">
+                                                <Button 
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={isUploading}
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="w-9 h-9 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                                >
+                                                    {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                                                </Button>
+                                            </div>
+                                            <Button
+                                                onClick={handleSendReply}
+                                                disabled={(!replyText.trim() && pendingAttachments.length === 0) || isUploading}
+                                                className={`h-9 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                                    (replyText.trim() || pendingAttachments.length > 0) 
+                                                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98]' 
+                                                        : 'bg-slate-200 text-slate-400 shadow-none'
+                                                }`}
+                                            >
+                                                Envoyer
+                                                <Send className="w-3.5 h-3.5 ml-2" />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </>

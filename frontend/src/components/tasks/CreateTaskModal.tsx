@@ -20,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { Task, TaskStatus, TaskPriority, TaskType, Sprint } from '@/types/project.types';
 import { projectsService } from '@/api/projects.service';
+import { auraService } from '@/api/aura.service';
 import { Loader2 } from 'lucide-react';
 
 interface CreateTaskModalProps {
@@ -55,6 +56,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     });
     const [tagInput, setTagInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Aura Suggestions State
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
+    const [isSuggesting, setIsSuggesting] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -70,8 +76,31 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 tags: [],
             });
             setTagInput('');
+            setSuggestions([]);
+            setSelectedSuggestions(new Set());
         }
     }, [isOpen, defaultStatus, defaultDueDate]);
+
+    const handleSuggest = async () => {
+        if (!form.title.trim()) return;
+        setIsSuggesting(true);
+        try {
+            const tasks = await auraService.suggestTasks(form.title, form.description);
+            setSuggestions(tasks);
+            setSelectedSuggestions(new Set(tasks)); // Tout sélectionner par défaut
+        } catch (error) {
+            console.error('Aura failed to suggest tasks:', error);
+        } finally {
+            setIsSuggesting(false);
+        }
+    };
+
+    const toggleSuggestion = (task: string) => {
+        const next = new Set(selectedSuggestions);
+        if (next.has(task)) next.delete(task);
+        else next.add(task);
+        setSelectedSuggestions(next);
+    };
 
     const STEPS = ['Configuration', 'Détails', 'Récapitulatif'];
 
@@ -90,12 +119,29 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 dueDate: form.dueDate || undefined,
             };
             const createdTask = await projectsService.createTask(taskData);
+            
+            // Create suggested sub-tasks if any are selected
+            if (selectedSuggestions.size > 0) {
+                for (const subTaskTitle of selectedSuggestions) {
+                    await projectsService.createTask({
+                        projectId,
+                        sprintId: sprintId || undefined,
+                        parentTaskId: createdTask.id,
+                        title: subTaskTitle,
+                        description: `Généré automatiquement par Aura IA pour la story: ${form.title}`,
+                        type: 'TASK',
+                        status: 'TODO',
+                        priority: form.priority,
+                        storyPoints: 1
+                    });
+                }
+            }
+
             onCreated(createdTask);
             onClose();
             setStep(1);
         } catch (error) {
             console.error('Failed to create task:', error);
-            // Optionally add error feedback here
         } finally {
             setIsSubmitting(false);
         }
@@ -218,8 +264,21 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</Label>
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleSuggest}
+                                            disabled={isSuggesting || !form.title.trim()}
+                                            className="h-7 px-3 text-[10px] font-black text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg flex items-center gap-2 border-none"
+                                        >
+                                            {isSuggesting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3 fill-amber-500" />}
+                                            {suggestions.length > 0 ? "Actualiser les suggestions" : "Suggérer des tâches (IA)"}
+                                        </Button>
+                                    </div>
+                                    
                                     <Textarea
                                         value={form.description}
                                         onChange={e => setForm({ ...form, description: e.target.value })}
@@ -227,6 +286,62 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                         className="rounded-xl text-xs border-slate-100 bg-slate-50/30 resize-none italic font-medium"
                                         placeholder="Détails sur la tâche..."
                                     />
+
+                                    <AnimatePresence>
+                                        {suggestions.length > 0 && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, height: 0 }} 
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                className="space-y-3 pt-3"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 italic">
+                                                        Cliquez pour accepter ou rejeter les suggestions :
+                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setSelectedSuggestions(new Set(suggestions))}
+                                                            className="h-6 px-2 text-[8px] font-black text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg uppercase tracking-wider transition-all"
+                                                        >
+                                                            Tout sélectionner
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setSelectedSuggestions(new Set())}
+                                                            className="h-6 px-2 text-[8px] font-black text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-lg uppercase tracking-wider transition-all"
+                                                        >
+                                                            Tout désélectionner
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {suggestions.map((s, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => toggleSuggestion(s)}
+                                                            className={cn(
+                                                                "flex items-center gap-3 px-4 py-2.5 rounded-xl border text-left transition-all",
+                                                                selectedSuggestions.has(s) 
+                                                                    ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
+                                                                    : "bg-slate-50 border-slate-100 text-slate-400 line-through opacity-60"
+                                                            )}
+                                                        >
+                                                            <div className={cn(
+                                                                "w-4 h-4 rounded flex items-center justify-center border transition-all",
+                                                                selectedSuggestions.has(s) ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300"
+                                                            )}>
+                                                                {selectedSuggestions.has(s) && <Check className="w-2.5 h-2.5" />}
+                                                            </div>
+                                                            <span className="text-[11px] font-bold">{s}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Échéance</Label>
@@ -266,6 +381,21 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                             <p className="text-xl font-black text-primary-600">{form.storyPoints} pts</p>
                                         </div>
                                     </div>
+
+                                    {selectedSuggestions.size > 0 && (
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Sous-tâches Aura à créer ({selectedSuggestions.size})
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {Array.from(selectedSuggestions).map(s => (
+                                                    <Badge key={s} variant="secondary" className="bg-amber-50 text-amber-700 border-amber-100 text-[10px] py-1 px-2 font-bold rounded-lg">
+                                                        {s}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -273,7 +403,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 </div>
 
                 <DialogFooter className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between shadow-[0_-8px_20px_rgba(0,0,0,0.02)]">
-                    <Button variant="ghost" onClick={onClose} className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">
+                    <Button 
+                        variant="ghost" 
+                        onClick={step === 1 ? onClose : () => setStep(prev => prev - 1)} 
+                        className="rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600"
+                    >
                         {step === 1 ? 'Annuler' : 'Précédent'}
                     </Button>
 

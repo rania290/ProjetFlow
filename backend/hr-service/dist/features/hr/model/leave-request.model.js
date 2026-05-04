@@ -23,6 +23,7 @@ let LeaveRequest = class LeaveRequest {
     motif;
     status;
     managerId;
+    managerIds;
     currentValidatorId;
     validationStep;
     reviewedBy;
@@ -85,6 +86,10 @@ __decorate([
     (0, typeorm_1.Column)("uuid", { name: "manager_id", nullable: true }),
     __metadata("design:type", Object)
 ], LeaveRequest.prototype, "managerId", void 0);
+__decorate([
+    (0, typeorm_1.Column)("simple-array", { name: "manager_ids", nullable: true }),
+    __metadata("design:type", Array)
+], LeaveRequest.prototype, "managerIds", void 0);
 __decorate([
     (0, typeorm_1.Column)("uuid", { name: "current_validator_id", nullable: true }),
     __metadata("design:type", Object)

@@ -96,9 +96,9 @@ export const ROLE_CONFIG: RoleConfigType = {
   },
   DESIGNER: {
     label: 'Designer',
-    color: 'bg-pink-50 text-pink-700 border-pink-200/50',
-    iconColor: 'text-pink-600',
-    iconBg: 'bg-pink-100',
+    color: 'bg-amber-50 text-amber-800 border-amber-200/50',
+    iconColor: 'text-amber-800',
+    iconBg: 'bg-amber-100',
     icon: Shield,
     description: 'Design et UX/UI',
     level: 60

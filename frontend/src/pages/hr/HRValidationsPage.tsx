@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLeaveRequests } from '../../features/hr/leave/hooks/useLeaveRequests';
 import { useLeaveActions } from '../../features/hr/leave/hooks/useLeaveActions';
 import { LeaveTable } from '../../features/hr/leave/components/LeaveTable';
-import { ReviewModal } from '../../features/hr/leave/components/ReviewModal';
+import { LeaveDetailsModal } from '../../features/hr/leave/components/LeaveDetailsModal';
 import { Skeleton } from '../../components/ui/skeleton';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -12,27 +12,28 @@ import { AnimatePresence, motion } from 'framer-motion';
 export const HRValidationsPage = () => {
   const { user } = useAuth();
   const employeeId = user?.id ?? 'unknown';
-  const role = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'HR_ADMIN'
-    ? 'HR_ADMIN' : user?.role === 'PROJECT_MANAGER' || user?.role === 'MANAGER'
+  const userRole = (user?.role || '').toUpperCase();
+  const role = (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN' || userRole === 'ROOT' || userRole === 'RH' || userRole === 'HR_ADMIN')
+    ? 'HR_ADMIN' : (userRole === 'PROJECT_MANAGER' || userRole === 'MANAGER' || userRole === 'CHEF' || userRole === 'CHEF DE PROJET')
       ? 'MANAGER' : 'EMPLOYEE';
 
   // Si HR_ADMIN, on ne filtre pas par validatorId pour voir toutes les demandes en attente
   const validatorId = role === 'HR_ADMIN' ? undefined : employeeId;
   const { data: pendingLeaves, isLoading, refetch } = useLeaveRequests(validatorId, 'MANAGER');
-  const [reviewId, setReviewId] = useState<string | null>(null);
+  const [viewId, setViewId] = useState<string | null>(null);
   const { approveLeave, rejectLeave, isReviewing } = useLeaveActions();
 
-  const leaveToReview = pendingLeaves.find(l => l.id === reviewId) ?? null;
+  const leaveToReview = pendingLeaves.find(l => l.id === viewId) ?? null;
 
   const handleApprove = useCallback(async (id: string) => {
     await approveLeave(id, employeeId);
-    setReviewId(null);
+    setViewId(null);
     refetch();
   }, [approveLeave, employeeId, refetch]);
 
   const handleReject = useCallback(async (id: string, reason: string) => {
     await rejectLeave(id, employeeId, reason);
-    setReviewId(null);
+    setViewId(null);
     refetch();
   }, [rejectLeave, employeeId, refetch]);
 
@@ -71,20 +72,21 @@ export const HRValidationsPage = () => {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Aucune demande en attente de traitement.</p>
               </motion.div>
             ) : (
-              <motion.div key="table" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden border-t-4 border-t-pink-600">
-                <LeaveTable leaves={pendingLeaves} role={role} onReview={setReviewId} />
+              <motion.div key="table" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden border-t-4 border-t-amber-800">
+                <LeaveTable leaves={pendingLeaves} role={role} onView={setViewId} />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        <ReviewModal
+        <LeaveDetailsModal
           leave={leaveToReview}
-          open={!!reviewId}
-          onClose={() => setReviewId(null)}
+          isOpen={!!viewId}
+          onClose={() => setViewId(null)}
           onApprove={handleApprove}
           onReject={handleReject}
           isReviewing={isReviewing}
+          role={role as any}
         />
       </div>
     </AppLayout>

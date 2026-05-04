@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import {
     ChevronRight,
     Layers,
@@ -22,355 +22,226 @@ import {
     Kanban,
     GanttChart,
     MessageSquare,
+    Play,
+    Database,
+    BookOpen,
+    HelpCircle
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { FadeInView } from '../components/ui/FadeInView';
 import { AnimatedCounter } from '../components/ui/AnimatedCounter';
 
 /* ============================================================
-   LANDING PAGE – VAERDIA ProjectFlow
-   Premium LIGHT design
+   LANDING PAGE – VAERDIA ProjectFlow (PREMIUM LIGHT THEME)
    ============================================================ */
 
 export const LandingPage: React.FC = () => {
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const { scrollYProgress } = useScroll();
-    const navBg = useTransform(scrollYProgress, [0, 0.05], [0, 1]);
-    const [navOpacity, setNavOpacity] = React.useState(0);
+    const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+    const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+    const [guideTab, setGuideTab] = useState<'basics' | 'tickets' | 'aura'>('basics');
+    const [demoStep, setDemoStep] = useState(0);
+    const [scrolled, setScrolled] = useState(false);
 
-    React.useEffect(() => {
-        return navBg.on('change', (v) => setNavOpacity(v));
-    }, [navBg]);
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 50);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden selection:bg-primary-100 selection:text-primary-700">
+        <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden selection:bg-primary-100 selection:text-primary-900 font-sans">
+            
+            {/* ===== NAVBAR ===== */}
+            <nav className={`fixed top-0 w-full z-[100] transition-all duration-500 px-6 py-4 ${
+                scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-100 py-3 shadow-sm' : 'bg-transparent'
+            }`}>
+                <div className="max-w-7xl mx-auto flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-2 group">
+                        <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-200 group-hover:scale-110 transition-transform duration-300">
+                            <Layers className="text-white w-6 h-6" />
+                        </div>
+                        <span className="text-2xl font-black tracking-tighter text-slate-900 font-display uppercase">VAERDIA</span>
+                    </Link>
 
-            {/* ===== SUBTLE BACKGROUND GRADIENTS ===== */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div className="absolute top-0 left-0 w-[80%] h-[60%] rounded-full opacity-30"
-                    style={{ background: 'radial-gradient(ellipse at 20% 10%, rgba(92,124,250,0.12) 0%, transparent 60%)' }} />
-                <div className="absolute bottom-0 right-0 w-[60%] h-[50%] rounded-full opacity-20"
-                    style={{ background: 'radial-gradient(ellipse at 80% 90%, rgba(190,75,219,0.1) 0%, transparent 60%)' }} />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50%] h-[40%] opacity-15"
-                    style={{ background: 'radial-gradient(ellipse, rgba(92,124,250,0.08) 0%, transparent 70%)' }} />
-            </div>
-
-            {/* ===== NAVIGATION ===== */}
-            <motion.nav className="fixed top-0 w-full z-50">
-                <div
-                    className="mx-4 md:mx-8 mt-4 rounded-2xl transition-all duration-500"
-                    style={{
-                        background: navOpacity > 0.1
-                            ? `rgba(255, 255, 255, ${0.85 + navOpacity * 0.15})`
-                            : 'rgba(255,255,255,0)',
-                        backdropFilter: navOpacity > 0.1 ? `blur(20px)` : 'none',
-                        border: navOpacity > 0.1 ? `1px solid rgba(92,124,250,${0.08 + navOpacity * 0.08})` : '1px solid transparent',
-                        boxShadow: navOpacity > 0.3 ? '0 4px 24px rgba(92,124,250,0.08), 0 1px 0 rgba(0,0,0,0.04)' : 'none',
-                    }}
-                >
-                    <div className="max-w-7xl mx-auto px-6 h-16 md:h-18 flex items-center justify-between">
-                        {/* Logo */}
-                        <Link to="/" className="flex items-center gap-3 group">
-                            <div className="relative w-9 h-9">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl opacity-90 group-hover:opacity-100 transition-opacity shadow-lg shadow-primary-500/30" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <Layers className="text-white w-5 h-5" />
-                                </div>
-                            </div>
-                            <span className="text-lg font-bold font-display tracking-tight text-slate-900">
-                                VAERDIA
-                            </span>
-                        </Link>
-
-                        {/* Desktop Nav */}
-                        <div className="hidden md:flex items-center gap-1">
-                            {['Produit', 'Solutions', 'Entreprise', 'Tarifs'].map((item) => (
-                                <Link
-                                    key={item}
-                                    to="#"
-                                    className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-all duration-200"
+                    {/* Desktop Nav */}
+                    <div className="hidden md:flex items-center gap-10 relative z-[110]">
+                        {[
+                            { name: 'Fonctionnalités', href: '#features' },
+                            { name: 'Guide', onClick: () => setIsGuideModalOpen(true) },
+                        ].map((link) => (
+                            link.href ? (
+                                <a 
+                                    key={link.name} 
+                                    href={link.href}
+                                    className="text-sm font-bold text-slate-500 hover:text-primary-600 transition-colors tracking-wide"
                                 >
-                                    {item}
-                                </Link>
-                            ))}
-                        </div>
-
-                        {/* Desktop CTA */}
-                        <div className="hidden md:flex items-center gap-3">
-                            <Link to="/login">
-                                <Button variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-                                    Se connecter
-                                </Button>
-                            </Link>
-                            <Link to="/register">
-                                <Button className="bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 shadow-lg shadow-primary-500/25 border-0 text-white">
-                                    Commencer gratuitement
-                                    <ArrowRight className="ml-2 w-4 h-4" />
-                                </Button>
-                            </Link>
-                        </div>
-
-                        {/* Mobile Toggle */}
-                        <button
-                            className="md:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-700"
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                    {link.name}
+                                </a>
+                            ) : (
+                                <button
+                                    key={link.name}
+                                    onClick={link.onClick}
+                                    className="text-sm font-bold text-slate-500 hover:text-primary-600 transition-colors tracking-wide cursor-pointer"
+                                >
+                                    {link.name}
+                                </button>
+                            )
+                        ))}
+                        <button 
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsVideoModalOpen(true);
+                            }}
+                            className="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors tracking-wide cursor-pointer py-2 px-1"
                         >
-                            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            Voir la démo
                         </button>
                     </div>
+
+                    {/* Desktop CTA */}
+                    <div className="hidden md:flex items-center gap-4">
+                        <Link to="/login" className="text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors px-4">
+                            Se connecter
+                        </Link>
+                    </div>
                 </div>
+            </nav>
 
-                {/* Mobile Menu */}
-                {isMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="md:hidden mx-4 mt-2 rounded-2xl bg-white border border-slate-200 shadow-xl p-6 space-y-3"
-                    >
-                        {['Produit', 'Solutions', 'Entreprise', 'Tarifs'].map((item) => (
-                            <Link key={item} to="#" className="block px-4 py-3 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">
-                                {item}
-                            </Link>
-                        ))}
-                        <div className="pt-4 border-t border-slate-100 space-y-3">
-                            <Link to="/login" className="block"><Button variant="ghost" className="w-full text-slate-700">Se connecter</Button></Link>
-                            <Link to="/register" className="block"><Button className="w-full bg-gradient-to-r from-primary-600 to-primary-500 text-white">Commencer gratuitement</Button></Link>
+            {/* ===== HERO SECTION ===== */}
+            <section className="relative pt-40 pb-24 px-6 overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-gradient-to-b from-primary-50/50 to-transparent -z-10" />
+                
+                <div className="max-w-7xl mx-auto">
+                    <FadeInView className="text-center mb-20">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-100 border border-primary-200 text-xs font-bold text-primary-700 uppercase tracking-widest mb-8">
+                            <Sparkles className="w-4 h-4" /> Propulsé par Aura IA
                         </div>
-                    </motion.div>
-                )}
-            </motion.nav>
-
-            {/* ===== HERO ===== */}
-            <section className="relative pt-36 pb-20 md:pt-52 md:pb-32 px-6 z-10">
-                <div className="max-w-7xl mx-auto text-center">
-
-                    {/* Badge */}
-                    <FadeInView delay={0.1}>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 border border-primary-200 mb-8 group hover:border-primary-300 transition-colors cursor-default">
-                            <Sparkles className="w-4 h-4 text-primary-500" />
-                            <span className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
-                                Nouvelle version 2.0
+                        <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 mb-8 leading-[0.9] font-display">
+                            Gérez vos projets <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-accent-600">
+                                sans limites.
                             </span>
-                            <ChevronRight className="w-3 h-3 text-primary-400 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                    </FadeInView>
-
-                    {/* Heading */}
-                    <FadeInView delay={0.2}>
-                        <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[6.5rem] font-black font-display mb-8 tracking-tight leading-[0.95] text-slate-900">
-                            Gérez vos projets
-                            <br />
-                            <span className="gradient-text">sans limites.</span>
                         </h1>
-                    </FadeInView>
-
-                    {/* Sub-heading */}
-                    <FadeInView delay={0.3}>
-                        <p className="text-base md:text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
-                            VAERDIA ProjectFlow centralise planification, suivi et collaboration.{' '}
-                            <span className="text-slate-700 font-medium">Plus rapide, plus flexible, plus puissant que tout ce que vous avez utilisé avant.</span>
+                        <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed font-medium">
+                            VAERDIA centralise vos tâches et vos insights IA dans une interface épurée conçue pour la performance brute.
                         </p>
                     </FadeInView>
 
-                    {/* CTA */}
-                    <FadeInView delay={0.4} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link to="/register">
-                            <Button size="lg" className="h-14 px-10 text-base font-bold bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 shadow-xl shadow-primary-500/25 group border-0 text-white">
-                                <Sparkles className="mr-2 w-5 h-5" />
-                                Essai gratuit 14 jours
-                                <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </Link>
-                        <Button variant="outline" size="lg" className="h-14 px-10 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300">
-                            <svg className="mr-2 w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21" /></svg>
-                            Voir la démo
-                        </Button>
-                    </FadeInView>
-
-                    {/* Social proof */}
-                    <FadeInView delay={0.5}>
-                        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-slate-400">
-                            <div className="flex -space-x-2">
-                                {[
-                                    'bg-gradient-to-br from-blue-400 to-blue-600',
-                                    'bg-gradient-to-br from-emerald-400 to-emerald-600',
-                                    'bg-gradient-to-br from-amber-400 to-amber-600',
-                                    'bg-gradient-to-br from-rose-400 to-rose-600',
-                                    'bg-gradient-to-br from-violet-400 to-violet-600',
-                                ].map((bg, i) => (
-                                    <div key={i} className={`w-8 h-8 rounded-full ${bg} border-2 border-white flex items-center justify-center text-white text-[10px] font-bold shadow-sm`}>
-                                        {['A', 'M', 'S', 'K', 'R'][i]}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex items-center gap-1">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                    <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                                ))}
-                                <span className="ml-2 text-slate-500">
-                                    Noté <span className="text-slate-800 font-semibold">4.9/5</span> par +10 000 équipes
-                                </span>
-                            </div>
-                        </div>
-                    </FadeInView>
-
-                    {/* ===== PLATFORM PREVIEW ===== */}
-                    <FadeInView delay={0.7} className="mt-20 relative">
-                        <div className="relative mx-auto max-w-6xl">
-                            {/* Glow */}
-                            <div className="absolute inset-0 -m-10 bg-gradient-to-b from-primary-500/08 via-accent-500/04 to-transparent rounded-[60px] blur-3xl pointer-events-none" />
-
-                            <div className="relative rounded-3xl border border-slate-200 p-1.5 bg-white shadow-[0_24px_80px_rgba(92,124,250,0.12)] overflow-hidden">
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shadow-inner">
-                                    {/* Tab bar */}
-                                    <div className="flex items-center px-5 py-3 border-b border-slate-100 bg-white">
-                                        <div className="flex gap-2">
-                                            <div className="w-3 h-3 rounded-full bg-red-400/70" />
-                                            <div className="w-3 h-3 rounded-full bg-amber-400/70" />
-                                            <div className="w-3 h-3 rounded-full bg-emerald-400/70" />
+                    {/* INTERACTIVE BROWSER MOCKUP (LIGHT) */}
+                    <FadeInView delay={0.3} className="relative max-w-6xl mx-auto mt-20">
+                        <div className="relative rounded-[2.5rem] p-3 bg-white border border-slate-200 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)]">
+                            <div className="bg-slate-50 rounded-[2rem] overflow-hidden aspect-[16/10] relative flex border border-slate-100">
+                                {/* Sidebar Mockup */}
+                                <div className="w-64 bg-white border-r border-slate-100 hidden md:flex flex-col p-6">
+                                    <div className="flex items-center gap-3 mb-10">
+                                        <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+                                            <Layers className="text-white w-5 h-5" />
                                         </div>
-                                        <div className="flex-1 flex justify-center">
-                                            <div className="px-4 py-1 rounded-lg bg-slate-100 text-[11px] text-slate-400 font-mono">
-                                                app.vaerdia.com/dashboard
-                                            </div>
-                                        </div>
+                                        <span className="text-sm font-black tracking-tighter">VAERDIA</span>
                                     </div>
-
-                                    {/* Dashboard Content */}
-                                    <div className="flex" style={{ minHeight: '420px' }}>
-                                        {/* Sidebar */}
-                                        <div className="hidden md:flex w-56 border-r border-slate-100 bg-white flex-col p-4 gap-1">
-                                            <div className="flex items-center gap-3 px-3 py-2 mb-4">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
-                                                    <Layers className="w-4 h-4 text-white" />
-                                                </div>
-                                                <span className="text-sm font-bold text-slate-800">VAERDIA</span>
+                                    <div className="space-y-4">
+                                        {[
+                                            { icon: Layout, label: 'Dashboard', active: true },
+                                            { icon: Kanban, label: 'Board', active: false },
+                                            { icon: Clock, label: 'Timeline', active: false },
+                                            { icon: Users, label: 'Équipe', active: false },
+                                            { icon: BarChart3, label: 'Analytics', active: false },
+                                            { icon: MessageSquare, label: 'Messages', active: false },
+                                        ].map((item) => (
+                                            <div key={item.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${item.active ? 'bg-primary-50 text-primary-600' : 'text-slate-400'}`}>
+                                                <item.icon className="w-5 h-5" />
+                                                <span className="text-xs font-bold">{item.label}</span>
                                             </div>
-                                            {[
-                                                { icon: <Layout className="w-4 h-4" />, label: 'Dashboard', active: true },
-                                                { icon: <Kanban className="w-4 h-4" />, label: 'Board', active: false },
-                                                { icon: <GanttChart className="w-4 h-4" />, label: 'Timeline', active: false },
-                                                { icon: <Users className="w-4 h-4" />, label: 'Équipe', active: false },
-                                                { icon: <BarChart3 className="w-4 h-4" />, label: 'Analytics', active: false },
-                                                { icon: <MessageSquare className="w-4 h-4" />, label: 'Messages', active: false },
-                                            ].map(({ icon, label, active }) => (
-                                                <div key={label} className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all ${active ? 'bg-primary-50 text-primary-600 font-semibold' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>
-                                                    {icon}
-                                                    {label}
-                                                </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Main Content Mockup */}
+                                <div className="flex-1 p-8 overflow-hidden">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div>
+                                            <h3 className="text-2xl font-black text-slate-900">Projet Alpha - Refonte V2</h3>
+                                            <p className="text-xs font-medium text-slate-400">12 tâches · 4 membres actifs</p>
+                                        </div>
+                                        <div className="flex -space-x-2">
+                                            {[1, 2, 3].map(i => (
+                                                <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-slate-200 shadow-sm`} />
                                             ))}
+                                            <div className="w-8 h-8 rounded-full border-2 border-white bg-primary-600 flex items-center justify-center text-[8px] font-bold text-white shadow-sm">+</div>
                                         </div>
+                                    </div>
 
-                                        {/* Main area */}
-                                        <div className="flex-1 p-6 md:p-8 space-y-6 overflow-hidden bg-slate-50/60">
-                                            {/* Header row */}
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="text-lg font-bold text-slate-800 mb-1">Projet Alpha</div>
-                                                    <div className="text-xs text-slate-400">12 tâches · 4 membres</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {['À FAIRE', 'EN COURS', 'TERMINÉ'].map((col, idx) => (
+                                            <div key={col} className="space-y-4">
+                                                <div className="flex items-center justify-between px-1">
+                                                    <span className="text-[10px] font-black text-slate-400 tracking-widest">{col}</span>
+                                                    <span className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">2</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex -space-x-2">
-                                                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white" />
-                                                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 border-2 border-white" />
-                                                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white" />
-                                                    </div>
-                                                    <div className="h-8 px-3 rounded-lg bg-primary-50 text-primary-600 text-xs font-semibold flex items-center gap-1 border border-primary-100">
-                                                        <Zap className="w-3 h-3" /> Sprint 4
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Kanban columns */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                {[
-                                                    {
-                                                        title: 'À faire', color: 'bg-slate-400', cards: [
-                                                            { t: 'Refonte UX checkout', tag: 'Design', tagColor: 'text-violet-600 bg-violet-50 border-violet-100' },
-                                                            { t: 'API v2 endpoints', tag: 'Backend', tagColor: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-                                                        ]
-                                                    },
-                                                    {
-                                                        title: 'En cours', color: 'bg-primary-500', cards: [
-                                                            { t: 'Dashboard analytics', tag: 'Frontend', tagColor: 'text-blue-600 bg-blue-50 border-blue-100' },
-                                                            { t: 'Tests E2E sprint', tag: 'QA', tagColor: 'text-amber-600 bg-amber-50 border-amber-100' },
-                                                        ]
-                                                    },
-                                                    {
-                                                        title: 'Terminé', color: 'bg-emerald-500', cards: [
-                                                            { t: 'Auth SSO Google', tag: 'Sécurité', tagColor: 'text-rose-600 bg-rose-50 border-rose-100' },
-                                                        ]
-                                                    },
-                                                ].map(({ title, color, cards }) => (
-                                                    <div key={title} className="space-y-3">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className={`w-2 h-2 rounded-full ${color}`} />
-                                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{title}</span>
-                                                            <span className="ml-auto text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{cards.length}</span>
+                                                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                                                    <div className="w-10 h-1 bg-primary-600/20 rounded-full" />
+                                                    <p className="text-xs font-bold text-slate-800">Tâche Critique #{idx + 1}</p>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex -space-x-1">
+                                                            <div className="w-5 h-5 rounded-full bg-slate-200 border border-white" />
                                                         </div>
-                                                        {cards.map(({ t, tag, tagColor }) => (
-                                                            <div key={t} className="p-3 rounded-xl border border-slate-200 bg-white hover:shadow-md hover:border-primary-200 transition-all space-y-2 cursor-default">
-                                                                <div className="text-sm font-medium text-slate-700">{t}</div>
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${tagColor}`}>{tag}</span>
-                                                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border border-white shadow-sm" />
-                                                                </div>
-                                                            </div>
-                                                        ))}
+                                                        <div className="text-[8px] px-2 py-0.5 rounded-full bg-slate-100 font-black text-slate-500">PRIORITÉ</div>
                                                     </div>
-                                                ))}
+                                                </div>
+                                                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm space-y-3 opacity-50">
+                                                    <div className="w-8 h-1 bg-slate-200 rounded-full" />
+                                                    <p className="text-xs font-bold text-slate-800">Review PR</p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Floating Cards */}
-                            <div className="absolute -top-8 -right-6 hidden lg:block z-20">
-                                <motion.div
-                                    animate={{ y: [0, -12, 0] }}
-                                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                                    className="bg-white border border-slate-200 shadow-xl p-4 rounded-2xl flex items-center gap-4"
-                                >
-                                    <div className="w-11 h-11 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center">
-                                        <CheckCircle2 className="text-emerald-500 w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-800">+85% efficacité</p>
-                                        <p className="text-[11px] text-slate-400">vs outils classiques</p>
-                                    </div>
-                                </motion.div>
-                            </div>
+                            {/* Floating UI Elements (Light Mode) */}
+                            <motion.div 
+                                animate={{ y: [0, -10, 0] }}
+                                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                                className="absolute -top-6 -right-6 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-5 rounded-3xl border border-slate-100 flex items-center gap-4 z-20"
+                            >
+                                <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center">
+                                    <CheckCircle2 className="text-emerald-600 w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">+85% d'efficacité</p>
+                                    <p className="text-[10px] text-slate-400 font-medium">vs outils classiques</p>
+                                </div>
+                            </motion.div>
 
-                            <div className="absolute -bottom-6 -left-6 hidden lg:block z-20">
-                                <motion.div
-                                    animate={{ y: [0, 10, 0] }}
-                                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                                    className="bg-white border border-slate-200 shadow-xl p-4 rounded-2xl flex items-center gap-4"
-                                >
-                                    <div className="w-11 h-11 bg-primary-50 border border-primary-100 rounded-xl flex items-center justify-center">
-                                        <Bot className="text-primary-500 w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-800">IA intégrée</p>
-                                        <p className="text-[11px] text-slate-400">Automatisation intelligente</p>
-                                    </div>
-                                </motion.div>
-                            </div>
+                            <motion.div 
+                                animate={{ y: [0, 10, 0] }}
+                                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                                className="absolute -bottom-8 -left-8 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-5 rounded-3xl border border-slate-100 flex items-center gap-4 z-20"
+                            >
+                                <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center">
+                                    <Bot className="text-indigo-600 w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">Aura AI Active</p>
+                                    <p className="text-[10px] text-slate-400 font-medium">Automatisation intelligente</p>
+                                </div>
+                            </motion.div>
                         </div>
                     </FadeInView>
                 </div>
             </section>
 
-            {/* ===== TRUSTED BY ===== */}
-            <section className="py-16 px-6 border-t border-slate-100 relative z-10 bg-slate-50/50">
+            {/* ===== TECH STACK ===== */}
+            <section className="py-20 px-6 border-t border-slate-100 relative z-10 bg-slate-50">
                 <div className="max-w-7xl mx-auto text-center">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.2em] mb-10">
-                        Adopté par les équipes les plus ambitieuses
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-12">
+                        Technologies au cœur de l'écosystème
                     </p>
-                    <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-6 opacity-50">
-                        {['Google', 'Microsoft', 'Stripe', 'Vercel', 'Spotify', 'Notion'].map((name) => (
-                            <span key={name} className="text-xl font-bold font-display text-slate-400 tracking-tight hover:text-slate-600 transition-colors cursor-default">
+                    <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+                        {['React', 'NestJS', 'Docker', 'PostgreSQL', 'Redis', 'LLaMA 3.1'].map((name) => (
+                            <span key={name} className="text-2xl font-black font-display text-slate-900 tracking-tight hover:text-primary-600 transition-colors cursor-default">
                                 {name}
                             </span>
                         ))}
@@ -379,380 +250,509 @@ export const LandingPage: React.FC = () => {
             </section>
 
             {/* ===== STATS ===== */}
-            <section className="py-20 px-6 relative z-10">
-                <div className="max-w-5xl mx-auto">
+            <section className="py-24 px-6 relative z-10 bg-white">
+                <div className="max-w-6xl mx-auto">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-                        <StatCard value={10000} suffix="+" label="Équipes actives" delay={0} />
-                        <StatCard value={99} suffix="%" label="Uptime garanti" delay={0.1} />
-                        <StatCard value={50} suffix="M" label="Tâches créées" delay={0.2} />
-                        <StatCard value={150} suffix="+" label="Pays couverts" delay={0.3} />
+                        <StatCard value={6} suffix="" label="Microservices" delay={0} />
+                        <StatCard value={100} suffix="%" label="Dockerisé" delay={0.1} />
+                        <StatCard value={1} suffix="" label="IA Aura (RAG)" delay={0.2} />
+                        <StatCard value={3} suffix="" label="Bases de Données" delay={0.3} />
                     </div>
                 </div>
             </section>
 
             {/* ===== FEATURES GRID ===== */}
-            <section className="py-24 px-6 relative z-10 bg-slate-50/60">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-20">
-                        <FadeInView>
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-50 border border-primary-200 text-xs font-semibold text-primary-600 uppercase tracking-wider mb-6">
-                                <Zap className="w-3 h-3" /> Fonctionnalités
-                            </div>
-                        </FadeInView>
-                        <FadeInView delay={0.1}>
-                            <h2 className="text-4xl md:text-6xl font-black font-display mb-6 tracking-tight text-slate-900">
-                                Tout ce qu'il vous faut.
-                                <br />
-                                <span className="text-slate-400">Rien de superflu.</span>
-                            </h2>
-                        </FadeInView>
-                        <FadeInView delay={0.2}>
-                            <p className="text-slate-500 max-w-xl mx-auto text-lg">
-                                Plus besoin de jongler entre 10 outils différents. VAERDIA centralise tout votre flux de travail en un seul endroit.
-                            </p>
-                        </FadeInView>
+            <section id="features" className="py-32 px-6 relative z-10 bg-slate-50 border-y border-slate-100">
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <div className="text-center mb-24">
+                        <h2 className="text-5xl font-black font-display text-slate-900 mb-6 tracking-tighter">
+                            Tout ce qu'il vous faut.<br />
+                            <span className="text-primary-600 text-3xl md:text-5xl">Rien de superflu.</span>
+                        </h2>
+                        <p className="text-slate-500 max-w-xl mx-auto font-medium">
+                            Plus besoin de jongler entre 10 outils. VAERDIA centralise tout dans une interface conçue pour la vitesse.
+                        </p>
                     </div>
 
-                    {/* Bento Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {/* Feature 1 – Large */}
-                        <LightCard className="lg:col-span-2 p-8 md:p-10" delay={0.1}>
-                            <div className="flex flex-col md:flex-row md:items-center gap-8">
-                                <div className="flex-1">
-                                    <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-6">
-                                        <Zap className="text-amber-500 w-7 h-7" />
-                                    </div>
-                                    <h3 className="text-2xl font-bold font-display mb-3 text-slate-900">Vitesse éclair</h3>
-                                    <p className="text-slate-500 leading-relaxed">
-                                        Optimisé pour la rapidité extrême. Chargez vos boards instantanément, même avec des milliers de tâches et d'énormes équipes.
-                                    </p>
-                                </div>
-                                <div className="flex-shrink-0 w-full md:w-52">
-                                    <div className="space-y-3">
-                                        {[
-                                            { label: 'VAERDIA', val: 95, color: 'from-primary-500 to-accent-500' },
-                                            { label: 'Outil A', val: 40, color: 'from-slate-200 to-slate-300' },
-                                            { label: 'Outil B', val: 55, color: 'from-slate-200 to-slate-300' },
-                                        ].map(({ label, val, color }) => (
-                                            <div key={label}>
-                                                <div className="flex justify-between text-xs mb-1">
-                                                    <span className="text-slate-600">{label}</span>
-                                                    <span className="text-slate-400">{val}ms</span>
-                                                </div>
-                                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                    <motion.div
-                                                        initial={{ width: 0 }}
-                                                        whileInView={{ width: `${val}%` }}
-                                                        viewport={{ once: true }}
-                                                        transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
-                                                        className={`h-full rounded-full bg-gradient-to-r ${color}`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+                        {/* Feature 1 – Performance */}
+                        <DarkCard className="p-8 group" delay={0.1}>
+                            <div className="w-12 h-12 rounded-xl bg-primary-100 border border-primary-200 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <Zap className="text-primary-600 w-6 h-6" />
                             </div>
-                        </LightCard>
-
-                        {/* Feature 2 */}
-                        <LightCard className="p-8" delay={0.2}>
-                            <div className="w-14 h-14 rounded-2xl bg-primary-50 border border-primary-100 flex items-center justify-center mb-6">
-                                <Users className="text-primary-500 w-7 h-7" />
-                            </div>
-                            <h3 className="text-xl font-bold font-display mb-3 text-slate-900">Collaboration Temps Réel</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                Assignez, commentez, partagez. Tout en temps réel, sans latence. Comme si votre équipe était dans la même pièce.
+                            <h3 className="text-xl font-black text-slate-900 mb-3 font-display">Vitesse Inégalée</h3>
+                            <p className="text-slate-500 text-sm leading-relaxed mb-8 flex-grow">
+                                Architecture Serverless optimisée. Chargez vos boards instantanément.
                             </p>
-                            <div className="mt-6 flex -space-x-2">
-                                {['from-blue-400 to-blue-600', 'from-emerald-400 to-emerald-600', 'from-rose-400 to-rose-600'].map((c, i) => (
-                                    <motion.div
-                                        key={i}
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        whileInView={{ scale: 1, opacity: 1 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: 0.5 + i * 0.1 }}
-                                        className={`w-9 h-9 rounded-full bg-gradient-to-br ${c} border-2 border-white shadow-sm`}
-                                    />
+                            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">VAERDIA</span>
+                                        <span className="text-xs font-black text-emerald-600">95ms</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div initial={{ width: 0 }} whileInView={{ width: '30%' }} className="h-full bg-emerald-500" />
+                                    </div>
+                                    <div className="flex justify-between items-center opacity-40">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Concurrent A</span>
+                                        <span className="text-xs font-black text-slate-500">350ms</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden opacity-40">
+                                        <div className="h-full bg-slate-300 w-[80%]" />
+                                    </div>
+                                </div>
+                            </div>
+                        </DarkCard>
+
+                        {/* Feature 2 – Live Collaboration */}
+                        <DarkCard className="p-8 group" delay={0.2}>
+                            <div className="w-12 h-12 rounded-xl bg-accent-100 border border-accent-200 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <Users className="text-accent-600 w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 mb-3 font-display">Collaboration Live</h3>
+                            <p className="text-slate-500 text-sm leading-relaxed mb-8 flex-grow">
+                                Curseur en temps réel, présence et chat intégré.
+                            </p>
+                            <div className="flex items-center -space-x-3">
+                                {[1, 2, 3, 4].map(i => (
+                                    <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center overflow-hidden">
+                                        <img src={`https://i.pravatar.cc/100?u=${i}`} alt="User" />
+                                    </div>
                                 ))}
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    whileInView={{ scale: 1 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: 0.8 }}
-                                    className="w-9 h-9 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] text-slate-500 font-bold shadow-sm"
-                                >
+                                <div className="w-10 h-10 rounded-full border-2 border-white bg-primary-100 flex items-center justify-center text-[10px] font-black text-primary-700">
                                     +12
-                                </motion.div>
+                                </div>
                             </div>
-                        </LightCard>
+                        </DarkCard>
 
-                        {/* Feature 3 */}
-                        <LightCard className="p-8" delay={0.3}>
-                            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6">
-                                <Layout className="text-emerald-500 w-7 h-7" />
+                        {/* Feature 3 – Views */}
+                        <DarkCard className="p-8 group" delay={0.3}>
+                            <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <Layout className="text-emerald-600 w-6 h-6" />
                             </div>
-                            <h3 className="text-xl font-bold font-display mb-3 text-slate-900">Vues Multiples</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                Kanban, Gantt, Liste, Calendrier. Visualisez votre travail exactement comme vous le souhaitez.
+                            <h3 className="text-xl font-black text-slate-900 mb-3 font-display">Vues Multiples</h3>
+                            <p className="text-slate-500 text-sm leading-relaxed mb-8 flex-grow">
+                                Kanban, Liste, Calendrier ou Dashboard BI.
                             </p>
-                            <div className="mt-6 flex gap-2">
-                                {[
-                                    { icon: <Kanban className="w-4 h-4" />, active: true },
-                                    { icon: <GanttChart className="w-4 h-4" />, active: false },
-                                    { icon: <BarChart3 className="w-4 h-4" />, active: false },
-                                ].map(({ icon, active }, i) => (
-                                    <div key={i} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${active ? 'bg-primary-100 text-primary-600 border border-primary-200' : 'bg-slate-100 text-slate-400 hover:text-slate-600 border border-slate-100'}`}>
-                                        {icon}
+                            <div className="grid grid-cols-2 gap-2">
+                                {['Kanban', 'List', 'Calendar', 'Gantt'].map(view => (
+                                    <div key={view} className="px-3 py-2 rounded-lg bg-white border border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                                        {view}
                                     </div>
                                 ))}
                             </div>
-                        </LightCard>
+                        </DarkCard>
 
-                        {/* Feature 4 – Large */}
-                        <LightCard className="lg:col-span-2 p-8 md:p-10" delay={0.4}>
-                            <div className="flex flex-col md:flex-row md:items-center gap-8">
-                                <div className="flex-1">
-                                    <div className="w-14 h-14 rounded-2xl bg-accent-50 border border-accent-100 flex items-center justify-center mb-6"
-                                        style={{ backgroundColor: 'rgba(190,75,219,0.06)', borderColor: 'rgba(190,75,219,0.15)' }}>
-                                        <Bot className="text-accent-500 w-7 h-7" />
+                        {/* Feature 4 – Aura IA */}
+                        <DarkCard id="aura" className="p-8 overflow-hidden group" delay={0.4}>
+                            <div className="w-12 h-12 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <Bot className="text-indigo-600 w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 mb-3 font-display">Aura IA Intégrée</h3>
+                            <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow">
+                                Propulsé par LLaMA 3.1. Analyse vos projets automatiquement.
+                            </p>
+                            <div className="relative bg-white rounded-2xl p-4 border border-indigo-100 shadow-sm overflow-hidden">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center">
+                                        <Sparkles className="text-white w-3 h-3" />
                                     </div>
-                                    <h3 className="text-2xl font-bold font-display mb-3 text-slate-900">Intelligence Artificielle</h3>
-                                    <p className="text-slate-500 leading-relaxed">
-                                        Notre IA comprend vos projets. Elle prédit les blocages, suggère des optimisations et automatise les workflows répétitifs.
-                                    </p>
+                                    <span className="text-[10px] font-black text-indigo-900 uppercase">Aura Analyst</span>
                                 </div>
-                                <div className="flex-shrink-0">
-                                    <div className="w-full md:w-64 rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 shadow-sm">
-                                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                                            <Bot className="w-3 h-3 text-accent-500" />
-                                            <span>VAERDIA AI</span>
-                                        </div>
-                                        <div className="p-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-600 shadow-sm">
-                                            Le sprint 4 risque un retard de 2 jours. Je suggère de réaffecter la tâche "API v2" à Sara.
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <div className="px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[11px] font-semibold cursor-default hover:bg-primary-600 transition-colors">
-                                                Appliquer
-                                            </div>
-                                            <div className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 text-[11px] font-semibold cursor-default hover:bg-slate-200 transition-colors">
-                                                Ignorer
-                                            </div>
-                                        </div>
-                                    </div>
+                                <p className="text-[10px] text-slate-600 leading-tight">
+                                    Alerte : Le projet Alpha risque un dépassement de budget.
+                                </p>
+                                <div className="mt-3">
+                                    <div className="px-3 py-1.5 rounded-lg bg-indigo-600 text-[9px] font-bold text-white inline-block">Générer rapport</div>
                                 </div>
                             </div>
-                        </LightCard>
-
-                        {/* Feature 5 */}
-                        <LightCard className="p-8" delay={0.5}>
-                            <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mb-6">
-                                <BarChart3 className="text-rose-500 w-7 h-7" />
-                            </div>
-                            <h3 className="text-xl font-bold font-display mb-3 text-slate-900">Analyses Profondes</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                Suivez la vélocité, les burn-down charts et les performances avec des rapports automatiques en temps réel.
-                            </p>
-                        </LightCard>
-
-                        {/* Feature 6 */}
-                        <LightCard className="p-8" delay={0.55}>
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-6">
-                                <Layers className="text-indigo-500 w-7 h-7" />
-                            </div>
-                            <h3 className="text-xl font-bold font-display mb-3 text-slate-900">Scalabilité Totale</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                De 5 à 5 000 utilisateurs sans perte de performance. Architecture distribuée de dernière génération.
-                            </p>
-                        </LightCard>
-
-                        {/* Feature 7 */}
-                        <LightCard className="p-8" delay={0.6}>
-                            <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center mb-6">
-                                <Workflow className="text-sky-500 w-7 h-7" />
-                            </div>
-                            <h3 className="text-xl font-bold font-display mb-3 text-slate-900">Automatisations</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">
-                                Workflows personnalisables sans code. Laissez les robots gérer le travail répétitif pour vous.
-                            </p>
-                        </LightCard>
+                        </DarkCard>
                     </div>
                 </div>
             </section>
 
-            {/* ===== TESTIMONIALS ===== */}
-            <section className="py-24 px-6 relative z-10">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16">
-                        <FadeInView>
-                            <h2 className="text-4xl md:text-5xl font-black font-display mb-4 tracking-tight text-slate-900">
-                                Ils nous font confiance
-                            </h2>
-                        </FadeInView>
-                        <FadeInView delay={0.1}>
-                            <p className="text-slate-500 text-lg">Ce que disent nos utilisateurs les plus fidèles.</p>
-                        </FadeInView>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {[
-                            {
-                                quote: "VAERDIA a transformé notre façon de travailler. Nous avons réduit notre temps de livraison de 40% en 3 mois.",
-                                name: 'Sophie Martin',
-                                role: 'VP Engineering, TechCorp',
-                                avatar: 'from-blue-400 to-blue-600',
-                            },
-                            {
-                                quote: "Après avoir testé de nombreux outils, VAERDIA est le seul qui a convaincu toute l'équipe dès le premier jour.",
-                                name: 'Karim Benzarti',
-                                role: 'CTO, StartupFlow',
-                                avatar: 'from-emerald-400 to-emerald-600',
-                            },
-                            {
-                                quote: "L'IA intégrée est un game-changer. Elle anticipe les problèmes avant même qu'on les identifie nous-mêmes.",
-                                name: 'Laura Chen',
-                                role: 'Chef de Projet, DesignStudio',
-                                avatar: 'from-rose-400 to-rose-600',
-                            },
-                        ].map(({ quote, name, role, avatar }, i) => (
-                            <LightCard key={name} className="p-8" delay={0.1 + i * 0.1}>
-                                <div className="flex mb-4">
-                                    {[1, 2, 3, 4, 5].map((s) => (
-                                        <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
+            {/* ===== APP GUIDE SECTION ===== */}
+            <section id="guide" className="py-32 px-6 bg-white relative overflow-hidden">
+                <div className="max-w-7xl mx-auto relative z-10">
+                    <div className="flex flex-col md:flex-row items-center gap-16">
+                        <div className="flex-1">
+                            <FadeInView>
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-8">
+                                    <HelpCircle className="w-4 h-4" /> Tutoriel Rapide
+                                </div>
+                                <h2 className="text-5xl font-black font-display text-slate-900 mb-8 tracking-tighter">
+                                    Comment utiliser <br />
+                                    <span className="text-primary-600">Vaerdia Flow ?</span>
+                                </h2>
+                                <div className="space-y-10">
+                                    {[
+                                        { 
+                                            step: '01', 
+                                            title: 'Planification Agile', 
+                                            desc: 'Organisez vos Sprints, gérez votre Backlog et assignez des points d\'effort pour une visibilité totale sur vos cycles de développement.',
+                                            icon: <GanttChart className="w-5 h-5 text-primary-600" />
+                                        },
+                                        { 
+                                            step: '02', 
+                                            title: 'Collaboration Client', 
+                                            desc: 'Unifiez les retours via notre système de tickets intégré. Communiquez directement avec vos clients au cœur de chaque tâche.',
+                                            icon: <MessageSquare className="w-5 h-5 text-accent-600" />
+                                        },
+                                        { 
+                                            step: '03', 
+                                            title: 'Insights Prédictifs Aura', 
+                                            desc: 'Suivez vos Burndown Charts en temps réel et laissez Aura IA identifier les risques de retard avant qu\'ils ne surviennent.',
+                                            icon: <BarChart3 className="w-5 h-5 text-indigo-600" />
+                                        },
+                                    ].map((item) => (
+                                        <div key={item.step} className="flex gap-8 group">
+                                            <div className="relative">
+                                                <div className="text-4xl font-black text-slate-100 group-hover:text-primary-50 transition-colors font-display">
+                                                    {item.step}
+                                                </div>
+                                                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-lg bg-white border border-slate-100 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    {item.icon}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-primary-600 transition-colors">{item.title}</h3>
+                                                <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-sm">{item.desc}</p>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
-                                <p className="text-slate-600 leading-relaxed mb-8 text-sm italic">
-                                    "{quote}"
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatar} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-                                        {name[0]}
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-semibold text-slate-800">{name}</div>
-                                        <div className="text-xs text-slate-400">{role}</div>
-                                    </div>
-                                </div>
-                            </LightCard>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ===== CTA SECTION ===== */}
-            <section className="py-32 px-6 relative z-10">
-                <div className="max-w-4xl mx-auto relative">
-                    <FadeInView>
-                        <div className="relative rounded-[40px] overflow-hidden"
-                            style={{ background: 'linear-gradient(135deg, #4c6ef5 0%, #be4bdb 50%, #4263eb 100%)' }}>
-                            <div className="absolute inset-0 opacity-20"
-                                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E\")" }} />
-                            <div className="relative p-12 md:p-20 text-center text-white">
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-xs font-semibold text-white uppercase tracking-wider mb-8">
-                                    <Sparkles className="w-3 h-3" /> Offre de lancement
-                                </div>
-                                <h2 className="text-4xl md:text-7xl font-black font-display mb-8 tracking-tight leading-[0.95]">
-                                    Prêt à propulser
-                                    <br />
-                                    vos projets ?
-                                </h2>
-                                <p className="text-lg text-white/80 mb-12 max-w-lg mx-auto leading-relaxed">
-                                    Rejoignez plus de <span className="text-white font-semibold">10 000 équipes</span> qui utilisent déjà VAERDIA pour transformer leur productivité.
-                                </p>
-                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                    <Link to="/register">
-                                        <Button size="lg" className="h-16 px-12 text-lg font-bold bg-white text-primary-700 hover:bg-primary-50 shadow-2xl border-0 group">
-                                            Démarrer gratuitement
-                                            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                        </Button>
-                                    </Link>
-                                </div>
-                                <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-white/60">
-                                    <div className="flex items-center gap-2">
-                                        <Shield className="w-4 h-4" />
-                                        <span>Pas de carte bancaire</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="w-4 h-4" />
-                                        <span>Setup en 2 minutes</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Globe className="w-4 h-4" />
-                                        <span>Support 24/7</span>
-                                    </div>
-                                </div>
-                            </div>
+                            </FadeInView>
                         </div>
-                    </FadeInView>
+                        <div className="flex-1 relative">
+                            <FadeInView delay={0.3} className="relative z-10">
+                                <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl shadow-primary-500/20 border border-slate-800">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 rounded-full bg-red-500" />
+                                            <div className="w-3 h-3 rounded-full bg-amber-500" />
+                                            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                                        </div>
+                                        <div className="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                            Aura IA Dashboard
+                                        </div>
+                                    </div>
+                                    <div className="space-y-6">
+                                        {/* Simulated Task */}
+                                        <div className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="h-4 w-1/3 bg-primary-600/30 rounded-full" />
+                                                <div className="h-4 w-4 bg-primary-600 rounded-md" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="h-2 w-full bg-slate-700 rounded-full" />
+                                                <div className="h-2 w-2/3 bg-slate-700 rounded-full" />
+                                            </div>
+                                        </div>
+
+                                        {/* Simulated Aura Response */}
+                                        <div className="relative pl-12">
+                                            <div className="absolute left-0 top-0 w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-900/50">
+                                                <Sparkles className="text-white w-4 h-4" />
+                                            </div>
+                                            <div className="p-4 bg-primary-900/20 rounded-2xl border border-primary-500/20">
+                                                <p className="text-[10px] text-primary-200 leading-relaxed font-medium">
+                                                    "Analyse terminée. J'ai détecté 3 goulots d'étranglement potentiels dans le Sprint actuel. Voulez-vous que je réassigne les tâches ?"
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="h-16 bg-slate-800/30 rounded-2xl border border-slate-700/30" />
+                                            <div className="h-16 bg-slate-800/30 rounded-2xl border border-slate-700/30" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Overlay Play Button */}
+                                <div 
+                                    onClick={() => setIsGuideModalOpen(true)}
+                                    className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-500 bg-slate-900/20 backdrop-blur-[2px] rounded-[2.5rem] cursor-pointer group"
+                                >
+                                    <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                                        <BookOpen className="text-primary-600 w-8 h-8" />
+                                    </div>
+                                    <div className="absolute bottom-10 bg-white px-6 py-3 rounded-2xl shadow-xl text-primary-600 font-black uppercase tracking-widest text-xs transform translate-y-4 group-hover:translate-y-0 transition-all opacity-0 group-hover:opacity-100">
+                                        Ouvrir le Guide Interactif
+                                    </div>
+                                </div>
+
+                            </FadeInView>
+                            {/* Decorative elements */}
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary-500 rounded-full blur-[100px] opacity-20" />
+                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-accent-500 rounded-full blur-[100px] opacity-20" />
+                        </div>
+                    </div>
                 </div>
             </section>
 
             {/* ===== FOOTER ===== */}
-            <footer className="py-20 px-6 border-t border-slate-100 relative z-10 bg-slate-50/50">
-                <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-12">
-                    <div className="col-span-2 space-y-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-md">
-                                <Layers className="text-white w-5 h-5" />
+
+            <footer className="py-24 px-6 border-t border-slate-100 relative z-10 bg-white">
+                <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
+                    <div className="relative mb-10 group">
+                        <div className="absolute inset-0 bg-primary-100 blur-[80px] rounded-full opacity-50" />
+                        <div className="relative flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center shadow-xl shadow-primary-100">
+                                <Layers className="text-white w-7 h-7" />
                             </div>
-                            <span className="text-lg font-bold font-display text-slate-900">VAERDIA</span>
-                        </div>
-                        <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
-                            La plateforme de gestion de projet nouvelle génération. Conçue pour les équipes qui exigent l'excellence.
-                        </p>
-                        <div className="flex gap-3">
-                            {['X', 'in', 'D'].map((s) => (
-                                <div key={s} className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 text-xs font-bold cursor-pointer transition-all">
-                                    {s}
-                                </div>
-                            ))}
+                            <span className="text-3xl font-black tracking-tighter text-slate-900 font-display uppercase">VAERDIA</span>
                         </div>
                     </div>
-
-                    {[
-                        { title: 'Produit', links: ['Fonctionnalités', 'Intégrations', 'Mobile', 'Changelog'] },
-                        { title: 'Ressources', links: ['Documentation', 'Support', 'API', 'Blog'] },
-                        { title: 'Entreprise', links: ['À propos', 'Carrières', 'Presse', 'Contact'] },
-                        { title: 'Légal', links: ['Confidentialité', 'Conditions', 'Sécurité', 'RGPD'] },
-                    ].map(({ title, links }) => (
-                        <div key={title}>
-                            <h4 className="font-bold mb-6 text-[11px] uppercase tracking-[0.15em] text-slate-400">{title}</h4>
-                            <ul className="space-y-3">
-                                {links.map((link) => (
-                                    <li key={link}>
-                                        <Link to="#" className="text-sm text-slate-500 hover:text-primary-600 transition-colors duration-200">
-                                            {link}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="max-w-7xl mx-auto pt-16 mt-16 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-slate-400 text-xs">© 2026 VAERDIA ProjectFlow. Tous droits réservés.</p>
-                    <div className="flex gap-8">
-                        {['Statut', 'Sécurité', 'ChangeLog'].map((item) => (
-                            <Link key={item} to="#" className="text-xs text-slate-400 hover:text-primary-600 transition-colors duration-200">
-                                {item}
-                            </Link>
-                        ))}
+                    <p className="text-slate-500 text-sm leading-relaxed max-w-md mb-12 font-medium">
+                        La plateforme de gestion de projet intelligente. <br />
+                        Conçue pour les équipes qui bâtissent le monde de demain.
+                    </p>
+                    <div className="w-full pt-10 border-t border-slate-100">
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em]">
+                            © 2026 VAERDIA ProjectFlow · Tous droits réservés
+                        </p>
                     </div>
                 </div>
             </footer>
+
+            {/* ===== GUIDE INTERACTIF MODAL ===== */}
+            <AnimatePresence>
+                {isGuideModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[250] flex items-center justify-center p-4 md:p-10 bg-slate-900/60 backdrop-blur-xl"
+                    >
+                        <div className="absolute inset-0 cursor-pointer" onClick={() => setIsGuideModalOpen(false)} />
+                        
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 30 }}
+                            className="relative w-full max-w-5xl bg-white rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col md:flex-row h-[80vh]"
+                        >
+                            {/* Modal Sidebar */}
+                            <div className="w-full md:w-72 bg-slate-50 border-r border-slate-100 p-8 flex flex-col">
+                                <div className="flex items-center gap-3 mb-12">
+                                    <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-200">
+                                        <BookOpen className="text-white w-6 h-6" />
+                                    </div>
+                                    <span className="text-xl font-black tracking-tighter uppercase">Guide</span>
+                                </div>
+
+                                <nav className="space-y-2 flex-1">
+                                    {[
+                                        { id: 'basics', label: 'Espace & Sprints', icon: Kanban },
+                                        { id: 'tickets', label: 'Support Client', icon: MessageSquare },
+                                        { id: 'aura', label: 'IA Aura (RAG)', icon: Sparkles },
+                                        { id: 'bi', label: 'Analytics & Pilotage', icon: BarChart3 },
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setGuideTab(tab.id as any)}
+                                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
+                                                guideTab === tab.id ? 'bg-white shadow-md text-primary-600 border border-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                            }`}
+                                        >
+                                            <tab.icon className="w-5 h-5" />
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </nav>
+
+                                <button 
+                                    onClick={() => setIsGuideModalOpen(false)}
+                                    className="mt-8 w-full py-4 rounded-2xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-colors shadow-xl shadow-slate-200"
+                                >
+                                    J'ai compris
+                                </button>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div className="flex-1 overflow-y-auto p-12 bg-white">
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={guideTab}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="space-y-8"
+                                    >
+                                        {guideTab === 'basics' && (
+                                            <>
+                                                <h2 className="text-4xl font-black text-slate-900 leading-tight">Excellence Opérationnelle</h2>
+                                                <p className="text-slate-500 font-medium text-lg leading-relaxed">
+                                                    Maîtrisez la hiérarchie de Vaerdia Flow pour une organisation sans faille : Espace de Travail &gt; Projets &gt; Sprints &gt; Tâches.
+                                                </p>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                                                    <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm">
+                                                        <h4 className="text-slate-900 font-bold mb-3 flex items-center gap-2">
+                                                            <Workflow className="w-4 h-4 text-primary-600" />
+                                                            Cycle de Vie Agile
+                                                        </h4>
+                                                        <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                                                            Transformez vos idées brutes du Backlog en livrables concrets via des Sprints structurés. La gestion par points permet un suivi précis de la vélocité.
+                                                        </p>
+                                                    </div>
+                                                    <div className="p-8 bg-primary-50 rounded-[2rem] border border-primary-100 shadow-sm">
+                                                        <h4 className="text-primary-900 font-bold mb-3 flex items-center gap-2">
+                                                            <Bot className="w-4 h-4 text-primary-700" />
+                                                            Stratégie de Tâches
+                                                        </h4>
+                                                        <p className="text-primary-700 text-sm leading-relaxed font-medium">
+                                                            Catégorisez vos efforts (Bug, Story, Tâche) pour une lecture immédiate de la santé de votre projet et une priorisation intelligente.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {guideTab === 'tickets' && (
+                                            <>
+                                                <h2 className="text-4xl font-black text-slate-900 leading-tight">Relation Client Unifiée</h2>
+                                                <p className="text-slate-500 font-medium text-lg leading-relaxed">
+                                                    Éliminez les frictions de communication. Notre portail centralise les besoins de vos partenaires pour une réactivité maximale.
+                                                </p>
+                                                <div className="space-y-4">
+                                                    {[
+                                                        { title: "Standardisation des flux", desc: "Conversion automatique des demandes clients en unités de travail techniques." },
+                                                        { title: "Transparence totale", desc: "Suivi en temps réel de l'état d'avancement pour rassurer vos donneurs d'ordres." },
+                                                        { title: "Communication synchrone", desc: "Échanges instantanés via WebSocket pour une résolution accélérée des points de blocage." },
+                                                    ].map((item, i) => (
+                                                        <div key={i} className="flex items-start gap-6 p-6 rounded-[2rem] border border-slate-100 hover:border-primary-200 transition-all group bg-white shadow-sm hover:shadow-md">
+                                                            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-all shrink-0">{i+1}</div>
+                                                            <div>
+                                                                 <h4 className="font-bold text-slate-900 mb-1">{item.title}</h4>
+                                                                 <p className="text-xs text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+                                                             </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                        {guideTab === 'aura' && (
+                                            <>
+                                                <h2 className="text-4xl font-black text-slate-900 leading-tight">Intelligence Assistée (RAG)</h2>
+                                                <p className="text-slate-500 font-medium text-lg leading-relaxed">
+                                                    Aura n'est pas qu'un assistant, c'est le moteur cognitif de votre projet, propulsé par une architecture Retrieval-Augmented Generation.
+                                                </p>
+                                                <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
+                                                    <Sparkles className="absolute -right-16 -bottom-16 w-64 h-64 text-primary-500/10 rotate-12" />
+                                                    <div className="relative z-10 space-y-8">
+                                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-600/20 text-primary-400 border border-primary-500/30 text-[10px] font-black uppercase tracking-widest">
+                                                            Contextual Analysis Engine
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                            <div className="space-y-4">
+                                                                <h4 className="text-xl font-bold">Analyse Contextuelle</h4>
+                                                                <p className="text-slate-400 text-sm leading-relaxed">
+                                                                    Aura scanne vos données de projet pour identifier les risques critiques et suggérer des actions correctives immédiates.
+                                                                </p>
+                                                            </div>
+                                                            <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                                                <p className="text-xs text-primary-300 font-medium italic mb-2">Prompt conseillé :</p>
+                                                                <p className="text-sm text-white font-bold leading-relaxed">
+                                                                    "Identifie les dépendances critiques qui pourraient retarder le prochain jalon."
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {guideTab === 'bi' && (
+                                            <>
+                                                <h2 className="text-4xl font-black text-slate-900 leading-tight">Pilotage Stratégique</h2>
+                                                <p className="text-slate-500 font-medium text-lg leading-relaxed">
+                                                    Transformez vos données brutes en leviers de décision grâce à nos outils de haute précision.
+                                                </p>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                                                    <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
+                                                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mb-6">
+                                                            <BarChart3 className="text-emerald-600 w-6 h-6" />
+                                                        </div>
+                                                        <h4 className="text-slate-900 font-black mb-3 font-display">Vélocité & Burndown</h4>
+                                                        <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                                                            Suivez l'effort consommé en temps réel pour une prédictibilité totale sur vos dates de livraison.
+                                                        </p>
+                                                    </div>
+                                                    <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
+                                                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-6">
+                                                            <Database className="w-6 h-6 text-indigo-600" />
+                                                        </div>
+                                                        <h4 className="text-slate-900 font-black mb-3 font-display">Rapports de Gouvernance</h4>
+                                                        <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                                                            Générez des rapports PDF exhaustifs pour vos comités de pilotage, centralisant KPIs et santé du projet.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </motion.div>
+                                </AnimatePresence>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ===== VIDEO/DEMO MODAL ===== */}
+            <AnimatePresence>
+                {isVideoModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 bg-slate-900/40 backdrop-blur-md"
+                    >
+                        <div className="absolute inset-0 cursor-pointer" onClick={() => setIsVideoModalOpen(false)} />
+                        
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className="relative w-full max-w-6xl aspect-video bg-white rounded-[2rem] border border-slate-200 shadow-[0_40px_100px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col"
+                        >
+                            <div className="absolute top-0 w-full h-14 bg-gradient-to-b from-white/80 to-transparent z-[210] flex items-center justify-end px-6">
+                                <button 
+                                    onClick={() => setIsVideoModalOpen(false)}
+                                    className="w-10 h-10 rounded-full bg-white/50 hover:bg-white flex items-center justify-center text-slate-900 transition-colors border border-slate-200 shadow-sm"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <div className="flex-1 overflow-hidden relative group bg-slate-50">
+                                <iframe 
+                                    src="/login" 
+                                    title="Vaerdia Live Demo"
+                                    className="w-full h-full border-0"
+                                    style={{ background: 'white' }}
+                                />
+                                
+                                <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-slate-200 shadow-xl z-[220]">
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Live Preview Active</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
 
 /* ===== LOCAL COMPONENTS ===== */
 
-const LightCard: React.FC<{ className?: string; delay?: number; children: React.ReactNode }> = ({ className = '', delay = 0, children }) => (
-    <FadeInView delay={delay}>
+const DarkCard: React.FC<{ id?: string; className?: string; delay?: number; children: React.ReactNode }> = ({ id, className = '', delay = 0, children }) => (
+    <FadeInView delay={delay} className="h-full">
         <motion.div
-            whileHover={{ y: -4, boxShadow: '0 20px 60px rgba(92,124,250,0.12)' }}
+            id={id}
+            whileHover={{ y: -5, boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.05)' }}
             transition={{ duration: 0.3 }}
-            className={`bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-primary-200 transition-colors ${className}`}
+            className={`h-full bg-white rounded-[2.5rem] border border-slate-100 hover:border-primary-100 transition-all flex flex-col shadow-sm ${className}`}
         >
             {children}
         </motion.div>

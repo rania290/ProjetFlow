@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProjectCalendarViewProps {
     tasks: Task[];
-    onOpenTaskDetails: (task: Task) => void;
+    onOpenTaskDetails: (task: Task, isReadOnly?: boolean) => void;
     onAddTask?: (date: Date) => void;
 }
 
@@ -118,7 +118,7 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({ tasks,
                             return (
                                 <div
                                     key={task.id}
-                                    onClick={() => onOpenTaskDetails(task)}
+                                    onClick={() => onOpenTaskDetails(task, true)}
                                     className={`px-2 py-1.5 text-[10px] font-semibold border rounded-lg cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 w-[98%] bg-white ${colors.border} group/task shadow-sm`}
                                 >
                                     <div className="flex items-center gap-1.5 mb-1.5">
@@ -158,7 +158,7 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({ tasks,
                                             return (
                                                 <div
                                                     key={task.id}
-                                                    onClick={() => onOpenTaskDetails(task)}
+                                                    onClick={() => onOpenTaskDetails(task, true)}
                                                     className={`px-3 py-2 text-xs font-semibold border-b last:border-0 border-slate-50 cursor-pointer transition-colors hover:bg-slate-50 flex items-center justify-between`}
                                                 >
                                                     <span className="truncate flex-1 pr-2 text-slate-700">{task.title}</span>

@@ -9,30 +9,30 @@ export type ProjectViewMode = 'BOARD' | 'LIST' | 'CALENDAR' | 'GANTT';
 export type ProjectStatus = 'PLANNED' | 'IN_PROGRESS' | 'DELIVERED' | 'SUSPENDED';
 
 export interface ProjectMember {
-    id: string;
-    fullName: string;
-    role: string;
-    avatar: string;
-    tjm: number; // Tarif journalier moyen
+  id: string;
+  fullName: string;
+  role: string;
+  avatar: string;
+  tjm: number; // Tarif journalier moyen
 }
 
 export interface Project {
-    id: string;
-    name: string;
-    description: string;
-    type: ProjectType;
-    viewMode: ProjectViewMode;
-    status: ProjectStatus;
-    managerId: string;
-    managerName: string;
-    clientName?: string;
-    members: ProjectMember[];
-    budget: number;
-    startDate: string;
-    endDate: string;
-    progress: number; // 0–100
-    tags: string[];
-    createdAt: string;
+  id: string;
+  name: string;
+  description: string;
+  type: ProjectType;
+  viewMode: ProjectViewMode;
+  status: ProjectStatus;
+  managerId: string;
+  managerName: string;
+  clientName?: string;
+  members: ProjectMember[];
+  budget: number;
+  startDate: string;
+  endDate: string;
+  progress: number; // 0–100
+  tags: string[];
+  createdAt: string;
 }
 
 // ==============================
@@ -44,36 +44,37 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type TaskType = 'STORY' | 'BUG' | 'TASK' | 'IMPROVEMENT';
 
 export interface Task {
-    id: string;
-    projectId: string;
-    sprintId?: string;
-    title: string;
-    description: string;
-    type: TaskType;
-    status: TaskStatus;
-    priority: TaskPriority;
-    assigneeId?: string;
-    assigneeName?: string;
-    assigneeAvatar?: string;
-    storyPoints?: number;
-    estimatedHours?: number;
-    acceptanceCriteria?: string;
-    tags: string[];
-    createdAt: string;
-    completedAt?: string;
-    dueDate?: string;
-    comments: TaskComment[];
-    subTasks?: Task[];
-    parentTaskId?: string;
+  id: string;
+  projectId: string;
+  sprintId?: string;
+  title: string;
+  description: string;
+  type: TaskType;
+  status: TaskStatus;
+  priority: TaskPriority;
+  assigneeId?: string;
+  assigneeName?: string;
+  assigneeAvatar?: string;
+  storyPoints?: number;
+  estimatedHours?: number;
+  acceptanceCriteria?: string;
+  tags: string[];
+  createdAt: string;
+  completedAt?: string;
+  dueDate?: string;
+  comments: TaskComment[];
+  subTasks?: Task[];
+  parentTaskId?: string;
+  attachments?: { key: string; name: string; url?: string }[];
 }
 
 export interface TaskComment {
-    id: string;
-    authorId: string;
-    authorName: string;
-    authorAvatar: string;
-    content: string;
-    createdAt: string;
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  createdAt: string;
 }
 
 // ==============================
@@ -83,16 +84,16 @@ export interface TaskComment {
 export type SprintStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED';
 
 export interface Sprint {
-    id: string;
-    projectId: string;
-    name: string;
-    goal: string;
-    status: SprintStatus;
-    startDate: string;
-    endDate: string;
-    tasks: Task[];
-    velocity?: number;
-    capacity?: number;
+  id: string;
+  projectId: string;
+  name: string;
+  goal: string;
+  status: SprintStatus;
+  startDate: string;
+  endDate: string;
+  tasks: Task[];
+  velocity?: number;
+  capacity?: number;
 }
 
 // ==============================
@@ -100,10 +101,10 @@ export interface Sprint {
 // ==============================
 
 export interface KanbanColumn {
-    id: TaskStatus;
-    label: string;
-    color: string;
-    tasks: Task[];
+  id: TaskStatus;
+  label: string;
+  color: string;
+  tasks: Task[];
 }
 
 // ==============================
@@ -111,20 +112,20 @@ export interface KanbanColumn {
 // ==============================
 
 export interface ProjectStats {
-    totalBudget: number;
-    consumedBudget: number;
-    totalTasks: number;
-    completedTasks: number;
-    teamSize: number;
+  totalBudget: number;
+  consumedBudget: number;
+  totalTasks: number;
+  completedTasks: number;
+  teamSize: number;
 }
 
 export interface DashboardStats {
-    totalProjects: number;
-    activeProjects: number;
-    totalTasks: number;
-    completedTasks: number;
-    teamMembers: number;
-    upcomingDeadlines: number;
+  totalProjects: number;
+  activeProjects: number;
+  totalTasks: number;
+  completedTasks: number;
+  teamMembers: number;
+  upcomingDeadlines: number;
 }
 
 // ==============================
@@ -135,29 +136,30 @@ export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'WAITING_ON_CLIENT' | 'RESOL
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface TicketMessage {
-    id: string;
-    authorId: string;
-    authorName: string;
-    authorAvatar?: string;
-    content: string;
-    createdAt: string;
-    isClient: boolean;
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  content: string;
+  attachments?: { name: string; url: string; size: number; type: string }[];
+  createdAt: string;
+  isClient: boolean;
 }
 
 export interface Ticket {
-    id: string;
-    projectId: string;
-    projectName?: string;
-    title: string;
-    description: string;
-    status: TicketStatus;
-    priority: TicketPriority;
-    requesterName: string;
-    requesterEmail: string;
-    assigneeId?: string;
-    assigneeName?: string;
-    assigneeAvatar?: string;
-    createdAt: string;
-    updatedAt: string;
-    messages: TicketMessage[];
+  id: string;
+  projectId: string;
+  projectName?: string;
+  title: string;
+  description: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  requesterName: string;
+  requesterEmail: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  assigneeAvatar?: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: TicketMessage[];
 }

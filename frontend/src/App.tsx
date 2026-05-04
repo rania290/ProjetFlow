@@ -6,10 +6,11 @@ import { UiProvider } from './store/uiStore';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { TooltipProvider } from './components/ui/tooltip';
+import { Toaster } from './components/ui/sonner';
 import { Loader2, Construction } from 'lucide-react';
 
 // Lazy load pages
-
+const LandingPage = lazy(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then(module => ({ default: module.LoginPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const ProjectsListPage = lazy(() => import('./pages/ProjectsListPage').then(module => ({ default: module.ProjectsListPage })));
@@ -35,6 +36,7 @@ const HRMyLeavesPage = lazy(() => import('./pages/hr/HRMyLeavesPage').then(modul
 const HRValidationsPage = lazy(() => import('./pages/hr/HRValidationsPage').then(module => ({ default: module.HRValidationsPage })));
 const HRAnnuairePage = lazy(() => import('./pages/hr/HRAnnuairePage').then(module => ({ default: module.HRAnnuairePage })));
 const HRHierarchyPage = lazy(() => import('./pages/hr/HRHierarchyPage').then(module => ({ default: module.HRHierarchyPage })));
+import { TimeTrackingPage } from './features/hr/time-tracking/pages/TimeTrackingPage';
 
 
 // Client Portal Pages
@@ -93,7 +95,7 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
 
                   {/* Protected Main App Routes */}
-                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  <Route path="/" element={<LandingPage />} />
                   <Route
                     path="/dashboard"
                     element={
@@ -250,7 +252,14 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-
+                  <Route
+                    path="/hr/pointage"
+                    element={
+                      <ProtectedRoute>
+                        <TimeTrackingPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Client Portal Routes */}
                   <Route path="/client-portal" element={<Navigate to="/client-portal/dashboard" replace />} />
@@ -317,6 +326,7 @@ function App() {
                   <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
               </Suspense>
+              <Toaster position="top-right" richColors />
             </Router>
           </TooltipProvider>
         </UiProvider>

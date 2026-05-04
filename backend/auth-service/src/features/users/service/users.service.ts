@@ -17,6 +17,7 @@ export class UsersService {
     password: string;
     fullName: string;
     role?: UserRole;
+    managerIds?: string[];
   }): Promise<User> {
     const existingUser = await this.userRepository.findOne({
       where: { email: userData.email },
@@ -32,6 +33,7 @@ export class UsersService {
       ...userData,
       password: hashedPassword,
       role: userData.role || UserRole.TEAM_MEMBER,
+      managerIds: userData.managerIds || [],
     });
 
     return this.userRepository.save(user);
@@ -42,6 +44,7 @@ export class UsersService {
     password?: string;
     fullName: string;
     role?: UserRole;
+    managerIds?: string[];
   }): Promise<User> {
     let user = await this.userRepository.findOne({
       where: { email: userData.email },
@@ -53,6 +56,9 @@ export class UsersService {
       }
       if (userData.role && userData.role !== user.role) {
         user.role = userData.role;
+      }
+      if (userData.managerIds) {
+        user.managerIds = userData.managerIds;
       }
       if (userData.password) {
         user.password = await bcrypt.hash(userData.password, 10);
@@ -68,6 +74,7 @@ export class UsersService {
         ...userData,
         password: hashedPassword,
         role: userData.role || UserRole.TEAM_MEMBER,
+        managerIds: userData.managerIds || [],
       });
 
       return this.userRepository.save(user);
@@ -106,8 +113,11 @@ export class UsersService {
       delete updateData.password;
     }
 
+    console.log(`[UsersService] update: data received:`, JSON.stringify(updateData));
+    
     // 2. Perform the update (manual merge to prevent ID overwrites)
     Object.assign(user, updateData);
+    console.log(`[UsersService] update: entity after assign:`, JSON.stringify(user));
     
     // 3. Save the full entity
     const updated = await this.userRepository.save(user);

@@ -26,5 +26,7 @@ export class CreateLeaveDto {
 
   @IsOptional()
   managerId?: string;
+  managerIds?: string[];
+
 }
 

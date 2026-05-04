@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketEntity } from '../model/ticket.entity';
+import { ClientEntity } from '../model/client.entity';
 import { CreateTicketDto, TicketCommentDto } from '../dto/create-ticket.dto';
 import { UpdateTicketDto } from '../dto/create-ticket.dto';
 import { EmailService } from '../../../utils/services/email.service';
@@ -10,23 +11,35 @@ import { CLIENT_PORTAL_CONSTANTS } from '../constants/client-portal.constants';
 
 @Injectable()
 export class TicketService {
+  private readonly logger = new Logger(TicketService.name);
+
   constructor(
     @InjectRepository(TicketEntity)
     private readonly ticketRepository: Repository<TicketEntity>,
+    @InjectRepository(ClientEntity)
+    private readonly clientRepository: Repository<ClientEntity>,
     private readonly emailService: EmailService,
     private readonly notificationService: NotificationService,
   ) {}
 
   async create(createTicketDto: CreateTicketDto, user: any) {
+    const userEmail = user.email || user.preferred_username || user.sub;
+    
+    let client: ClientEntity | null = null;
+    if (userEmail) {
+      client = await this.clientRepository.findOne({ where: { email: userEmail } });
+    }
+
     const ticket = this.ticketRepository.create({
       ...createTicketDto,
+      client: client || undefined,
       status: CLIENT_PORTAL_CONSTANTS.TICKET_STATUS.OPEN,
       assignedTo: createTicketDto.assignedTo,
       assignedByEmail: createTicketDto.assignedByEmail,
       timeline: [{
         action: 'created',
         description: 'Ticket créé',
-        user: user.email,
+        user: userEmail || 'Système',
         timestamp: new Date(),
       }],
     });
@@ -45,7 +58,7 @@ export class TicketService {
       ticketId: savedTicket.id,
       title: savedTicket.title,
       clientId: savedTicket.client?.id,
-      createdBy: user.email,
+      createdBy: userEmail,
     });
 
     return savedTicket;
@@ -117,7 +130,7 @@ export class TicketService {
   async findOne(id: string, user: any) {
     const ticket = await this.ticketRepository.findOne({
       where: { id },
-      relations: ['client', 'project', 'timeline'],
+      relations: ['client', 'project'],
     });
 
     if (!ticket) {
@@ -165,30 +178,42 @@ export class TicketService {
   }
 
   async addComment(id: string, commentDto: TicketCommentDto, user: any) {
+    this.logger.log(`Adding comment to ticket ${id} by ${user.email}`);
     const ticket = await this.findOne(id, user);
+    const userEmail = user.email || user.preferred_username || user.sub;
+
+    if (!ticket.timeline) {
+      ticket.timeline = [];
+    }
 
     const newComment = {
       action: commentDto.isInternal ? 'internal_comment' : 'comment',
-      description: commentDto.comment,
-      user: user.email,
+      description: commentDto.comment || (commentDto.attachments?.length ? 'Pièce jointe ajoutée' : ''),
+      user: userEmail,
       timestamp: new Date(),
       attachments: commentDto.attachments || [],
     };
 
     ticket.timeline.push(newComment);
 
-    const updatedTicket = await this.ticketRepository.save(ticket);
-
-    // Notifier le client si ce n'est pas un commentaire interne
-    if (!commentDto.isInternal) {
-      try {
-        await this.emailService.sendTicketNotification(updatedTicket, 'commentaire ajouté');
-      } catch (error) {
-        console.error('Erreur lors de l\'envoi de l\'email de commentaire:', error);
+    try {
+      const updatedTicket = await this.ticketRepository.save(ticket);
+      this.logger.log(`Comment added successfully to ticket ${id}`);
+      
+      // Notifier le client si ce n'est pas un commentaire interne
+      if (!commentDto.isInternal) {
+        try {
+          await this.emailService.sendTicketNotification(updatedTicket, 'commentaire ajouté');
+        } catch (error) {
+          this.logger.error('Erreur lors de l\'envoi de l\'email de commentaire:', error);
+        }
       }
-    }
 
-    return updatedTicket;
+      return updatedTicket;
+    } catch (error) {
+      this.logger.error(`Failed to save ticket ${id} with new comment:`, error);
+      throw error;
+    }
   }
 
   async getComments(id: string, user: any) {

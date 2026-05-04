@@ -1,13 +1,19 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Headers } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ProjectsService } from '../service/projects.service';
+import { TasksService } from '../../tasks/service/tasks.service';
+import { SprintsService } from '../../sprints/service/sprints.service';
 import { CreateProjectDto, UpdateProjectDto } from '../dto/projects.dto';
 import { ProjectStatus } from '../constants/projects.constants';
 
 @ApiTags('projects')
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) { }
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly tasksService: TasksService,
+    private readonly sprintsService: SprintsService
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
@@ -47,6 +53,18 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Update project status' })
   updateStatus(@Param('id') id: string, @Param('status') status: ProjectStatus) {
     return this.projectsService.updateStatus(id, status as ProjectStatus);
+  }
+
+  @Get(':id/tasks')
+  @ApiOperation({ summary: 'Get all tasks for a project' })
+  findAllTasks(@Param('id') id: string) {
+    return this.tasksService.findAll(id);
+  }
+
+  @Get(':id/sprints')
+  @ApiOperation({ summary: 'Get all sprints for a project' })
+  findAllSprints(@Param('id') id: string) {
+    return this.sprintsService.findAll(id);
   }
 
   @Delete('all')

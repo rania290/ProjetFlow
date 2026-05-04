@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Calendar, Users, TrendingUp, CheckCircle2, Clock, Shield } from 'lucide-react';
+import { X, Target, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import type { Project } from '../../types/project.types';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ProjectDetailsModalProps {
     isOpen: boolean;
@@ -29,116 +30,75 @@ export const ProjectDetailsModal: React.FC<ProjectDetailsModalProps> = ({ isOpen
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden"
+                        className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
                         onClick={e => e.stopPropagation()}
                     >
-                        {/* High-Density Header (Keep) */}
-                        <div className="h-24 bg-gradient-to-r from-emerald-500 to-teal-600 relative">
+                        {/* Minimalist Header */}
+                        <div className="pt-8 px-8 flex items-center justify-between">
+                            <div className="w-11 h-11 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 border border-emerald-100">
+                                <Target className="w-5 h-5" />
+                            </div>
                             <button
                                 onClick={onClose}
-                                className="absolute top-3 right-3 p-1.5 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors backdrop-blur-md"
+                                className="p-2.5 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
-                            <div className="absolute -bottom-5 left-6 w-12 h-12 bg-white rounded-xl shadow-lg flex items-center justify-center text-emerald-600 border-4 border-white">
-                                <Target className="w-6 h-6" />
-                            </div>
                         </div>
 
-                        {/* Content Area - Condensed Layout but Legible Fonts */}
-                        <div className="pt-8 px-6 pb-6 space-y-5 text-slate-900">
+                        {/* Content Area */}
+                        <div className="p-8 space-y-8">
                             <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                    {/* Restored title font size: text-xl (20px) */}
+                                <div className="flex items-center justify-between mb-2.5">
                                     <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">{project.name}</h2>
-                                    {/* Restored label font size: text-xs (12px) */}
-                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${project.status === 'IN_PROGRESS' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-50 text-slate-500 border border-slate-100'
+                                    <Badge variant="outline" className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${project.status === 'IN_PROGRESS' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'
                                         }`}>
-                                        {project.status === 'IN_PROGRESS' ? 'En Cours' : project.status}
-                                    </span>
+                                        {project.status === 'PLANNED' ? 'Planifié' : project.status === 'IN_PROGRESS' ? 'En Cours' : project.status}
+                                    </Badge>
                                 </div>
-                                {/* Restored description font size: text-sm (14px) */}
-                                <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                                    {project.description || "Aucune description détaillée fournie."}
+                                <p className="text-[12px] font-medium text-slate-400 leading-relaxed">
+                                    {project.description || "Aucune description fournie."}
                                 </p>
                             </div>
 
                             {/* Progress Section */}
-                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <div className="flex justify-between items-center mb-2.5">
-                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <TrendingUp className="w-4 h-4 text-emerald-500" /> Progression
-                                    </span>
-                                    <span className="text-sm font-black text-emerald-600">{project.progress}%</span>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">
+                                    <span>Progression du projet</span>
+                                    <span className="text-emerald-600 text-xs">{project.progress}%</span>
                                 </div>
-                                <div className="h-1.5 bg-white rounded-full overflow-hidden border border-slate-100">
+                                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         animate={{ width: `${project.progress}%` }}
                                         transition={{ duration: 1, ease: "easeOut" }}
-                                        className="h-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                                        className="h-full bg-emerald-500"
                                     />
                                 </div>
                             </div>
 
-                            {/* Info Grid - Optimized but Legible */}
+                            {/* Important Dates Grid (Start & Deadline) */}
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="flex items-center gap-3 p-3.5 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                    <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                                        <Calendar className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Date de début</p>
-                                        <p className="text-sm font-black text-slate-800">{new Date(project.startDate).toLocaleDateString()}</p>
-                                    </div>
+                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                                        <Calendar className="w-3 h-3 text-emerald-500" /> Lancement
+                                    </p>
+                                    <p className="text-xs font-black text-slate-800">{new Date(project.startDate).toLocaleDateString()}</p>
                                 </div>
-                                <div className="flex items-center gap-3 p-3.5 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                    <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                                        <Users className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Participants</p>
-                                        <p className="text-sm font-black text-slate-800">{project.members?.length || 0} Membres</p>
-                                    </div>
+                                <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50">
+                                    <p className="text-[9px] font-black text-amber-600/70 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                                        <Clock className="w-3 h-3 text-amber-500" /> Échéance
+                                    </p>
+                                    <p className="text-xs font-black text-amber-900">{new Date(project.endDate).toLocaleDateString()}</p>
                                 </div>
                             </div>
 
-                            {/* Milestones - High Density but Legible */}
-                            <div className="space-y-3">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Jalons Stratégiques</h3>
-                                <div className="space-y-2.5">
-                                    <div className="flex items-center gap-3 p-3.5 bg-emerald-50/30 border border-emerald-100 rounded-xl shadow-sm">
-                                        <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                        </div>
-                                        <span className="text-[11px] font-black text-emerald-900 uppercase tracking-tight">Cahier des Charges validé</span>
-                                        <span className="ml-auto text-[10px] text-emerald-600 font-black uppercase tracking-widest bg-white/50 px-2 py-0.5 rounded-full">Terminé</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-3.5 bg-white border border-slate-100 rounded-xl">
-                                        <div className="w-6 h-6 bg-amber-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-                                            <Clock className="w-3.5 h-3.5" />
-                                        </div>
-                                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Prototype UI/UX interactif</span>
-                                        <span className="ml-auto text-[10px] text-amber-600 font-black uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-full">En cours</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-2">
-                                <button
-                                    onClick={onClose}
-                                    className="w-full py-4 px-4 bg-emerald-600 text-white text-xs font-black uppercase tracking-[0.2em] rounded-[18px] hover:bg-black transition-all shadow-xl shadow-emerald-100"
-                                >
-                                    Fermer les détails
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-2">
-                             <div className="flex items-center gap-2 opacity-50">
-                                <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.1em]">Documents Certifiés VAERDIA</span>
-                             </div>
+                            <Button
+                                onClick={onClose}
+                                className="w-full h-12 bg-slate-900 hover:bg-black text-white text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-slate-100 transition-all"
+                            >
+                                Fermer
+                            </Button>
                         </div>
                     </motion.div>
                 </div>

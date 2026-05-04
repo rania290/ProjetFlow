@@ -49,6 +49,9 @@ export const TeamPage: React.FC = () => {
 
         state.projects.forEach((project: Project) => {
             (project.members || []).forEach(member => {
+                // Skip ADMIN users in the team view
+                if (member.role === 'ADMIN') return;
+
                 if (memberMap.has(member.id)) {
                     memberMap.get(member.id)!.projects.push({ id: project.id, name: project.name });
                 } else {

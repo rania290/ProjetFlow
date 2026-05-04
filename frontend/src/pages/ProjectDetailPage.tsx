@@ -19,6 +19,8 @@ import {
 import { AppLayout } from '../components/layout/AppLayout';
 
 import { useStore } from '../store/projectStore';
+import { AuthContext } from '../store/authStore';
+import { useContext } from 'react';
 
 import type { Task, TaskStatus, TaskPriority, TaskType, Sprint } from '../types/project.types';
 
@@ -176,7 +178,7 @@ export const ProjectDetailPage: React.FC = () => {
     const { projectId } = useParams<{ projectId: string }>();
 
     const { state, dispatch } = useStore();
-
+    const { user } = useContext(AuthContext)!;
     const navigate = useNavigate();
 
 
@@ -196,6 +198,9 @@ export const ProjectDetailPage: React.FC = () => {
 
 
     const project = state.projects.find(p => p.id === projectId);
+    
+    const isManagerOrAdmin = user?.role === 'ADMIN' || (project && user?.id === project.managerId);
+
 
     const sprints = state.sprints.filter(s => s.projectId === projectId);
 
@@ -233,6 +238,7 @@ export const ProjectDetailPage: React.FC = () => {
     const [createTaskSprintId, setCreateTaskSprintId] = useState<string | undefined>(undefined);
 
     const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [isEditingReadOnly, setIsEditingReadOnly] = useState(false);
 
     const [reportSprint, setReportSprint] = useState<Sprint | null>(null);
 
@@ -283,20 +289,38 @@ export const ProjectDetailPage: React.FC = () => {
         };
     }, []);
 
-    // Load tasks from API
+    // Load tasks from API and enrich with project member info
     React.useEffect(() => {
-        if (!projectId) return;
+        if (!projectId || !project) return;
 
         const loadTasks = async () => {
             try {
-                const tasks = await projectsService.getAllTasks(projectId);
-                dispatch({ type: 'SET_TASKS', tasks });
+                const rawTasks = await projectsService.getAllTasks(projectId);
+
+                // Enrich tasks: backend doesn't store assigneeName/assigneeAvatar,
+                // so we join them from the project's members list here.
+                const members = project.members || [];
+                const enrichedTasks = rawTasks.map((t: any) => {
+                    const member = t.assigneeId
+                        ? members.find((m: any) => String(m.id) === String(t.assigneeId))
+                        : undefined;
+                    return {
+                        ...t,
+                        comments:       t.comments       ?? [],
+                        subTasks:       t.subTasks       ?? [],
+                        tags:           t.tags           ?? [],
+                        assigneeName:   member?.fullName ?? t.assigneeName,
+                        assigneeAvatar: member?.avatar   ?? t.assigneeAvatar,
+                    };
+                });
+
+                dispatch({ type: 'SET_TASKS', tasks: enrichedTasks });
             } catch (error) {
                 console.error("Failed to load project tasks:", error);
             }
         };
         loadTasks();
-    }, [projectId, dispatch]);
+    }, [projectId, project?.members?.length, dispatch]); // re-run if members change
 
 
 
@@ -333,11 +357,17 @@ export const ProjectDetailPage: React.FC = () => {
 
     const currentSprintForBoard = sprints.find(s => s.id === selectedSprintId) ?? activeSprint ?? sprints[0];
 
-    const boardTasks = currentSprintForBoard
-
+    // • 'table'  → toutes les tâches du projet (sans filtre sprint)
+    // • 'board' / 'calendar' → tâches du sprint sélectionné,
+    //   MAIS si aucun sprint n'existe ou si le sprint est vide,
+    //   on affiche quand même toutes les tâches du projet.
+    const sprintFilteredTasks = currentSprintForBoard
         ? projectTasks.filter(t => t.sprintId === currentSprintForBoard.id)
-
         : projectTasks;
+
+    const boardTasks = (tab === 'table')
+        ? projectTasks
+        : (sprintFilteredTasks.length > 0 ? sprintFilteredTasks : projectTasks);
 
 
 
@@ -407,7 +437,9 @@ export const ProjectDetailPage: React.FC = () => {
 
                         {/* Members with enhanced keys and styling */}
                         <div className="flex -space-x-2 ml-auto">
-                            {(project.members || []).map((m, idx) => (
+                            {(project.members || [])
+                                .filter(m => m.role !== 'ADMIN')
+                                .map((m, idx) => (
                                 <div
                                     key={m.id || `member-${idx}`}
                                     title={m.fullName}
@@ -416,13 +448,15 @@ export const ProjectDetailPage: React.FC = () => {
                                     {m.avatar || m.fullName.charAt(0)}
                                 </div>
                             ))}
-                            <button
-                                onClick={() => setShowAddMember(true)}
-                                className="w-8 h-8 rounded-xl bg-slate-50 border-2 border-white flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all z-10 shadow-sm"
-                                title="Ajouter des membres"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
+                            {isManagerOrAdmin && (
+                                <button
+                                    onClick={() => setShowAddMember(true)}
+                                    className="w-8 h-8 rounded-xl bg-slate-50 border-2 border-white flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all z-10 shadow-sm"
+                                    title="Ajouter des membres"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
 
@@ -509,7 +543,7 @@ export const ProjectDetailPage: React.FC = () => {
 
                     {/* SPRINT SELECTOR */}
 
-                    {(tab === 'table' || tab === 'board' || tab === 'calendar') && sprints.length > 0 && (
+                    {(tab === 'board' || tab === 'calendar') && sprints.length > 0 && (
 
                         <div className="flex items-center gap-2 px-6 py-3 bg-white/50 border-b border-slate-100">
 
@@ -572,8 +606,7 @@ export const ProjectDetailPage: React.FC = () => {
                             onAddTask={() => { setCreateTaskSprintId(undefined); setShowCreateTask(true); }}
 
                             onAddSprint={() => setShowCreateSprint(true)}
-
-                            onAddMember={() => setShowAddMember(true)}
+                            onAddMember={isManagerOrAdmin ? () => setShowAddMember(true) : () => {}}
 
                         />
 
@@ -689,70 +722,55 @@ export const ProjectDetailPage: React.FC = () => {
 
                                         }}
 
-                                        onQuickAddTask={(title, status) => {
-
-                                            const task: Task = {
-
-                                                id: `t${Date.now()}`,
-
+                                        onQuickAddTask={async (title, status) => {
+                                            const taskData = {
                                                 projectId: project.id,
-
                                                 sprintId: selectedSprintId || activeSprint?.id || undefined,
-
                                                 title,
-
                                                 description: '',
-
                                                 type: 'STORY',
-
                                                 status,
-
                                                 priority: 'MEDIUM',
-
                                                 tags: [],
-
-                                                createdAt: new Date().toISOString(),
-
-                                                comments: [],
-
                                                 storyPoints: 0
-
                                             };
-
-                                            dispatch({ type: 'ADD_TASK', task });
-
-                                            if (task.sprintId) dispatch({ type: 'MOVE_TASK_TO_SPRINT', taskId: task.id, sprintId: task.sprintId });
-
-                                        }}
-
-                                        onOpenTaskDetails={(task) => setEditingTask(task)}
-
-                                        onDuplicateTask={(taskId) => {
-
-                                            const task = state.tasks.find(t => t.id === taskId);
-
-                                            if (task) {
-
-                                                const duplicatedTask: Task = {
-
-                                                    ...task,
-
-                                                    id: `t${Date.now()}`,
-
-                                                    title: `${task.title} (copie)`,
-
-                                                };
-
-                                                dispatch({ type: 'ADD_TASK', task: duplicatedTask });
-
+                                            try {
+                                                const createdTask = await projectsService.createTask(taskData);
+                                                dispatch({ type: 'ADD_TASK', task: createdTask });
+                                                if (createdTask.sprintId) dispatch({ type: 'MOVE_TASK_TO_SPRINT', taskId: createdTask.id, sprintId: createdTask.sprintId });
+                                            } catch (error) {
+                                                console.error("Failed to quick add task:", error);
                                             }
-
                                         }}
 
-                                        onDeleteTask={(taskId) => {
+                                        onOpenTaskDetails={(task, isReadOnly = false) => {
+                                            setIsEditingReadOnly(isReadOnly);
+                                            setEditingTask(task);
+                                        }}
 
-                                            dispatch({ type: 'DELETE_TASK', id: taskId });
+                                        onDuplicateTask={async (taskId) => {
+                                            const task = state.tasks.find(t => t.id === taskId);
+                                            if (task) {
+                                                try {
+                                                    const { id, createdAt, updatedAt, ...newTaskData } = task;
+                                                    const duplicatedTask = await projectsService.createTask({
+                                                        ...newTaskData,
+                                                        title: `${task.title} (copie)`
+                                                    });
+                                                    dispatch({ type: 'ADD_TASK', task: duplicatedTask });
+                                                } catch (error) {
+                                                    console.error("Failed to duplicate task:", error);
+                                                }
+                                            }
+                                        }}
 
+                                        onDeleteTask={async (taskId) => {
+                                            try {
+                                                await projectsService.deleteTask(taskId);
+                                                dispatch({ type: 'DELETE_TASK', id: taskId });
+                                            } catch (error) {
+                                                console.error("Failed to delete task:", error);
+                                            }
                                         }}
 
                                     />
@@ -769,11 +787,21 @@ export const ProjectDetailPage: React.FC = () => {
 
                                         tasks={filteredTasks}
 
-                                        onStatusChange={(taskId, status) => dispatch({ type: 'UPDATE_TASK_STATUS', id: taskId, status })}
+                                        onStatusChange={async (taskId, status) => {
+                                            try {
+                                                await projectsService.updateTask(taskId, { status });
+                                                dispatch({ type: 'UPDATE_TASK_STATUS', id: taskId, status });
+                                            } catch (error) {
+                                                console.error("Failed to update task status:", error);
+                                            }
+                                        }}
 
                                         onAddTask={() => { setCreateTaskSprintId(activeSprint?.id); setShowCreateTask(true); }}
 
-                                        onEditTask={(task) => setEditingTask(task)}
+                                        onEditTask={(task, isReadOnly = false) => {
+                                            setIsEditingReadOnly(isReadOnly);
+                                            setEditingTask(task);
+                                        }}
 
                                     />
 
@@ -789,7 +817,10 @@ export const ProjectDetailPage: React.FC = () => {
 
                                         tasks={filteredTasks}
 
-                                        onOpenTaskDetails={(task) => setEditingTask(task)}
+                                        onOpenTaskDetails={(task, isReadOnly = false) => {
+                                            setIsEditingReadOnly(isReadOnly);
+                                            setEditingTask(task);
+                                        }}
 
                                         onAddTask={(date) => {
                                             const tzOffset = date.getTimezoneOffset() * 60000;
@@ -825,9 +856,19 @@ export const ProjectDetailPage: React.FC = () => {
 
                             onAddTask={() => { setCreateTaskSprintId(undefined); setShowCreateTask(true); }}
 
-                            onMoveToSprint={(taskId, sprintId) => dispatch({ type: 'MOVE_TASK_TO_SPRINT', taskId, sprintId })}
+                            onMoveToSprint={async (taskId, sprintId) => {
+                                try {
+                                    await projectsService.updateTask(taskId, { sprintId });
+                                    dispatch({ type: 'MOVE_TASK_TO_SPRINT', taskId, sprintId });
+                                } catch (error) {
+                                    console.error("Failed to move task to sprint:", error);
+                                }
+                            }}
 
-                            onEditTask={(task) => setEditingTask(task)}
+                            onEditTask={(task, isReadOnly = false) => {
+                                 setIsEditingReadOnly(isReadOnly);
+                                 setEditingTask(task);
+                             }}
 
                         />
 
@@ -1126,17 +1167,35 @@ export const ProjectDetailPage: React.FC = () => {
                     key="task-edit-modal"
                     isOpen={!!editingTask}
                     task={editingTask!}
+                    isReadOnly={isEditingReadOnly}
                     sprints={sprints}
+                    projectMembers={project.members || []}
                     onClose={() => setEditingTask(null)}
-                    onUpdate={(task) => {
-                        dispatch({ type: 'UPDATE_TASK', task });
-                        setEditingTask(null);
+                    onUpdate={async (task) => {
+                        try {
+                            await projectsService.updateTask(task.id, task);
+                            dispatch({ type: 'UPDATE_TASK', task });
+                            setEditingTask(null);
+                        } catch (error) {
+                            console.error("Failed to update task:", error);
+                        }
                     }}
-                    onDuplicate={(task) => {
-                        dispatch({ type: 'ADD_TASK', task });
+                    onDuplicate={async (task) => {
+                        try {
+                            const { id, ...newTaskData } = task; // backend generates ID
+                            const createdTask = await projectsService.createTask(newTaskData);
+                            dispatch({ type: 'ADD_TASK', task: createdTask });
+                        } catch (error) {
+                            console.error("Failed to duplicate task:", error);
+                        }
                     }}
-                    onDelete={(id) => {
-                        dispatch({ type: 'DELETE_TASK', id });
+                    onDelete={async (id) => {
+                        try {
+                            await projectsService.deleteTask(id);
+                            dispatch({ type: 'DELETE_TASK', id });
+                        } catch (error) {
+                            console.error("Failed to delete task:", error);
+                        }
                     }}
                 />
 

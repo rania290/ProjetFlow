@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { Badge } from '../../components/ui/badge';
+import { timeTrackingApi } from '../../features/hr/time-tracking/api/time-tracking.api';
 
 export const AdminDashboard: React.FC = () => {
   const [showCriticalPanel, setShowCriticalPanel] = useState(false);
@@ -30,6 +31,7 @@ export const AdminDashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<GlobalAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const { state, dispatch } = useStore();
   const chartData = useChartData();
 
@@ -126,13 +128,31 @@ export const AdminDashboard: React.FC = () => {
       })(),
       projects: storeProjects.map(p => {
         const projectTasks = tasks.filter(t => t.projectId === p.id);
-        const doneTasks = projectTasks.filter(t => t.status === 'DONE').length;
         
         let completedEffort = 0;
+        let spentAmount = 0;
+
         projectTasks.forEach(t => {
-            if (t.status === 'DONE') completedEffort += 1;
-            else if (t.status === 'IN_TEST') completedEffort += 0.9;
-            else if (t.status === 'IN_PROGRESS') completedEffort += 0.5;
+            let progressRatio = 0;
+            if (t.status === 'DONE') {
+                completedEffort += 1;
+                progressRatio = 1;
+            } else if (t.status === 'IN_TEST') {
+                completedEffort += 0.9;
+                progressRatio = 0.9;
+            } else if (t.status === 'IN_PROGRESS') {
+                completedEffort += 0.5;
+                progressRatio = 0.5;
+            }
+
+            // Calcul du coût réel de la tâche
+            const effortInDays = t.storyPoints || (t.estimatedHours ? t.estimatedHours / 8 : 1);
+            let tjm = 300; // TJM par défaut si non spécifié
+            if (t.assigneeId) {
+                const member = p.members?.find(m => m.id === t.assigneeId);
+                if (member && member.tjm) tjm = member.tjm;
+            }
+            spentAmount += effortInDays * tjm * progressRatio;
         });
 
         const calculatedProgress = projectTasks.length > 0 
@@ -145,7 +165,7 @@ export const AdminDashboard: React.FC = () => {
           progress: calculatedProgress,
           status: p.status,
           budget: Number(p.budget) || 0,
-          spentAmount: 0
+          spentAmount: Math.round(spentAmount)
         };
       }),
     };
@@ -154,10 +174,14 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const data = await reportingService.getGlobalAnalytics();
+        const [data, allTasks] = await Promise.all([
+            reportingService.getGlobalAnalytics(),
+            projectsService.getAllTasks()
+        ]);
         setAnalytics(data);
+        dispatch({ type: 'SET_TASKS', tasks: allTasks });
       } catch (error) {
-        console.warn('[Dashboard] Reporting API unavailable, using local store fallback:', error);
+        console.warn('[Dashboard] API unavailable, using local store fallback:', error);
         // Fallback: use local store data so charts still display correctly
         setAnalytics(computeFromStore());
       } finally {
@@ -176,6 +200,27 @@ export const AdminDashboard: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.projects, state.tasks]);
+
+  // Poll active time tracking sessions when RH tab is selected
+  useEffect(() => {
+    let mounted = true;
+    const fetchActiveSessions = async () => {
+      try {
+        const active = await timeTrackingApi.getTeamActive();
+        if (mounted) setActiveSessions(active);
+      } catch (e) {
+        console.warn('Failed to fetch active sessions', e);
+      }
+    };
+    if (selectedReport === 'rh') {
+      fetchActiveSessions();
+      const interval = setInterval(fetchActiveSessions, 10000);
+      return () => {
+        mounted = false;
+        clearInterval(interval);
+      };
+    }
+  }, [selectedReport]);
 
   if (loading) {
       return (
@@ -211,7 +256,7 @@ export const AdminDashboard: React.FC = () => {
   });
 
   const totalBudget = summary.totalBudget;
-  const totalSpent = summary.invoices?.totalAmount || 0;
+  const totalSpent = projectCosts.reduce((acc, p) => acc + p.spent, 0);
   const totalEstimatedCost = summary.totalBudget;
 
   const realResources = resources.map(r => ({
@@ -322,9 +367,13 @@ export const AdminDashboard: React.FC = () => {
           tasksUpToMonth.forEach(t => {
             const effort = t.storyPoints || (t.estimatedHours ? t.estimatedHours / 8 : 1);
             totalEffort += effort;
-            if (t.status === 'DONE' && t.completedAt && new Date(t.completedAt) <= monthEnd) {
+            
+            // Fix: Use updatedAt or createdAt if completedAt is missing for DONE tasks
+            const taskDate = t.completedAt ? new Date(t.completedAt) : (t.updatedAt ? new Date(t.updatedAt) : new Date(t.createdAt));
+
+            if (t.status === 'DONE' && taskDate <= monthEnd) {
               completedEffort += effort;
-            } else if (i === 0) {
+            } else if (i === 0) { // Pour le mois courant, on compte partiellement ce qui est en cours
               if (t.status === 'DONE') completedEffort += effort;
               else if (t.status === 'IN_TEST') completedEffort += effort * 0.9;
               else if (t.status === 'IN_PROGRESS') completedEffort += effort * 0.5;
@@ -592,7 +641,7 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <div className="mt-4 pt-4 border-t border-red-100 space-y-2">
                       {criticalTasksList.slice(0, 8).map(t => {
-                        const proj = state.projects.find(p => p.id === t.projectId);
+                        const proj = analytics?.projects?.find(p => p.id === t.projectId) || state.projects.find(p => p.id === t.projectId);
                         const isOverdue = t.dueDate && new Date(t.dueDate) < now;
                         return (
                           <div key={t.id} className="flex items-start justify-between gap-2 p-2 rounded-xl bg-red-50/60 border border-red-100/80">
@@ -749,7 +798,6 @@ export const AdminDashboard: React.FC = () => {
                 <div className="w-1.5 h-4 bg-indigo-500 rounded-full"></div>
                 <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Détail des ressources</h3>
               </div>
-              <button className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-tighter">Voir tout l'historique</button>
             </div>
             <div className="overflow-x-auto">
               <Table>
@@ -1044,6 +1092,51 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </GlassCard>
           </div>
+
+          <GlassCard className="border-white/40 overflow-hidden" delay={0.6}>
+             <div className="p-8 border-b border-slate-100/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Présence en Direct</h3>
+                </div>
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-black text-[10px] uppercase">
+                   {activeSessions.length} actif(s)
+                </Badge>
+             </div>
+             <div className="p-6">
+                 {activeSessions.length === 0 ? (
+                    <div className="text-center py-10">
+                       <Clock className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                       <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Personne n'est actuellement pointé</p>
+                    </div>
+                 ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {activeSessions.map((session, idx) => (
+                           <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white transition-all shadow-sm">
+                              <div className="relative">
+                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                                    <Activity className="w-5 h-5" />
+                                 </div>
+                                 <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${session.status === 'PAUSED' ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <p className="text-xs font-black text-slate-800 truncate">{session.employeeName}</p>
+                                 <p className="text-[10px] font-bold text-slate-500 truncate mt-0.5">{session.activity || 'Travail standard'}</p>
+                                 <div className="flex items-center gap-2 mt-1.5">
+                                    <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">
+                                       Depuis {new Date(session.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    {session.status === 'PAUSED' && (
+                                       <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-700 uppercase">En pause</span>
+                                    )}
+                                 </div>
+                              </div>
+                           </div>
+                       ))}
+                    </div>
+                 )}
+             </div>
+          </GlassCard>
         </FadeInView>
       )}
     </div>

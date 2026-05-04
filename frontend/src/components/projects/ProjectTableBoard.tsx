@@ -39,7 +39,7 @@ interface ProjectTableBoardProps {
     onUpdateTaskTitle: (taskId: string, title: string) => void;
     onAddTask: (status: TaskStatus) => void;
     onQuickAddTask: (title: string, status: TaskStatus) => void;
-    onOpenTaskDetails: (task: Task) => void;
+    onOpenTaskDetails: (task: Task, isReadOnly?: boolean) => void;
     onDuplicateTask: (taskId: string) => void;
     onDeleteTask: (taskId: string) => void;
 }
@@ -129,7 +129,7 @@ export const ProjectTableBoard: React.FC<ProjectTableBoardProps> = ({
                                                     onAssigneeChange={onAssigneeChange}
                                                     onPriorityChange={onPriorityChange}
                                                     onUpdateTaskTitle={onUpdateTaskTitle}
-                                                    onOpenDetails={() => onOpenTaskDetails(task)}
+                                                    onOpenDetails={(isReadOnly) => onOpenTaskDetails(task, isReadOnly)}
                                                     isLast={idx === groupTasks.length - 1}
                                                     onDuplicate={() => onDuplicateTask(task.id)}
                                                     onDelete={() => onDeleteTask(task.id)}
@@ -144,7 +144,7 @@ export const ProjectTableBoard: React.FC<ProjectTableBoardProps> = ({
                                                         onAssigneeChange={onAssigneeChange}
                                                         onPriorityChange={onPriorityChange}
                                                         onUpdateTaskTitle={onUpdateTaskTitle}
-                                                        onOpenDetails={() => onOpenTaskDetails(subTask)}
+                                                        onOpenDetails={(isReadOnly) => onOpenTaskDetails(subTask, isReadOnly)}
                                                         isLast={false}
                                                         isSubtask={true}
                                                         onDuplicate={() => onDuplicateTask(subTask.id)}
@@ -192,7 +192,7 @@ const TaskRow: React.FC<{
     onAssigneeChange: (taskId: string, assigneeId: string | undefined) => void;
     onPriorityChange: (taskId: string, priority: TaskPriority) => void;
     onUpdateTaskTitle: (taskId: string, title: string) => void;
-    onOpenDetails: () => void;
+    onOpenDetails: (isReadOnly?: boolean) => void;
     isLast: boolean;
     onDuplicate: () => void;
     onDelete: () => void;
@@ -344,22 +344,25 @@ const TaskRow: React.FC<{
             {/* Actions */}
             <TableCell className="text-right py-1.5 px-8 border-none">
                 <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onOpenDetails}
-                        className="h-8 pr-3 pl-2 rounded-lg text-[10px] font-black text-slate-400 hover:text-primary-600 hover:bg-primary-50/50 transition-all uppercase tracking-widest gap-2 flex items-center group/btn"
-                    >
-                        <div className="w-5 h-5 rounded-md bg-slate-50 flex items-center justify-center border border-slate-100 group-hover/btn:bg-white group-hover/btn:border-primary-100 group-hover/btn:text-primary-600 transition-colors">
-                            <List className="w-3 h-3" />
-                        </div>
-                        MODIFIER
-                    </Button>
+
                     <DropdownMenu>
                         <DropdownMenuTrigger className="w-8 h-8 p-0 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200 flex items-center justify-center outline-none bg-transparent cursor-pointer">
                             <MoreHorizontal className="w-4 h-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-48 p-2 rounded-2xl border-slate-100 shadow-2xl" align="end">
+                            <DropdownMenuItem
+                                onClick={() => onOpenDetails(true)}
+                                className="rounded-xl text-xs font-bold px-3 py-2 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"
+                            >
+                                Voir les détails
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => onOpenDetails(false)}
+                                className="rounded-xl text-xs font-bold px-3 py-2 text-primary-600 hover:bg-primary-50 transition-all cursor-pointer"
+                            >
+                                Modifier les détails
+                            </DropdownMenuItem>
+                            <div className="h-px bg-slate-100 my-1" />
                             <DropdownMenuItem
                                 onClick={onDuplicate}
                                 className="rounded-xl text-xs font-bold px-3 py-2 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer"

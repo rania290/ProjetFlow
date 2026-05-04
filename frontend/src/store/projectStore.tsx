@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { Project, Task, Sprint, DashboardStats, ProjectStatus, TaskStatus, Ticket, TicketStatus, TicketMessage } from '../types/project.types';
+import { projectsService } from '../api/projects.service';
 
 // ==============================
 // PERSISTENCE HELPERS
@@ -67,7 +68,7 @@ type Action =
     | { type: 'UPDATE_TICKET'; ticket: Ticket }
     | { type: 'UPDATE_TICKET_STATUS'; id: string; status: TicketStatus }
     | { type: 'ADD_TICKET_MESSAGE'; ticketId: string; message: TicketMessage }
-    | { type: 'SET_SPRINTS'; sprints: Sprint[] }
+    | { type: 'SET_TICKETS'; tickets: Ticket[] }
     | { type: 'WIPE_DATA' }
     | { type: 'TOGGLE_SIDEBAR' };
 
@@ -218,6 +219,7 @@ function reducer(state: StoreState, action: Action): StoreState {
                 if (local) {
                     return {
                         ...apiTask,
+                        // Preserve local edits for these user-mutable fields
                         priority:    local.priority,
                         status:      local.status,
                         title:       local.title,
@@ -225,10 +227,12 @@ function reducer(state: StoreState, action: Action): StoreState {
                         storyPoints: local.storyPoints ?? apiTask.storyPoints,
                         dueDate:     local.dueDate ?? apiTask.dueDate,
                         tags:        local.tags?.length ? local.tags : (apiTask.tags || []),
-                        sprintId:    local.sprintId ?? apiTask.sprintId,
-                        assigneeId:  local.assigneeId !== undefined ? local.assigneeId : apiTask.assigneeId,
-                        assigneeName: local.assigneeName !== undefined ? local.assigneeName : apiTask.assigneeName,
-                        assigneeAvatar: local.assigneeAvatar !== undefined ? local.assigneeAvatar : apiTask.assigneeAvatar,
+                        // Trust the API for relational fields (sprint & assignee)
+                        // to prevent stale localStorage values from hiding tasks
+                        sprintId:       apiTask.sprintId ?? local.sprintId,
+                        assigneeId:     apiTask.assigneeId ?? local.assigneeId,
+                        assigneeName:   apiTask.assigneeName ?? local.assigneeName,
+                        assigneeAvatar: apiTask.assigneeAvatar ?? local.assigneeAvatar,
                     };
                 }
                 return apiTask;
@@ -252,7 +256,9 @@ function reducer(state: StoreState, action: Action): StoreState {
             const localOnlySprints = localSprints.filter(s => !apiIds.has(s.id));
             return { ...state, sprints: [...mergedSprints, ...localOnlySprints] };
         }
-
+        case 'SET_TICKETS':
+            return { ...state, tickets: action.tickets };
+        case 'ADD_TICKET':
             return { ...state, tickets: [action.ticket, ...(state.tickets || [])] };
         case 'UPDATE_TICKET':
             return { ...state, tickets: (state.tickets || []).map(t => t.id === action.ticket.id ? action.ticket : t) };
@@ -263,7 +269,7 @@ function reducer(state: StoreState, action: Action): StoreState {
                 ...state,
                 tickets: (state.tickets || []).map(t => t.id === action.ticketId ? {
                     ...t,
-                    messages: [...t.messages, action.message],
+                    messages: [...(t.messages || []), action.message],
                     updatedAt: new Date().toISOString()
                 } : t)
             };
@@ -320,6 +326,45 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         saveToLS(LS_KEYS.sprints,  state.sprints);
         saveToLS(LS_KEYS.tickets,  state.tickets);
     }, [state.projects, state.tasks, state.sprints, state.tickets]);
+
+    // INITIAL FETCH FROM API
+    useEffect(() => {
+        const fetchAll = async () => {
+            try {
+                const projects = await projectsService.getAll();
+                dispatch({ type: 'SET_PROJECTS', projects });
+                const tasks = await projectsService.getAllTasks();
+                dispatch({ type: 'SET_TASKS', tasks });
+                const sprints = await projectsService.getAllSprints();
+                dispatch({ type: 'SET_SPRINTS', sprints });
+            } catch (err) {
+                console.error("Failed to fetch from API:", err);
+            }
+        };
+        fetchAll();
+    }, []);
+
+    // BACKGROUND SYNC TO BACKEND (Debounced)
+    useEffect(() => {
+        const syncTimer = setTimeout(async () => {
+            try {
+                // Sync projects
+                for (const project of state.projects) {
+                    try { await projectsService.update(project.id, project); } 
+                    catch { try { await projectsService.create(project); } catch {} }
+                }
+                // Sync tasks
+                for (const task of state.tasks) {
+                    try { await projectsService.updateTask(task.id, task); } 
+                    catch { try { await projectsService.createTask(task); } catch {} }
+                }
+            } catch (err) {
+                console.warn("Background sync failed (probably offline):", err);
+            }
+        }, 3000); // Sync 3 seconds after last change
+
+        return () => clearTimeout(syncTimer);
+    }, [state.projects, state.tasks]);
 
     const safeProjects = state.projects || [];
     const safeTasks = state.tasks || [];

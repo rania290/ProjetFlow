@@ -33,6 +33,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/store/projectStore';
 import type { Task, TaskStatus, TaskPriority, TaskType } from '@/types/project.types';
+import { TaskTimerButton } from '../tasks/TaskTimerButton';
 
 // ===== CONSTANTS =====
 const STATUS_COLUMNS: { id: TaskStatus; label: string; color: string; headerBg: string; dot: string }[] = [
@@ -60,7 +61,7 @@ interface KanbanBoardProps {
     tasks: Task[];
     onStatusChange: (id: string, status: TaskStatus) => void;
     onAddTask: (status: TaskStatus) => void;
-    onEditTask: (task: Task) => void;
+    onEditTask: (task: Task, isReadOnly?: boolean) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onStatusChange, onAddTask, onEditTask }) => {
@@ -100,7 +101,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onStatusChange,
 
                 if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
                     const reordered = arrayMove(columnTasks, oldIndex, newIndex);
-                    dispatch({ type: 'REORDER_BACKLOG', projectTasks: reordered });
+                    // Update each reordered task individually (no REORDER_BACKLOG action exists)
+                    reordered.forEach(t => dispatch({ type: 'UPDATE_TASK', task: t }));
                 }
             }
         }
@@ -130,7 +132,7 @@ const DroppableColumn: React.FC<{
     col: typeof STATUS_COLUMNS[0];
     colTasks: Task[];
     onAddTask: (status: TaskStatus) => void;
-    onEditTask: (task: Task) => void;
+    onEditTask: (task: Task, isReadOnly?: boolean) => void;
 }> = ({ col, colTasks, onAddTask, onEditTask }) => {
     const { setNodeRef, isOver } = useDroppable({
         id: col.id,
@@ -167,7 +169,12 @@ const DroppableColumn: React.FC<{
             )}>
                 <SortableContext items={colTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                     {colTasks.map(task => (
-                        <TaskCard key={task.id} task={task} onEdit={() => onEditTask(task)} />
+                        <TaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onView={() => onEditTask(task, true)} 
+                            onEdit={() => onEditTask(task, false)} 
+                        />
                     ))}
                 </SortableContext>
 
@@ -182,7 +189,7 @@ const DroppableColumn: React.FC<{
     );
 };
 
-const TaskCard: React.FC<{ task: Task; onEdit: () => void }> = ({ task, onEdit }) => {
+const TaskCard: React.FC<{ task: Task; onView: () => void; onEdit: () => void }> = ({ task, onView, onEdit }) => {
     const {
         attributes,
         listeners,
@@ -207,7 +214,7 @@ const TaskCard: React.FC<{ task: Task; onEdit: () => void }> = ({ task, onEdit }
             style={style}
             {...attributes}
             {...listeners}
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            onClick={(e) => { e.stopPropagation(); onView(); }}
             className={cn(
                 "group relative bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary-100 transition-all cursor-grab active:cursor-grabbing select-none hover:-translate-y-1 active:scale-[0.98]",
                 isDragging ? 'opacity-40 ring-2 ring-primary-500 shadow-2xl scale-[1.02]' : ''
@@ -264,6 +271,9 @@ const TaskCard: React.FC<{ task: Task; onEdit: () => void }> = ({ task, onEdit }
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <TaskTimerButton task={{ id: task.id, title: task.title, projectId: task.projectId }} />
+                    </div>
                     {task.dueDate && (
                         <div className="text-[9px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-md flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />

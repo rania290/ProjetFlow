@@ -9,7 +9,11 @@ interface LeaveStatusBadgeProps {
 }
 
 export const LeaveStatusBadge = ({ status, size = 'md' }: LeaveStatusBadgeProps) => {
-  const config = STATUS_CONFIG[status]
+  const config = STATUS_CONFIG[status] || {
+    label: status,
+    badgeClass: 'bg-slate-50 text-slate-400 border-slate-200',
+    dotClass: 'bg-slate-300'
+  }
   
   return (
     <Badge

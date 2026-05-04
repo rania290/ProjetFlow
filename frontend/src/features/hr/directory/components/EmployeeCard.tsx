@@ -19,7 +19,7 @@ const ROLE_CONFIG: Record<string, { color: string, icon: React.ReactNode, label:
   ADMIN: { color: 'bg-rose-500', icon: <Shield className="w-3 h-3" />, label: 'Administrateur' },
   PROJECT_MANAGER: { color: 'bg-indigo-500', icon: <Zap className="w-3 h-3" />, label: 'Manager' },
   DEVELOPER: { color: 'bg-sky-500', icon: <Cpu className="w-3 h-3" />, label: 'Développeur' },
-  DESIGNER: { color: 'bg-pink-500', icon: <User className="w-3 h-3" />, label: 'Designer' },
+  DESIGNER: { color: 'bg-amber-700', icon: <User className="w-3 h-3" />, label: 'Designer' },
   TEAM_MEMBER: { color: 'bg-slate-500', icon: <User className="w-3 h-3" />, label: 'Membre' },
   DEFAULT: { color: 'bg-slate-400', icon: <User className="w-3 h-3" />, label: 'Employé' }
 };

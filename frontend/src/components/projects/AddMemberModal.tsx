@@ -39,8 +39,8 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                 setIsLoading(true);
                 try {
                     const data = await adminApi.getAllUsers();
-                    // On ne propose que les utilisateurs qui ne sont pas déjà membres
-                    const availableUsers = (data || []).filter(u => !existingMemberIds.includes(u.id));
+                    // On ne propose que les utilisateurs qui ne sont pas déjà membres et qui ne sont pas ADMIN
+                    const availableUsers = (data || []).filter(u => !existingMemberIds.includes(u.id) && u.role !== 'ADMIN');
                     setUsers(availableUsers);
                 } catch (error) {
                     console.error("Erreur lors de la récupération des utilisateurs:", error);

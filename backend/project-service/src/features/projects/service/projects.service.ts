@@ -15,7 +15,11 @@ export class ProjectsService {
   ) { }
 
   async create(createProjectDto: CreateProjectDto, userId?: string, role?: string): Promise<Project> {
-    const project = this.projectRepository.create(createProjectDto);
+    const data: Partial<Project> = { ...createProjectDto } as any;
+    delete (data as any).members;
+    delete (data as any).tags;
+
+    const project = this.projectRepository.create(data);
     const savedProject = await this.projectRepository.save(project);
 
     // If userId is provided, automatically assign the creator to the project
@@ -125,7 +129,13 @@ export class ProjectsService {
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project> {
-    await this.projectRepository.update(id, updateProjectDto);
+    const updateData = { ...updateProjectDto } as any;
+    delete updateData.members;
+    delete updateData.tags;
+    
+    if (Object.keys(updateData).length > 0) {
+        await this.projectRepository.update(id, updateData);
+    }
     return this.findOne(id);
   }
 

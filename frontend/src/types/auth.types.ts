@@ -15,6 +15,7 @@ export interface RegisterUserDto {
     password: string;
     fullName: string;
     role: UserRole;
+    managerIds?: string[];
 }
 
 export interface LoginDto {
@@ -29,6 +30,7 @@ export interface User {
     role: UserRole;
     isActive?: boolean;
     managerId?: string;
+    managerIds?: string[];
     createdAt?: string;
     updatedAt?: string;
 }

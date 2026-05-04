@@ -83,6 +83,12 @@ export class TicketEntity {
     description: string;
     user: string;
     timestamp: Date;
+    attachments?: {
+      name: string;
+      url: string;
+      size: number;
+      type: string;
+    }[];
   }[];
 
   @Column({ default: true })

@@ -2,18 +2,19 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy package config and root node_modules if they exist (monorepo root)
+# Copy package config
 COPY package*.json ./
 RUN npm install --no-audit --no-fund --timeout=300000
 
-# Copy the entire mono-repo
-COPY . .
+# Copy backend directory
+COPY . ./
 
-# ARGs to specify which project to build (api-gateway, auth-service, etc.)
+# ARGs to specify which project to build
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
 
-RUN npm run build ${SERVICE_NAME}
+# Build using nest build directly
+RUN npx nest build ${SERVICE_NAME}
 
 FROM node:20-slim
 
@@ -22,11 +23,12 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 
 WORKDIR /app
 
+# Copy package files and node_modules from builder
 COPY --from=builder /app/package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund --timeout=300000
 
-# Copy distribution folder and built node_modules
+# Copy dist folder
 COPY --from=builder /app/dist ./dist
 
-# Point d'entrée pour les projets NestJS (monorepo structure)
+# Run the service
 CMD node dist/${SERVICE_NAME}/src/main.js

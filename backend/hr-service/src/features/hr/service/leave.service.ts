@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { Repository, LessThanOrEqual, MoreThanOrEqual, In } from "typeorm";
+import { Repository, LessThanOrEqual, MoreThanOrEqual, In, Not } from "typeorm";
 import { LeaveStatus } from "../constants/leave.constants";
 import { CreateLeaveDto } from "../dto/create-leave.dto";
 import { LeaveResponseDto } from "../dto/leave-response.dto";
@@ -30,16 +30,25 @@ export class LeaveService {
     if (durationDays <= 0) throw new BadRequestException("Leave duration must be at least 1 working day (check if dates fall on weekends)");
 
     console.log(`[HR Service] Start createLeaveRequest for employee ${dto.employeeId}`);
-    const overlap = await this.leaveRepository.findOne({
+    // Overlap check disabled as per user request
+
+    // Check for other users overlapping (Warning)
+    const otherOverlaps = await this.leaveRepository.find({
       where: {
-        employeeId: dto.employeeId,
-        status: In([LeaveStatus.PENDING, LeaveStatus.APPROVED]),
+        employeeId: Not(dto.employeeId),
+        status: LeaveStatus.FULLY_APPROVED,
         startDate: LessThanOrEqual(end),
         endDate: MoreThanOrEqual(start),
       },
     });
-    console.log(`[HR Service] Overlap check completed. Overlap found: ${!!overlap}`);
-    if (overlap) throw new BadRequestException("Overlapping leave request already exists for these dates");
+
+    if (otherOverlaps.length > 0) {
+      const names = otherOverlaps.map(o => o.employeeName).join(', ');
+      console.log(`[HR Service] Warning: Other users have approved leaves: ${names}`);
+      // We don't block here by default unless specified, but we can throw a specific exception or include it in response
+      // For this task, let's allow it but maybe the user wants to see it. 
+      // I'll add a check in the frontend instead to show a warning before submitting.
+    }
 
     try {
       console.log(`[HR Service] Creating entity...`);
@@ -52,8 +61,9 @@ export class LeaveService {
         durationDays,
         motif: dto.motif ?? "",
         status: LeaveStatus.PENDING,
-        managerId: dto.managerId || null,
-        currentValidatorId: dto.managerId || null,
+        managerId: dto.managerId || (dto.managerIds && dto.managerIds.length > 0 ? dto.managerIds[0] : null),
+        managerIds: dto.managerIds || (dto.managerId ? [dto.managerId] : []),
+        currentValidatorId: dto.managerId || (dto.managerIds && dto.managerIds.length > 0 ? dto.managerIds[0] : null),
         validationStep: 1,
         reviewedBy: null,
         reviewedAt: null,
@@ -70,14 +80,28 @@ export class LeaveService {
         console.log(`[HR Service] Sending notifications...`);
         sendLeaveRequestNotification(created);
 
-        if (created.managerId) {
-          await this.publishNotification(created.managerId, {
+        // 1. Notify ALL Managers (Chef de projet)
+        const managersToNotify = created.managerIds && created.managerIds.length > 0 
+          ? created.managerIds 
+          : created.managerId ? [created.managerId] : [];
+
+        for (const mId of managersToNotify) {
+          await this.publishNotification(mId, {
             type: 'LEAVE_REQUEST',
-            title: 'Nouvelle demande de congé',
+            title: 'Nouvelle demande (Action requise)',
             message: `${created.employeeName} a soumis une demande de ${created.durationDays} jours.`,
-            metadata: { leaveId: created.id }
+            metadata: { leaveId: created.id, role: 'MANAGER' }
           });
         }
+
+        // 2. Notify all Admins (Broadcast)
+        await this.publishNotification('ADMIN_GROUP', {
+          type: 'LEAVE_REQUEST_ADMIN',
+          title: 'Nouvelle demande soumise',
+          message: `${created.employeeName} a soumis une demande (Validation Chef en cours).`,
+          metadata: { leaveId: created.id, role: 'ADMIN' }
+        });
+
       } catch (e: any) {
         console.warn('[HR Service] Error sending notification', e.message);
       }
@@ -102,8 +126,8 @@ export class LeaveService {
 
       if (leave.status !== LeaveStatus.PENDING) throw new BadRequestException("Seules les demandes EN ATTENTE peuvent être traitées.");
 
-      if (dto.status !== LeaveStatus.APPROVED && dto.status !== LeaveStatus.REJECTED) {
-        throw new BadRequestException("Le statut doit être APPROVED ou REJECTED.");
+      if (dto.status !== LeaveStatus.FULLY_APPROVED && dto.status !== LeaveStatus.CHEF_APPROVED && dto.status !== LeaveStatus.REJECTED && (dto.status as any) !== 'APPROVED') {
+        throw new BadRequestException("Statut de validation invalide.");
       }
       if (dto.status === LeaveStatus.REJECTED && !dto.rejectionReason) {
         throw new BadRequestException("Une raison est requise pour un refus.");
@@ -111,11 +135,31 @@ export class LeaveService {
 
       console.log(`[HR Service] Updating leave ${id} in DB...`);
       try {
+        let newStatus = dto.status;
+        let newStep = leave.validationStep;
+        let newValidatorId = leave.currentValidatorId;
+
+        if (dto.status === LeaveStatus.FULLY_APPROVED || dto.status === 'APPROVED' as any) {
+           if (leave.validationStep === 1) {
+             // Step 1: Chef Approved -> Wait for HR
+             newStatus = LeaveStatus.CHEF_APPROVED;
+             newStep = 2;
+             newValidatorId = null; // Broadcast to HR/Admin
+           } else {
+             // Step 2: HR Final Approval
+             newStatus = LeaveStatus.FULLY_APPROVED;
+           }
+        } else if (dto.status === LeaveStatus.REJECTED) {
+           newStatus = LeaveStatus.REJECTED;
+        }
+
         await this.leaveRepository.update(id, {
-          status: dto.status,
+          status: newStatus,
           reviewedBy: dto.reviewedBy,
           reviewedAt: new Date(),
-          rejectionReason: dto.status === LeaveStatus.REJECTED ? dto.rejectionReason ?? null : null,
+          validationStep: newStep,
+          currentValidatorId: newValidatorId,
+          rejectionReason: newStatus === LeaveStatus.REJECTED ? dto.rejectionReason ?? null : null,
         });
       } catch (dbErr: any) {
         console.error(`[HR Service] DB UPDATE ERROR for ${id}:`, dbErr);
@@ -124,7 +168,7 @@ export class LeaveService {
 
       const updated = await this.leaveRepository.findOne({ where: { id } });
 
-      if (dto.status === LeaveStatus.APPROVED) {
+      if (updated?.status === LeaveStatus.FULLY_APPROVED) {
         try {
           console.log(`[HR Service] Syncing leave ${id} to calendar...`);
           await this.syncToProjectCalendar(updated!);
@@ -136,11 +180,17 @@ export class LeaveService {
       try {
         sendReviewNotification(updated!);
 
-        // Real-time Decision Notification to Employee
+        // Real-time Decision Notification
+        const notifTitle = updated!.status === LeaveStatus.FULLY_APPROVED 
+          ? 'Demande de congé Acceptée' 
+          : updated!.status === LeaveStatus.CHEF_APPROVED 
+            ? 'Demande validée par le Chef (Attente RH)'
+            : 'Demande de congé Refusée';
+
         await this.publishNotification(updated!.employeeId, {
           type: 'LEAVE_DECISION',
-          title: `Demande de congé ${updated!.status === LeaveStatus.APPROVED ? 'Acceptée' : 'Refusée'}`,
-          message: `Votre demande du ${updated!.startDate.toLocaleDateString()} a été traitée.`,
+          title: notifTitle,
+          message: `Votre demande du ${updated!.startDate.toLocaleDateString()} a été mise à jour.`,
           metadata: { leaveId: updated!.id, status: updated!.status }
         });
       } catch (notifErr: any) {
@@ -181,15 +231,30 @@ export class LeaveService {
   }
 
   async getPendingLeaves(validatorId?: string): Promise<LeaveResponseDto[]> {
-    const where: any = { status: LeaveStatus.PENDING };
-    if (validatorId) {
-      where.currentValidatorId = validatorId;
+    let items: LeaveRequest[] = [];
+    
+    // If no validatorId is provided (Admin case), show EVERYTHING that needs validation
+    if (!validatorId || validatorId === 'undefined' || validatorId === '') {
+      items = await this.leaveRepository.find({
+        where: [
+          { status: LeaveStatus.PENDING },
+          { status: LeaveStatus.CHEF_APPROVED }
+        ],
+        order: { createdAt: 'DESC' }
+      });
+    } else {
+      // For Managers/Chefs: Show only PENDING requests they need to validate
+      // They see it if they are the current validator OR if they are in managerIds list for Level 1
+      items = await this.leaveRepository.createQueryBuilder('leave')
+        .where('leave.status = :status', { status: LeaveStatus.PENDING })
+        .andWhere('(leave.currentValidatorId = :vId OR leave.manager_ids LIKE :vLike)', { 
+          vId: validatorId,
+          vLike: `%${validatorId}%`
+        })
+        .orderBy('leave.created_at', 'DESC')
+        .getMany();
     }
 
-    const items = await this.leaveRepository.find({
-      where,
-      order: { createdAt: 'DESC' }
-    });
     return items.map(LeaveResponseDto.fromEntity);
   }
 
@@ -206,6 +271,21 @@ export class LeaveService {
       startDate: leave.startDate,
       endDate: leave.endDate,
     });
+  }
+
+  async checkOverlappingEmployees(start: Date, end: Date, excludeEmployeeId: string): Promise<string[]> {
+    const overlaps = await this.leaveRepository.find({
+      where: {
+        employeeId: Not(excludeEmployeeId),
+        status: LeaveStatus.FULLY_APPROVED,
+        startDate: LessThanOrEqual(end),
+        endDate: MoreThanOrEqual(start),
+      },
+      select: ["employeeName"]
+    });
+
+    // Return unique names
+    return Array.from(new Set(overlaps.map(o => o.employeeName)));
   }
 }
 

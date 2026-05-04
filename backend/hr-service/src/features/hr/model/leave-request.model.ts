@@ -47,6 +47,10 @@ export class LeaveRequest {
   @Column("uuid", { name: "manager_id", nullable: true })
   managerId!: string | null;
 
+  @Column("simple-array", { name: "manager_ids", nullable: true })
+  managerIds!: string[];
+
+
   @Column("uuid", { name: "current_validator_id", nullable: true })
   currentValidatorId!: string | null;
 

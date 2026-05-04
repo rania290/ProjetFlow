@@ -1,6 +1,8 @@
 export enum LeaveStatus {
   PENDING = "PENDING",
   APPROVED = "APPROVED",
+  CHEF_APPROVED = "CHEF_APPROVED",
+  FULLY_APPROVED = "FULLY_APPROVED",
   REJECTED = "REJECTED",
 }
 
@@ -20,5 +22,12 @@ export enum LeaveRole {
   ADMIN = "ADMIN",
   ROOT = "ROOT",
   SUPERADMIN = "SUPERADMIN",
+  SUPER_ADMIN = "SUPER_ADMIN",
+  // Business roles — treated as employees for HR purposes
+  DEVELOPER = "DEVELOPER",
+  DESIGNER = "DESIGNER",
+  TESTER = "TESTER",
+  PROJECT_MANAGER = "PROJECT_MANAGER",
+  TEAM_MEMBER = "TEAM_MEMBER",
 }
 

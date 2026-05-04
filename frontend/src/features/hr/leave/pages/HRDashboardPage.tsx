@@ -7,7 +7,7 @@ import { LeaveStatsBar } from '../components/LeaveStatsBar'
 import { LeaveCard } from '../components/LeaveCard'
 import { EmptyLeaveState } from '../components/EmptyLeaveState'
 import { LeaveCalendarView } from '../components/LeaveCalendarView'
-import { ReviewModal } from '../components/ReviewModal'
+import { LeaveDetailsModal } from '../components/LeaveDetailsModal'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,7 +22,7 @@ interface HRDashboardPageProps {
 }
 
 export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
-  const [reviewLeaveId, setReviewLeaveId] = useState<string | null>(null)
+  const [viewLeaveId, setViewLeaveId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('pending')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -32,18 +32,18 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
 
   const handleApprove = useCallback(async (id: string) => {
     await approveLeave(id, 'current-user')
-    setReviewLeaveId(null)
+    setViewLeaveId(null)
     refetch()
   }, [approveLeave, refetch])
 
   const handleReject = useCallback(async (id: string, reason: string) => {
     await rejectLeave(id, 'current-user', reason)
-    setReviewLeaveId(null)
+    setViewLeaveId(null)
     refetch()
   }, [rejectLeave, refetch])
 
-  const handleReview = useCallback((id: string) => {
-    setReviewLeaveId(id)
+  const handleView = useCallback((id: string) => {
+    setViewLeaveId(id)
   }, [])
 
   const getFilteredLeaves = () => {
@@ -74,7 +74,7 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
     }))
   }
 
-  const leaveToReview = allLeaves.find(leave => leave.id === reviewLeaveId)
+  const leaveToView = allLeaves.find(leave => leave.id === viewLeaveId)
 
   if (error) {
     return (
@@ -138,7 +138,7 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
                           key={leave.id}
                           leave={leave}
                           role={role}
-                          onReview={handleReview}
+                          onView={handleView}
                         />
                       ))}
                   </motion.div>
@@ -154,8 +154,9 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="PENDING">En attente</SelectItem>
-                    <SelectItem value="APPROVED">Approuvés</SelectItem>
+                    <SelectItem value="PENDING">En attente Chef</SelectItem>
+                    <SelectItem value="CHEF_APPROVED">Validé Chef</SelectItem>
+                    <SelectItem value="FULLY_APPROVED">Approuvés</SelectItem>
                     <SelectItem value="REJECTED">Rejetés</SelectItem>
                   </SelectContent>
                 </Select>
@@ -181,7 +182,7 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
                     key={leave.id}
                     leave={leave}
                     role={role}
-                    onReview={handleReview}
+                    onView={handleView}
                   />
                 ))}
               </div>
@@ -203,15 +204,20 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
                 {getRecentActivity().map((activity, index) => (
                   <div key={activity.id} className="flex items-start gap-3">
                     <div className="mt-1">
-                      {activity.status === 'APPROVED' ? (
+                      {activity.status === 'FULLY_APPROVED' ? (
                         <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      ) : activity.status === 'CHEF_APPROVED' ? (
+                        <CheckCircle className="w-4 h-4 text-blue-500" />
                       ) : (
                         <XCircle className="w-4 h-4 text-red-500" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-900">
-                        {activity.employeeName} - {activity.status === 'APPROVED' ? 'Approuvé' : 'Rejeté'}
+                        {activity.employeeName} - {
+                        activity.status === 'FULLY_APPROVED' ? 'Approuvé' : 
+                        activity.status === 'CHEF_APPROVED' ? 'Validé par Chef' : 'Rejeté'
+                      }
                       </p>
                       <p className="text-xs text-gray-500">
                         {activity.reviewedAt && formatDistanceToNow(new Date(activity.reviewedAt), { 
@@ -254,10 +260,10 @@ export const HRDashboardPage = ({ role }: HRDashboardPageProps) => {
         </div>
       </div>
 
-      <ReviewModal
-        leave={leaveToReview || null}
-        open={!!reviewLeaveId}
-        onClose={() => setReviewLeaveId(null)}
+      <LeaveDetailsModal
+        leave={leaveToView || null}
+        isOpen={!!viewLeaveId}
+        onClose={() => setViewLeaveId(null)}
         onApprove={handleApprove}
         onReject={handleReject}
         isReviewing={isReviewing}

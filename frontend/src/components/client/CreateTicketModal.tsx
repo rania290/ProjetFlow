@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../store/projectStore';
 import { useAuth } from '../../hooks/useAuth';
+import { ticketsService } from '../../api/tickets.service';
+import { storageService } from '../../api/storage.service';
 import {
     Dialog,
     DialogContent,
@@ -20,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface CreateTicketModalProps {
     isOpen: boolean;
@@ -48,42 +51,40 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
         if (!title.trim() || !description.trim()) return;
 
         setIsSubmitting(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            let attachments = [];
+            if (attachedFile) {
+                const uploadResult = await storageService.uploadFile(attachedFile);
+                attachments.push({
+                    name: attachedFile.name,
+                    url: uploadResult.url,
+                    size: attachedFile.size,
+                    type: attachedFile.type
+                });
+            }
 
-        const now = new Date().toISOString();
-        const newTicket = {
-            id: `ticket_${Date.now()}`,
-            title,
-            description,
-            status: 'OPEN',
-            priority,
-            clientId: (user as any)?.id || 'client-id',
-            requesterName: user?.fullName || 'Client',
-            requesterEmail: (user as any)?.email || '',
-            assigneeName: null,
-            createdAt: now,
-            updatedAt: now,
-            messages: [
-                {
-                    id: `msg_${Date.now()}`,
-                    authorId: (user as any)?.id || 'client-id',
-                    authorName: user?.fullName || 'Client',
-                    content: description,
-                    createdAt: now,
-                    isClient: true
-                }
-            ]
-        };
-
-        dispatch({ type: 'ADD_TICKET', ticket: newTicket as any });
-        setIsSubmitting(false);
-        onClose();
-        // Reset form
-        setTitle('');
-        setDescription('');
-        setPriority('MEDIUM');
-        setAttachedFile(null);
+            const ticketData = {
+                title,
+                description,
+                priority,
+                type: 'SUPPORT',
+                attachments
+            };
+            
+            const createdTicket = await ticketsService.create(ticketData, user?.email);
+            dispatch({ type: 'ADD_TICKET', ticket: createdTicket as any });
+            toast.success("Ticket créé avec succès ! Nos équipes reviendront vers vous rapidement.");
+            setIsSubmitting(false);
+            onClose();
+            // Reset form
+            setTitle('');
+            setDescription('');
+            setPriority('MEDIUM');
+            setAttachedFile(null);
+        } catch (error) {
+            console.error('Failed to create ticket:', error);
+            setIsSubmitting(false);
+        }
     };
 
     return (

@@ -13,7 +13,13 @@ export class TasksService {
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    const task = this.taskRepository.create(createTaskDto);
+    const data: Partial<Task> = { ...createTaskDto } as any;
+    delete (data as any).assigneeName;
+    delete (data as any).assigneeAvatar;
+    delete (data as any).subTasks;
+    delete (data as any).comments;
+    
+    const task = this.taskRepository.create(data);
     return this.taskRepository.save(task);
   }
 
@@ -31,10 +37,21 @@ export class TasksService {
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
-    if (updateTaskDto.status === TaskStatus.DONE) {
-        (updateTaskDto as any).completedAt = new Date();
+    const updateData = { ...updateTaskDto } as any;
+    
+    // Remove virtual/frontend-only properties that are not in the DB entity
+    delete updateData.assigneeName;
+    delete updateData.assigneeAvatar;
+    delete updateData.subTasks;
+    delete updateData.comments;
+
+    if (updateData.status === TaskStatus.DONE) {
+        updateData.completedAt = new Date();
     }
-    await this.taskRepository.update(id, updateTaskDto);
+    
+    if (Object.keys(updateData).length > 0) {
+        await this.taskRepository.update(id, updateData);
+    }
     return this.findOne(id);
   }
 

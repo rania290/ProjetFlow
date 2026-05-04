@@ -319,10 +319,10 @@ export const CalendarPage: React.FC = () => {
                                                 </button>
                                             </div>
 
-                                            <div className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-0.5">
-                                                {dayEvents.map(event => {
+                                            <div className="flex-1 space-y-1 overflow-hidden pr-0.5">
+                                                {dayEvents.slice(0, 3).map(event => {
                                                     const project = projects.find(p => p.id === event.project);
-                                                    const typeIcon = TYPE_CONFIG[event.type as keyof typeof TYPE_CONFIG];
+                                                    const typeIcon = TYPE_CONFIG[event.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.EVENT;
                                                     return (
                                                         <motion.div
                                                             key={event.id}
@@ -340,14 +340,37 @@ export const CalendarPage: React.FC = () => {
                                                         </motion.div>
                                                     );
                                                 })}
+                                                {dayEvents.length > 3 && (
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <button className="w-full text-left px-1.5 py-1 text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition-colors mt-1">
+                                                                + {dayEvents.length - 3} autre{dayEvents.length - 3 > 1 ? 's' : ''}...
+                                                            </button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-64 p-2 bg-white rounded-2xl shadow-xl border-slate-100 z-50 max-h-64 overflow-y-auto custom-scrollbar">
+                                                            <div className="space-y-1.5">
+                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2 py-1 mb-2">Tous les événements</div>
+                                                                {dayEvents.map(event => {
+                                                                    const project = projects.find(p => p.id === event.project);
+                                                                    const typeIcon = TYPE_CONFIG[event.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.EVENT;
+                                                                    return (
+                                                                        <div key={`popover-${event.id}`} className="p-2 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white transition-colors cursor-pointer">
+                                                                             <div className="flex items-center gap-1.5 mb-1">
+                                                                                <div className={`w-1.5 h-1.5 rounded-full ${project?.color || 'bg-slate-400'}`} />
+                                                                                <span className="text-[10px] font-black text-slate-900 truncate flex-1">{event.title}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                {typeIcon.icon}
+                                                                                <span className={`text-[9px] font-bold uppercase tracking-wider ${typeIcon.color}`}>{typeIcon.label}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                )}
                                             </div>
-
-                                            {/* Density Indicator */}
-                                            {dayEvents.length > 3 && (
-                                                <div className="absolute top-2 right-10">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                                                </div>
-                                            )}
                                         </div>
                                     );
                                 })}

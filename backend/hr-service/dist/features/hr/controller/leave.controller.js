@@ -42,6 +42,10 @@ let LeaveController = class LeaveController {
     async getLeavesByEmployee(employeeId) {
         return this.leaveService.getLeavesByEmployee(employeeId);
     }
+    async checkOverlaps(start, end, excludeId) {
+        const overlaps = await this.leaveService.checkOverlappingEmployees(new Date(start), new Date(end), excludeId);
+        return { overlappingEmployees: overlaps };
+    }
     async getLeaveById(id) {
         return this.leaveService.getLeaveById(id);
     }
@@ -59,7 +63,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)("/"),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.MANAGER, leave_constants_1.LeaveRole.HR_ADMIN),
+    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.MANAGER, leave_constants_1.LeaveRole.HR_ADMIN, leave_constants_1.LeaveRole.ADMIN, leave_constants_1.LeaveRole.ROOT, leave_constants_1.LeaveRole.SUPERADMIN, leave_constants_1.LeaveRole.SUPER_ADMIN),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -67,7 +71,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)("/"),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.EMPLOYEE),
+    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.EMPLOYEE, leave_constants_1.LeaveRole.MANAGER, leave_constants_1.LeaveRole.HR_ADMIN, leave_constants_1.LeaveRole.ADMIN, leave_constants_1.LeaveRole.ROOT, leave_constants_1.LeaveRole.SUPERADMIN, leave_constants_1.LeaveRole.SUPER_ADMIN, leave_constants_1.LeaveRole.DEVELOPER, leave_constants_1.LeaveRole.DESIGNER, leave_constants_1.LeaveRole.TESTER, leave_constants_1.LeaveRole.PROJECT_MANAGER, leave_constants_1.LeaveRole.TEAM_MEMBER),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_leave_dto_1.CreateLeaveDto]),
@@ -85,16 +89,26 @@ __decorate([
 __decorate([
     (0, common_1.Get)("/employee/:employeeId"),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.EMPLOYEE, leave_constants_1.LeaveRole.MANAGER),
+    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.EMPLOYEE, leave_constants_1.LeaveRole.MANAGER, leave_constants_1.LeaveRole.HR_ADMIN, leave_constants_1.LeaveRole.ADMIN, leave_constants_1.LeaveRole.ROOT, leave_constants_1.LeaveRole.SUPERADMIN, leave_constants_1.LeaveRole.SUPER_ADMIN, leave_constants_1.LeaveRole.DEVELOPER, leave_constants_1.LeaveRole.DESIGNER, leave_constants_1.LeaveRole.TESTER, leave_constants_1.LeaveRole.PROJECT_MANAGER, leave_constants_1.LeaveRole.TEAM_MEMBER),
     __param(0, (0, common_1.Param)("employeeId")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], LeaveController.prototype, "getLeavesByEmployee", null);
 __decorate([
+    (0, common_1.Get)("/check-overlaps"),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Query)("startDate")),
+    __param(1, (0, common_1.Query)("endDate")),
+    __param(2, (0, common_1.Query)("excludeEmployeeId")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", Promise)
+], LeaveController.prototype, "checkOverlaps", null);
+__decorate([
     (0, common_1.Get)("/:id"),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.EMPLOYEE, leave_constants_1.LeaveRole.MANAGER, leave_constants_1.LeaveRole.HR_ADMIN),
+    (0, roles_decorator_1.Roles)(leave_constants_1.LeaveRole.EMPLOYEE, leave_constants_1.LeaveRole.MANAGER, leave_constants_1.LeaveRole.HR_ADMIN, leave_constants_1.LeaveRole.ADMIN, leave_constants_1.LeaveRole.ROOT, leave_constants_1.LeaveRole.SUPERADMIN, leave_constants_1.LeaveRole.SUPER_ADMIN, leave_constants_1.LeaveRole.DEVELOPER, leave_constants_1.LeaveRole.DESIGNER, leave_constants_1.LeaveRole.TESTER, leave_constants_1.LeaveRole.PROJECT_MANAGER, leave_constants_1.LeaveRole.TEAM_MEMBER),
     __param(0, (0, common_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

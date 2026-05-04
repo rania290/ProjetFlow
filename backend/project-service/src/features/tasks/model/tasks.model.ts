@@ -73,6 +73,9 @@ export class Task {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
+  @Column({ type: 'jsonb', nullable: true })
+  attachments: any[];
+
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

@@ -1,4 +1,4 @@
-export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type LeaveStatus = 'PENDING' | 'CHEF_APPROVED' | 'FULLY_APPROVED' | 'REJECTED'
 export type LeaveType = 'ANNUAL' | 'SICK' | 'PERSONAL' | 'MATERNITY' | 'PATERNITY' | 'UNPAID'
 export type LeaveRole = 'EMPLOYEE' | 'MANAGER' | 'HR_ADMIN'
 

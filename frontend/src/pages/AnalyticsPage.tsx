@@ -69,17 +69,69 @@ export const AnalyticsPage: React.FC = () => {
     let globalConsumedBudget = totalBudget * (completionRate / 100); 
     let globalEstimatedCost = totalBudget * 0.8; // Example fallback until cost details from backend implementation
 
-    // Mock burndown data (kept for UI aesthetics until backend supports historical data)
-    const burndownData = [
-        { day: 1, remaining: 55, ideal: 55 },
-        { day: 3, remaining: 52, ideal: 47 },
-        { day: 5, remaining: 45, ideal: 39 },
-        { day: 7, remaining: 40, ideal: 31 },
-        { day: 9, remaining: 38, ideal: 23 },
-        { day: 11, remaining: 30, ideal: 15 },
-        { day: 13, remaining: 24, ideal: 7 },
-        { day: 14, remaining: 18, ideal: 0 },
+    // Compute Real Burndown Data from Store
+    let realBurndownData = [];
+    const activeSprint = state.sprints.find(s => s.status === 'ACTIVE') || state.sprints[0];
+
+    if (activeSprint) {
+        const sprintTasks = state.tasks.filter(t => t.sprintId === activeSprint.id);
+        const totalPoints = sprintTasks.reduce((sum, t) => sum + (t.storyPoints || 1), 0);
+        
+        const startDate = new Date(activeSprint.startDate);
+        const endDate = new Date(activeSprint.endDate);
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        const totalDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        
+        realBurndownData = Array.from({ length: totalDays + 1 }).map((_, i) => {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+            
+            const ideal = Math.max(0, totalPoints - (totalPoints / totalDays) * i);
+            
+            // Calculate how many points were completed UP TO this date
+            const completedPoints = sprintTasks
+                .filter(t => t.status === 'DONE' && t.completedAt && new Date(t.completedAt).getTime() <= currentDate.getTime() + 86400000) // End of day
+                .reduce((sum, t) => sum + (t.storyPoints || 1), 0);
+                
+            const remaining = Math.max(0, totalPoints - completedPoints);
+            
+            return {
+                day: i,
+                remaining: remaining,
+                ideal: ideal,
+                date: currentDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+            };
+        });
+    } else {
+        // Fallback realistic burndown if no sprints exist, based on all tasks in last 14 days
+        const today = new Date();
+        const totalPoints = state.tasks.reduce((sum, t) => sum + (t.storyPoints || 1), 0);
+        
+        realBurndownData = Array.from({ length: 15 }).map((_, i) => {
+            const date = new Date(today);
+            date.setDate(today.getDate() - (14 - i));
+            
+            const completedUpToDate = state.tasks
+                .filter(t => t.status === 'DONE' && t.completedAt && new Date(t.completedAt).getTime() <= date.getTime() + 86400000)
+                .reduce((sum, t) => sum + (t.storyPoints || 1), 0);
+                
+            return {
+                day: i,
+                remaining: totalPoints > 0 ? Math.max(0, totalPoints - completedUpToDate) : 55 - (i * 3.5),
+                ideal: totalPoints > 0 ? Math.max(0, totalPoints - (totalPoints / 14) * i) : 55 - (i * 3.9),
+                date: date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+            };
+        });
+    }
+
+    const burndownData = realBurndownData.length > 0 ? realBurndownData : [
+        { day: 0, remaining: 55, ideal: 55, date: '01/01' },
     ];
+    
+    const maxBurndownPoint = Math.max(...burndownData.map(d => d.ideal), ...burndownData.map(d => d.remaining), 10);
+    const totalChartDays = Math.max(1, burndownData.length - 1);
+    const getX = (index: number) => (index / totalChartDays) * 600;
+    const getY = (val: number) => ((maxBurndownPoint - val) / maxBurndownPoint) * 160;
 
     // Velocity based on real completion if available
     const velocityData = [
@@ -146,7 +198,7 @@ export const AnalyticsPage: React.FC = () => {
                     <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
                         <div className="flex items-center justify-between mb-5">
                             <div>
-                                <h3 className="text-sm font-bold text-slate-800">Burndown Chart – Sprint 1</h3>
+                                <h3 className="text-sm font-bold text-slate-800">Burndown Chart – {activeSprint ? activeSprint.name : 'Sprint Actuel'}</h3>
                                 <p className="text-[11px] text-slate-400">Évolution des story points restants</p>
                             </div>
                             <div className="flex items-center gap-3 text-[10px] text-slate-400">
@@ -165,32 +217,36 @@ export const AnalyticsPage: React.FC = () => {
                                     </linearGradient>
                                 </defs>
                                 {/* Grid lines */}
-                                {[0, 25, 50, 75, 100].map((v, i) => (
-                                    <g key={v}>
-                                        <line x1="0" y1={i * 36} x2="600" y2={i * 36} stroke="#f1f5f9" strokeWidth="1" />
-                                        <text x="0" y={i * 36 - 4} fontSize="10" fill="#94a3b8">{100 - v * 0.55}</text>
-                                    </g>
-                                ))}
+                                {[0, 1, 2, 3, 4].map((i) => {
+                                    const y = i * 40;
+                                    const val = Math.round(maxBurndownPoint * (1 - i / 4));
+                                    return (
+                                        <g key={i}>
+                                            <line x1="0" y1={y} x2="600" y2={y} stroke="#f1f5f9" strokeWidth="1" />
+                                            <text x="0" y={y > 0 ? y - 4 : 10} fontSize="10" fill="#94a3b8">{val}</text>
+                                        </g>
+                                    )
+                                })}
                                 {/* Ideal line */}
                                 <path
-                                    d={`M ${burndownData.map(d => `${(d.day / 14) * 600},${((55 - d.ideal) / 55) * 160}`).join(' L ')}`}
+                                    d={`M ${burndownData.map((d, i) => `${getX(i)},${getY(d.ideal)}`).join(' L ')}`}
                                     stroke="#cbd5e1" strokeWidth="1.5" fill="none" strokeDasharray="6,4"
                                 />
                                 {/* Real area */}
                                 <path
-                                    d={`M ${burndownData.map(d => `${(d.day / 14) * 600},${((55 - d.remaining) / 55) * 160}`).join(' L ')} L 600,160 L 0,160 Z`}
+                                    d={`M ${burndownData.map((d, i) => `${getX(i)},${getY(d.remaining)}`).join(' L ')} L 600,160 L 0,160 Z`}
                                     fill="url(#burnGrad)"
                                 />
                                 {/* Real line */}
                                 <path
-                                    d={`M ${burndownData.map(d => `${(d.day / 14) * 600},${((55 - d.remaining) / 55) * 160}`).join(' L ')}`}
+                                    d={`M ${burndownData.map((d, i) => `${getX(i)},${getY(d.remaining)}`).join(' L ')}`}
                                     stroke="#5c7cfa" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"
                                 />
                                 {/* Dots */}
-                                {burndownData.map(d => (
-                                    <circle key={d.day}
-                                        cx={(d.day / 14) * 600}
-                                        cy={((55 - d.remaining) / 55) * 160}
+                                {burndownData.map((d, i) => (
+                                    <circle key={i}
+                                        cx={getX(i)}
+                                        cy={getY(d.remaining)}
                                         r="3.5" fill="#5c7cfa" stroke="white" strokeWidth="2"
                                     />
                                 ))}

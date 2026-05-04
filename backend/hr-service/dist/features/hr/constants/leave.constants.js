@@ -5,6 +5,8 @@ var LeaveStatus;
 (function (LeaveStatus) {
     LeaveStatus["PENDING"] = "PENDING";
     LeaveStatus["APPROVED"] = "APPROVED";
+    LeaveStatus["CHEF_APPROVED"] = "CHEF_APPROVED";
+    LeaveStatus["FULLY_APPROVED"] = "FULLY_APPROVED";
     LeaveStatus["REJECTED"] = "REJECTED";
 })(LeaveStatus || (exports.LeaveStatus = LeaveStatus = {}));
 var LeaveType;
@@ -24,5 +26,11 @@ var LeaveRole;
     LeaveRole["ADMIN"] = "ADMIN";
     LeaveRole["ROOT"] = "ROOT";
     LeaveRole["SUPERADMIN"] = "SUPERADMIN";
+    LeaveRole["SUPER_ADMIN"] = "SUPER_ADMIN";
+    LeaveRole["DEVELOPER"] = "DEVELOPER";
+    LeaveRole["DESIGNER"] = "DESIGNER";
+    LeaveRole["TESTER"] = "TESTER";
+    LeaveRole["PROJECT_MANAGER"] = "PROJECT_MANAGER";
+    LeaveRole["TEAM_MEMBER"] = "TEAM_MEMBER";
 })(LeaveRole || (exports.LeaveRole = LeaveRole = {}));
 //# sourceMappingURL=leave.constants.js.map

@@ -70,7 +70,7 @@ interface BacklogViewProps {
     allTasks: Task[];
     onAddTask: () => void;
     onMoveToSprint: (taskId: string, sprintId: string) => void;
-    onEditTask: (task: Task) => void;
+    onEditTask: (task: Task, isReadOnly?: boolean) => void;
 }
 
 export const BacklogView: React.FC<BacklogViewProps> = ({
@@ -194,7 +194,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
                                         </div>
                                     ) : (
                                         sprintTasks.map(task => (
-                                            <BacklogTaskRow key={task.id} task={task} sprints={sprints} onMoveToSprint={onMoveToSprint} onEdit={() => onEditTask(task)} inSprint />
+                                            <BacklogTaskRow key={task.id} task={task} sprints={sprints} onMoveToSprint={onMoveToSprint} onEdit={(isReadOnly) => onEditTask(task, isReadOnly)} inSprint />
                                         ))
                                     )}
                                 </div>
@@ -275,7 +275,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({
                             >
                                 <SortableContext items={filtered.map(t => t.id)} strategy={verticalListSortingStrategy}>
                                     {filtered.map(task => (
-                                        <BacklogTaskRow key={task.id} task={task} sprints={sprints} onMoveToSprint={onMoveToSprint} onEdit={() => onEditTask(task)} />
+                                        <BacklogTaskRow key={task.id} task={task} sprints={sprints} onMoveToSprint={onMoveToSprint} onEdit={(isReadOnly) => onEditTask(task, isReadOnly)} />
                                     ))}
                                 </SortableContext>
                             </DndContext>
@@ -298,7 +298,7 @@ const BacklogTaskRow: React.FC<{
     task: Task;
     sprints: Sprint[];
     onMoveToSprint: (taskId: string, sprintId: string) => void;
-    onEdit: () => void;
+    onEdit: (isReadOnly?: boolean) => void;
     inSprint?: boolean;
 }> = ({ task, sprints, onMoveToSprint, onEdit, inSprint }) => {
     const {
@@ -342,7 +342,7 @@ const BacklogTaskRow: React.FC<{
                 {type.icon}
             </div>
 
-            <div className="flex-1 min-w-0" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+            <div className="flex-1 min-w-0" onClick={(e) => { e.stopPropagation(); onEdit(true); }}>
                 <div className="flex items-center gap-3">
                     <span className="text-[13px] text-slate-800 font-bold truncate group-hover:text-primary-700 transition-colors cursor-pointer">{task.title}</span>
                     {(task.storyPoints ?? 0) > 0 && (
@@ -382,7 +382,7 @@ const BacklogTaskRow: React.FC<{
 
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
-                        <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -392,8 +392,11 @@ const BacklogTaskRow: React.FC<{
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 p-1 rounded-xl shadow-2xl border-slate-100">
-                            <DropdownMenuItem className="text-[11px] font-bold text-slate-600 rounded-lg py-2 flex items-center gap-2 cursor-pointer" onClick={onEdit}>
-                                <Info className="w-4 h-4" /> Modifier les détails
+                            <DropdownMenuItem className="text-[11px] font-bold text-slate-600 rounded-lg py-2 flex items-center gap-2 cursor-pointer" onClick={() => onEdit(true)}>
+                                Voir les détails
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-[11px] font-bold text-primary-600 rounded-lg py-2 flex items-center gap-2 cursor-pointer" onClick={() => onEdit(false)}>
+                                Modifier les détails
                             </DropdownMenuItem>
                             {!task.sprintId && activeSprints.length > 0 && (
                                 <>

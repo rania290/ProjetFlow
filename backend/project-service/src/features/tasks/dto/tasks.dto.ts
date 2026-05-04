@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum, IsNumber, IsDateString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsEnum, IsNumber, IsDateString, IsUUID, IsArray } from 'class-validator';
 import { TaskStatus, TaskPriority, TaskType } from '../constants/tasks.constants';
 
 export class CreateTaskDto {
@@ -49,6 +49,10 @@ export class CreateTaskDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsArray()
+  attachments?: any[];
 }
 
 export class UpdateTaskDto {
@@ -95,4 +99,8 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsArray()
+  attachments?: any[];
 }

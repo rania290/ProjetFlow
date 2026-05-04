@@ -17,6 +17,9 @@ const leave_controller_1 = require("./controller/leave.controller");
 const leave_request_model_1 = require("./model/leave-request.model");
 const leave_service_1 = require("./service/leave.service");
 const leave_logger_middleware_1 = require("../../middleware/leave-logger.middleware");
+const time_tracking_controller_1 = require("./controller/time-tracking.controller");
+const time_tracking_service_1 = require("./service/time-tracking.service");
+const time_tracking_model_1 = require("./model/time-tracking.model");
 let HrModule = class HrModule {
     configure(consumer) {
         consumer
@@ -30,11 +33,12 @@ exports.HrModule = HrModule = __decorate([
         imports: [
             database_module_1.DatabaseModule,
             event_emitter_1.EventEmitterModule.forRoot(),
-            typeorm_1.TypeOrmModule.forFeature([leave_request_model_1.LeaveRequest]),
+            typeorm_1.TypeOrmModule.forFeature([leave_request_model_1.LeaveRequest, time_tracking_model_1.TimeTrackingSession]),
         ],
-        controllers: [leave_controller_1.LeaveController],
+        controllers: [leave_controller_1.LeaveController, time_tracking_controller_1.TimeTrackingController],
         providers: [
             leave_service_1.LeaveService,
+            time_tracking_service_1.TimeTrackingService,
             {
                 provide: 'REDIS_CLIENT',
                 inject: [config_1.ConfigService],

@@ -39,6 +39,7 @@ export class UsersController {
       password: body.password ?? 'password123',
       fullName: body.fullName ?? '',
       role: body.role,
+      managerIds: body.managerIds,
     });
   }
 

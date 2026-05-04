@@ -651,10 +651,17 @@ export const UsersManagementPage: React.FC = () => {
                                                                 Inscrit le {new Date(user.createdAt).toLocaleDateString('fr-FR')}
                                                             </div>
                                                         )}
-                                                        {user.managerId && (
-                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-indigo-500 mt-1 uppercase tracking-widest">
-                                                                <Users className="w-3 h-3" />
-                                                                Manager: {users.find(u => u.id === user.managerId)?.fullName || 'N/A'}
+                                                        {user.managerIds && user.managerIds.length > 0 && (
+                                                            <div className="flex flex-col gap-1 mt-1">
+                                                                {user.managerIds.map(mId => {
+                                                                    const m = users.find(u => u.id === mId);
+                                                                    return m ? (
+                                                                        <div key={mId} className="flex items-center gap-1.5 text-[9px] font-black text-indigo-500 uppercase tracking-widest">
+                                                                            <Users className="w-3 h-3" />
+                                                                            Manager: {m.fullName}
+                                                                        </div>
+                                                                    ) : null;
+                                                                })}
                                                             </div>
                                                         )}
                                                     </div>
@@ -735,7 +742,7 @@ export const UsersManagementPage: React.FC = () => {
             {/* ────────────── Create / Edit Modal (Ultra-Professional Identity Header) ────────────── */}
             <AnimatePresence>
                 {modalMode && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -868,25 +875,41 @@ export const UsersManagementPage: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Supérieur Hiérarchique (Manager)</label>
-                                        <div className="relative">
-                                            <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
-                                            <select
-                                                value={form.managerId ?? ''}
-                                                onChange={e => setForm(f => ({ ...f, managerId: e.target.value }))}
-                                                className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl pl-11 pr-10 py-3.5 text-[11px] font-black uppercase tracking-widest text-slate-700 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
-                                            >
-                                                <option value="">Aucun manager (Niveau 0)</option>
-                                                {users
-                                                    .filter(u => u.id !== form.id && (u.role === 'ADMIN' || u.role === 'PROJECT_MANAGER' || u.role === 'RH'))
-                                                    .map(u => (
-                                                        <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
-                                                    ))
-                                                }
-                                            </select>
-                                            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
+                                    <div className="space-y-4">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Supérieurs Hiérarchiques (Managers)</label>
+                                        <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto p-4 bg-slate-50/50 rounded-[2rem] border border-slate-100">
+                                            {users
+                                                .filter(u => u.id !== form.id && (u.role === 'ADMIN' || u.role === 'PROJECT_MANAGER' || u.role === 'RH'))
+                                                .map(u => {
+                                                    const isSelected = (form.managerIds || []).includes(u.id);
+                                                    return (
+                                                        <button
+                                                            key={u.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const current = form.managerIds || [];
+                                                                const updated = isSelected 
+                                                                    ? current.filter(id => id !== u.id)
+                                                                    : [...current, u.id];
+                                                                setForm(f => ({ ...f, managerIds: updated }));
+                                                            }}
+                                                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected 
+                                                                ? 'bg-white border-indigo-200 shadow-sm' 
+                                                                : 'bg-transparent border-transparent hover:bg-white/50'}`}
+                                                        >
+                                                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-200'}`}>
+                                                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                                            </div>
+                                                            <div className="flex-1 text-left">
+                                                                <p className={`text-[11px] font-black uppercase tracking-tight ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{u.fullName}</p>
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{u.role}</p>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })
+                                            }
                                         </div>
+                                        <p className="text-[9px] text-slate-400 font-medium px-2 italic">Sélectionnez les managers qui pourront valider les demandes de cet utilisateur.</p>
                                     </div>
 
                                     {/* STATUS BLOCK (PURE LIGHT VERSION) */}
@@ -937,7 +960,7 @@ export const UsersManagementPage: React.FC = () => {
             {/* ────────────── Permissions Modal ────────────── */}
             <AnimatePresence>
                 {showPermissionsModal && selectedUserForPermissions && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}

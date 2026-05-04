@@ -1,0 +1,29 @@
+  aura-service:
+    build:
+      context: ./backend/aura-service
+    container_name: vaerdia-aura-service
+    environment:
+      DB_URL: postgresql://postgres:postgres@db:5432/project_db
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-""}
+    ports:
+      - "3007:3007"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio
+    container_name: vaerdia-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+volumes:
+  postgres_data:
+  minio_data:

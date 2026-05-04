@@ -9,6 +9,7 @@ import {
 import { AppLayout } from '../components/layout/AppLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/projectStore';
+import { useAuraStore } from '../store/auraStore';
 
 import type { Project } from '../types/project.types';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
@@ -34,6 +35,7 @@ const PRIORITY_BADGES = {
 
 export const DashboardPage: React.FC = () => {
     const { state, dashboardStats, dispatch } = useStore();
+    const { insights, fetchInsights, toggleOpen } = useAuraStore();
     const { user } = useAuth();
     const navigate = useNavigate();
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -42,10 +44,12 @@ export const DashboardPage: React.FC = () => {
 
 
     useEffect(() => {
-        // We rely on AppLayout for global data sync to avoid race conditions and ensure filtering.
-        // If the store is empty, we can trigger a manual sync here if needed, 
-        // but it must be FILTERED.
-    }, [dispatch]);
+        // Fetch Aura insights if there's a selected project or at least one project
+        const projectId = state.currentProjectId || state.projects[0]?.id;
+        if (projectId) {
+            fetchInsights(projectId);
+        }
+    }, [state.currentProjectId, state.projects.length, fetchInsights]);
 
 
     // Use current updated state instead of stale state
@@ -130,16 +134,25 @@ export const DashboardPage: React.FC = () => {
                                 <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20">En ligne</Badge>
                             </CardHeader>
                             <CardContent className="pt-4 space-y-2">
-                                {[
-                                    'Sprint 1 se termine dans 4 jours — 2 tâches non assignées',
-                                    'Portail Client à 62% — en avance sur le planning',
-                                    'Bug critique non assigné depuis 2 jours',
-                                ].map((msg, i) => (
-                                    <div key={i} className="text-xs text-slate-300 bg-white/5 rounded-lg px-3 py-2 leading-relaxed border border-white/5">
-                                        {msg}
+                                {insights.length > 0 ? (
+                                    insights.map((msg, i) => (
+                                        <div key={i} className="text-xs text-slate-300 bg-white/5 rounded-lg px-3 py-2 leading-relaxed border border-white/5">
+                                            {msg}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-xs text-slate-400 italic px-3 py-2">
+                                        Analyse en cours...
                                     </div>
-                                ))}
-                                <Button className="w-full mt-2" variant="secondary" size="sm">Ouvrir Aura &rarr;</Button>
+                                )}
+                                <Button 
+                                    className="w-full mt-2" 
+                                    variant="secondary" 
+                                    size="sm"
+                                    onClick={toggleOpen}
+                                >
+                                    Ouvrir Aura &rarr;
+                                </Button>
                             </CardContent>
                         </Card>
 
@@ -192,32 +205,6 @@ export const DashboardPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Activité récente */}
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
-                            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-50">
-                                <Zap className="w-4 h-4 text-primary-500" />
-                                <span className="text-sm font-bold text-slate-800">Activité récente</span>
-                            </div>
-                            <div className="divide-y divide-slate-50">
-                                {[
-                                    { action: 'Tâche terminée', desc: 'Refonte page accueil', time: 'Il y a 1h', avatar: 'KM', color: 'bg-emerald-500' },
-                                    { action: 'Sprint démarré', desc: 'Sprint 1 – Portail Client', time: 'Il y a 3h', avatar: 'RB', color: 'bg-primary-500' },
-                                    { action: 'Bug signalé', desc: 'Bouton CTA mobile', time: 'Il y a 5h', avatar: 'SL', color: 'bg-red-500' },
-                                    { action: 'Tâche assignée', desc: 'OAuth Google → Adam T.', time: 'Hier', avatar: 'RB', color: 'bg-primary-500' },
-                                ].map((a, i) => (
-                                    <div key={i} className="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-                                        <div className={`w-6 h-6 rounded-full ${a.color} flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0`}>
-                                            {a.avatar}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[11px] font-semibold text-slate-700">{a.action}</p>
-                                            <p className="text-[10px] text-slate-400 truncate">{a.desc}</p>
-                                        </div>
-                                        <span className="text-[9px] text-slate-400 flex-shrink-0">{a.time}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

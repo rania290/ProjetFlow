@@ -30,7 +30,7 @@ export const HRAnnuairePage = () => {
           <div>
             <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Tous les collaborateurs</h2>
             <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-[0.2em] flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-pink-500" /> Une équipe de {users.length} talents
+              <Users className="w-3.5 h-3.5 text-amber-700" /> Une équipe de {users.length} talents
             </p>
           </div>
         </header>

@@ -32,4 +32,11 @@ export const leaveApi = {
   async deleteLeave(id: string): Promise<void> {
     await api.delete(`/hr/leaves/${id}`);
   },
+  
+  async checkOverlaps(startDate: string, endDate: string, excludeEmployeeId: string): Promise<{ overlappingEmployees: string[] }> {
+    const response = await api.get<{ overlappingEmployees: string[] }>('/hr/leaves/check-overlaps', {
+      params: { startDate, endDate, excludeEmployeeId }
+    });
+    return response.data;
+  },
 };

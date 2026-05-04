@@ -132,10 +132,10 @@ export class UpdateTicketDto {
 }
 
 export class TicketCommentDto {
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(1000)
-  comment: string;
+  comment?: string;
 
   @IsOptional()
   @IsArray()
