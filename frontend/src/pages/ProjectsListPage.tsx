@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,14 +16,16 @@ import { projectsService } from '../api/projects.service';
 
 
 // Re-export CreateProjectModal inline for this page
-const STATUS_LABELS: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-    PLANNED: { label: 'Planifié', color: 'text-slate-600', bg: 'bg-slate-100', dot: 'bg-slate-400' },
-    IN_PROGRESS: { label: 'En cours', color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
-    DELIVERED: { label: 'Livré', color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
-    SUSPENDED: { label: 'Suspendu', color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-400' },
-};
+const getStatusLabels = (t: any): Record<string, { label: string; color: string; bg: string; dot: string }> => ({
+    PLANNED: { label: t('projects.status_labels.PLANNED'), color: 'text-slate-600', bg: 'bg-slate-100', dot: 'bg-slate-400' },
+    IN_PROGRESS: { label: t('projects.status_labels.IN_PROGRESS'), color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
+    DELIVERED: { label: t('projects.status_labels.DELIVERED'), color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+    SUSPENDED: { label: t('projects.status_labels.SUSPENDED'), color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-400' },
+});
 
 export const ProjectsListPage: React.FC = () => {
+    const { t } = useTranslation();
+    const STATUS_LABELS = getStatusLabels(t);
     const { state, dispatch } = useStore();
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
@@ -53,7 +56,7 @@ export const ProjectsListPage: React.FC = () => {
     });
 
     return (
-        <AppLayout title="Projets" subtitle={`${state.projects.length} projets au total`}>
+        <AppLayout title={t('common.projects')} subtitle={t('projects.total_projects', { count: state.projects.length })}>
             <FadeInView className="p-4 md:p-6 space-y-6">
 
                 {/* Premium Toolbar */}
@@ -65,7 +68,7 @@ export const ProjectsListPage: React.FC = () => {
                             <input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder="Rechercher un projet, client, tags..."
+                                placeholder={t('projects.search_placeholder')}
                                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/50 border border-slate-200/60 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-slate-700 placeholder:text-slate-400 transition-all"
                             />
                         </div>
@@ -77,18 +80,18 @@ export const ProjectsListPage: React.FC = () => {
                                     <button key={s}
                                         onClick={() => setFilterStatus(s)}
                                         className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterStatus === s ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                                        {s === 'ALL' ? 'Tous' : STATUS_LABELS[s]?.label}
+                                        {s === 'ALL' ? t('common.all') : STATUS_LABELS[s]?.label}
                                     </button>
                                 ))}
                             </div>
 
                             {/* Filter Category */}
                             <div className="flex gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
-                                {(['ALL', 'WEB_APPLICATION', 'MOBILE_APP', 'API_INTEGRATION'] as const).map(t => (
-                                    <button key={t}
-                                        onClick={() => setFilterCategory(t)}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterCategory === t ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                                        {t === 'ALL' ? 'Catégories' : t === 'WEB_APPLICATION' ? 'Web' : t === 'MOBILE_APP' ? 'Mobile' : 'API'}
+                                {(['ALL', 'WEB_APPLICATION', 'MOBILE_APP', 'API_INTEGRATION'] as const).map(t_item => (
+                                    <button key={t_item}
+                                        onClick={() => setFilterCategory(t_item)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterCategory === t_item ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                        {t_item === 'ALL' ? t('projects.categories') : t_item === 'WEB_APPLICATION' ? t('projects.web') : t_item === 'MOBILE_APP' ? t('projects.mobile') : t('projects.api')}
                                     </button>
                                 ))}
                             </div>
@@ -97,12 +100,12 @@ export const ProjectsListPage: React.FC = () => {
                             <div className="flex bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
                                 <button onClick={() => setViewMode('grid')}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title="Vue grille">
+                                    title={t('projects.grid_view')}>
                                     <LayoutGrid className="w-4 h-4" />
                                 </button>
                                 <button onClick={() => setViewMode('list')}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title="Vue liste">
+                                    title={t('projects.list_view')}>
                                     <List className="w-4 h-4" />
                                 </button>
                             </div>
@@ -110,7 +113,7 @@ export const ProjectsListPage: React.FC = () => {
                             {/* Create */}
                             <button onClick={() => setShowCreate(true)}
                                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
-                                <Plus className="w-4 h-4" /> Nouveau
+                                <Plus className="w-4 h-4" /> {t('common.new')}
                             </button>
                         </div>
                     </div>
@@ -121,13 +124,13 @@ export const ProjectsListPage: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                         <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">
-                            {filtered.length} projet{filtered.length > 1 ? 's' : ''} trouvé{filtered.length > 1 ? 's' : ''}
+                            {filtered.length > 1 ? t('projects.projects_found_plural', { count: filtered.length }) : t('projects.projects_found', { count: filtered.length })}
                         </span>
                     </div>
                     {(search || filterStatus !== 'ALL' || filterCategory !== 'ALL') && (
                         <button onClick={() => { setSearch(''); setFilterStatus('ALL'); setFilterCategory('ALL'); }}
                             className="text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
-                            Effacer les filtres
+                            {t('common.clear_filters')}
                         </button>
                     )}
                 </div>
@@ -147,13 +150,13 @@ export const ProjectsListPage: React.FC = () => {
                                 <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100">
                                     <FolderKanban className="w-10 h-10 text-slate-200" />
                                 </div>
-                                <h3 className="text-xl font-black text-slate-800 font-display uppercase tracking-tight">Aucun projet trouvé</h3>
+                                <h3 className="text-xl font-black text-slate-800 font-display uppercase tracking-tight">{t('projects.no_projects_found')}</h3>
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 max-w-xs mx-auto">
-                                    Ajustez vos filtres ou créez une nouvelle roadmap pour commencer votre gestion.
+                                    {t('projects.adjust_filters')}
                                 </p>
                                 <button onClick={() => setShowCreate(true)}
                                     className="mt-8 px-6 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-indigo-600 hover:bg-slate-50 transition-all shadow-sm">
-                                    + Créer un projet
+                                    + {t('projects.create_project')}
                                 </button>
                             </Card>
                         )}
@@ -164,12 +167,12 @@ export const ProjectsListPage: React.FC = () => {
                 {viewMode === 'list' && (
                     <Card className="overflow-hidden shadow-sm border-slate-100">
                         <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            <div className="col-span-4">Information Projet</div>
-                            <div className="col-span-2">Configuration</div>
-                            <div className="col-span-2">Statut</div>
-                            <div className="col-span-2">Avancement</div>
-                            <div className="col-span-1">Équipe</div>
-                            <div className="col-span-1 text-right">Budget</div>
+                            <div className="col-span-4">{t('projects.project_info')}</div>
+                            <div className="col-span-2">{t('projects.configuration')}</div>
+                            <div className="col-span-2">{t('common.status')}</div>
+                            <div className="col-span-2">{t('common.progress')}</div>
+                            <div className="col-span-1">{t('common.team_members')}</div>
+                            <div className="col-span-1 text-right">{t('common.budget')}</div>
                         </div>
                         <div className="divide-y divide-slate-50">
                             {filtered.map((p, i) => (
@@ -181,7 +184,7 @@ export const ProjectsListPage: React.FC = () => {
                         </div>
                         {filtered.length === 0 && (
                             <div className="py-20 text-center">
-                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Liste vide</p>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{t('projects.empty_list')}</p>
                             </div>
                         )}
                     </Card>
@@ -199,6 +202,8 @@ export const ProjectsListPage: React.FC = () => {
 
 // ===== GRID CARD =====
 const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () => void }> = ({ project, index, onOpen }) => {
+    const { t } = useTranslation();
+    const STATUS_LABELS = getStatusLabels(t);
     const st = STATUS_LABELS[project.status];
 
     return (
@@ -216,7 +221,7 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
                     </h3>
                     {project.clientName && (
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">
-                            Client: <span className="text-slate-600">{project.clientName}</span>
+                            {t('projects.client')}: <span className="text-slate-600">{project.clientName}</span>
                         </p>
                     )}
                 </div>
@@ -227,8 +232,8 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
 
             {/* Badges */}
             <div className="flex items-center gap-2 mb-6 flex-wrap relative">
-                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-tight shadow-sm`}>Vue {project.viewMode}</span>
-                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tight shadow-sm`}>{project.type === 'WEB_APPLICATION' ? 'Web' : project.type === 'MOBILE_APP' ? 'Mobile' : 'API'}</span>
+                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-tight shadow-sm`}>{t('projects.view')} {project.viewMode}</span>
+                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tight shadow-sm`}>{project.type === 'WEB_APPLICATION' ? t('projects.web') : project.type === 'MOBILE_APP' ? t('projects.mobile') : t('projects.api')}</span>
                 <span className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
                     <div className={`w-1 h-1 rounded-full ${st.dot} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} />{st.label}
                 </span>
@@ -240,7 +245,7 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
             {/* Progress */}
             <div className="mb-6 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/50">
                 <div className="flex justify-between text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">
-                    <span>Avancement Global</span>
+                    <span>{t('projects.global_progress')}</span>
                     <span className="text-slate-900">{project.progress}%</span>
                 </div>
                 <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
@@ -268,7 +273,7 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
                         ))}
                     </div>
                     {(!project.members || project.members.length === 0) ? (
-                        <span className="text-[10px] text-slate-300 font-black uppercase tracking-tight">Aucun membre</span>
+                        <span className="text-[10px] text-slate-300 font-black uppercase tracking-tight">{t('projects.no_members')}</span>
                     ) : project.members.length > 3 && (
                         <span className="text-[10px] text-slate-400 font-black">+{project.members.length - 3}</span>
                     )}
@@ -277,10 +282,10 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
                 <div className="flex items-center gap-4 text-[10px] font-black text-slate-600 uppercase tracking-tight">
                     <span className="flex items-center gap-1.5 text-slate-400">
                         <CalendarDays className="w-3.5 h-3.5" />
-                        {new Date(project.endDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                        {new Date(project.endDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                     </span>
                     <div className="w-1 h-1 rounded-full bg-slate-200" />
-                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">{project.budget.toLocaleString()} DT</span>
+                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">{project.budget.toLocaleString()} {t('common.currency_dt') || 'DT'}</span>
                 </div>
             </div>
         </Card>
@@ -289,6 +294,8 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
 
 // ===== LIST ROW =====
 const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => void }> = ({ project, index, onOpen }) => {
+    const { t } = useTranslation();
+    const STATUS_LABELS = getStatusLabels(t);
     const st = STATUS_LABELS[project.status];
 
     return (
@@ -305,12 +312,12 @@ const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => 
                 </div>
                 <div className="min-w-0">
                     <p className="text-sm font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{project.name}</p>
-                    {project.clientName && <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{project.clientName}</p>}
+                    {project.clientName && <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{t('projects.client')}: {project.clientName}</p>}
                 </div>
             </div>
             <div className="col-span-2 flex flex-wrap gap-1.5">
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100/50 uppercase tracking-tighter`}>{project.viewMode}</span>
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tighter`}>{project.type === 'WEB_APPLICATION' ? 'Web' : project.type === 'MOBILE_APP' ? 'Mobile' : 'API'}</span>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tighter`}>{project.type === 'WEB_APPLICATION' ? t('projects.web') : project.type === 'MOBILE_APP' ? t('projects.mobile') : t('projects.api')}</span>
             </div>
             <div className="col-span-2">
                 <span className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg w-fit border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
@@ -340,7 +347,7 @@ const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => 
                 </div>
             </div>
             <div className="col-span-1 text-right pr-2">
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm uppercase">{(project.budget / 1000).toFixed(0)}k DT</span>
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm uppercase">{(project.budget / 1000).toFixed(0)}k {t('common.currency_dt') || 'DT'}</span>
             </div>
         </motion.div>
     );

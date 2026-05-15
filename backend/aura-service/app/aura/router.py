@@ -51,6 +51,20 @@ async def get_report(project_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/aura/reports/{project_id}")
+async def get_reports_list(project_id: str, db: Session = Depends(get_db)):
+    reports = db.query(models.AuraReport).filter(
+        models.AuraReport.project_id == project_id
+    ).order_by(models.AuraReport.created_at.desc()).all()
+    return reports
+
+@router.get("/aura/reports/detail/{report_id}")
+async def get_report_detail(report_id: str, db: Session = Depends(get_db)):
+    report = db.query(models.AuraReport).filter(models.AuraReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return report
+
 class SuggestTasksRequest(BaseModel):
     title: str
     description: str

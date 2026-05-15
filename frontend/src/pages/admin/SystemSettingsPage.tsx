@@ -8,6 +8,7 @@ import {
 import { AppLayout } from '../../components/layout/AppLayout';
 import { adminApi } from '../../api/admin.api';
 import { useUi } from '../../store/uiStore';
+import { useTranslation } from 'react-i18next';
 
 /* ─── Reusable components from user template ─── */
 const Field = ({ label, hint, children }: { label: string, hint?: string, children: React.ReactNode }) => (
@@ -49,15 +50,17 @@ const Toggle = ({ value, onChange }: { value: boolean, onChange: (v: boolean) =>
 );
 
 /* ─── Sections ─── */
-const GeneralSection = ({ edited, setEdited }: any) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+const GeneralSection = ({ edited, setEdited }: any) => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Identité de l'instance</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Configurez les informations fondamentales de votre plateforme.</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.instance_identity')}</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.configure_fundamental')}</p>
     </div>
 
     <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Field label="Nom de l'instance">
+      <Field label={t('admin.instance_name')}>
         <input
           value={edited.siteName ?? ''}
           onChange={e => setEdited((f: any) => ({ ...f, siteName: e.target.value }))}
@@ -69,15 +72,15 @@ const GeneralSection = ({ edited, setEdited }: any) => (
           }}
           onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
           onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
-          placeholder="Nom du site"
+          placeholder={t('admin.site_name_placeholder')}
         />
       </Field>
 
-      <Field label="Version logicielle" hint="Lecture seule">
+      <Field label={t('admin.software_version')} hint={t('admin.read_only')}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F9FAFB', border: '1.5px solid #F3F4F6', borderRadius: 10 }}>
           <Activity style={{ width: 15, height: 15, color: '#9CA3AF' }} />
           <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>{edited.version}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: 6 }}>Stable</span>
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: 6 }}>{t('admin.stable')}</span>
         </div>
       </Field>
     </div>
@@ -85,8 +88,8 @@ const GeneralSection = ({ edited, setEdited }: any) => (
     <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Quota collaborateurs</p>
-          <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>Capacité maximale de l'instance</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{t('admin.quota_colleagues')}</p>
+          <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>{t('admin.max_capacity')}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
           <span style={{ fontSize: 24, fontWeight: 800, color: '#111827', lineHeight: 1 }}>{edited.currentUsers}</span>
@@ -104,7 +107,7 @@ const GeneralSection = ({ edited, setEdited }: any) => (
         }} />
       </div>
 
-      <Field label="Limite maximale">
+      <Field label={t('admin.max_limit')}>
         <input
           type="number"
           value={edited.maxUsers ?? 0}
@@ -120,14 +123,17 @@ const GeneralSection = ({ edited, setEdited }: any) => (
         />
       </Field>
     </div>
-  </div>
-);
+    </div>
+  );
+};
 
-const AppearanceSection = ({ edited, setEdited }: any) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+const AppearanceSection = ({ edited, setEdited }: any) => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Expérience visuelle</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Définissez l'ambiance globale de travail.</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.visual_experience')}</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.define_ambiance')}</p>
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -154,14 +160,17 @@ const AppearanceSection = ({ edited, setEdited }: any) => (
         </button>
       ))}
     </div>
-  </div>
-);
+    </div>
+  );
+};
 
-const SystemSection = ({ edited, setEdited }: any) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+const SystemSection = ({ edited, setEdited }: any) => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Pilotage du service</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Gérez l'état et l'accessibilité du noyau système.</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.service_steering')}</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.manage_core_state')}</p>
     </div>
 
     <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, overflow: 'hidden' }}>
@@ -171,14 +180,14 @@ const SystemSection = ({ edited, setEdited }: any) => (
             <Zap style={{ width: 18, height: 18, color: edited.maintenance ? '#CA8A04' : '#9CA3AF' }} />
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Mode maintenance</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{t('admin.maintenance_mode')}</p>
           </div>
         </div>
         <Toggle value={!!edited.maintenance} onChange={v => setEdited((f: any) => ({ ...f, maintenance: v }))} />
       </div>
 
       <div style={{ padding: 24 }}>
-        <Field label="Message d'interruption">
+        <Field label={t('admin.maintenance_message')}>
           <textarea
             value={edited.maintenanceMessage ?? ''}
             onChange={e => setEdited((f: any) => ({ ...f, maintenanceMessage: e.target.value }))}
@@ -194,19 +203,67 @@ const SystemSection = ({ edited, setEdited }: any) => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
-const AccessSection = ({ userCount }: any) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+const LanguageSection = ({ edited, setEdited }: any) => {
+  const { i18n, t } = useTranslation();
+
+  const handleLanguageChange = (lang: string) => {
+    setEdited((f: any) => ({ ...f, language: lang }));
+    i18n.changeLanguage(lang);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <div>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.i18n_config')}</h2>
+        <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.manage_i18n_prefs')}</p>
+      </div>
+
+      <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <Field label={t('admin.select_language')}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {[
+              { id: 'fr', label: 'Français', flag: '🇫🇷' },
+              { id: 'en', label: 'English', flag: '🇬🇧' },
+            ].map(lang => (
+              <button
+                key={lang.id}
+                onClick={() => handleLanguageChange(lang.id)}
+                style={{
+                  padding: '16px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
+                  border: edited.language === lang.id ? '2px solid #4F46E5' : '2px solid #F3F4F6',
+                  background: edited.language === lang.id ? '#EEF2FF' : '#FAFAFA',
+                  transition: 'all 0.18s',
+                  display: 'flex', alignItems: 'center', gap: 12
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{lang.flag}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: edited.language === lang.id ? '#4338CA' : '#374151' }}>{lang.label}</span>
+                {edited.language === lang.id && <Check style={{ width: 14, height: 14, marginLeft: 'auto', color: '#4F46E5' }} />}
+              </button>
+            ))}
+          </div>
+        </Field>
+      </div>
+    </div>
+  );
+};
+
+const AccessSection = ({ userCount }: any) => {
+  const { t } = useTranslation();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Gouvernance & Accès</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Pilotez votre capital humain.</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.governance_access')}</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.manage_human_capital')}</p>
     </div>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {[
-        { href: '/admin/users', icon: Users, color: '#4F46E5', bg: '#EEF2FF', label: 'Annuaire des talents', desc: `${userCount} collaborateurs actifs` },
-        { href: '/admin/access', icon: ShieldAlert, color: '#7C3AED', bg: '#F5F3FF', label: 'Matrice de sécurité', desc: 'Droits RBAC granulaires' },
+        { href: '/admin/users', icon: Users, color: '#4F46E5', bg: '#EEF2FF', label: t('admin.talent_directory'), desc: t('admin.active_colleagues', { count: userCount }) },
+        { href: '/admin/access', icon: ShieldAlert, color: '#7C3AED', bg: '#F5F3FF', label: t('admin.security_matrix'), desc: t('admin.rbac_rights') },
       ].map(item => (
         <a
           key={item.href}
@@ -229,10 +286,12 @@ const AccessSection = ({ userCount }: any) => (
       ))}
     </div>
   </div>
-);
+  );
+};
 
 /* ─── Main Page ─── */
 export const SystemSettingsPage = () => {
+  const { t } = useTranslation();
   const [edited, setEdited] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
@@ -260,9 +319,9 @@ export const SystemSettingsPage = () => {
         maintenance: !!(updated as any).maintenance,
         theme: (updated as any).theme as any,
       });
-      setFeedback({ type: 'success', message: 'Instance synchronisée' });
+      setFeedback({ type: 'success', message: t('admin.sync_success') });
     } catch {
-      setFeedback({ type: 'error', message: 'Erreur système' });
+      setFeedback({ type: 'error', message: t('admin.sync_error') });
     }
     setSaving(false);
     setTimeout(() => setFeedback(null), 3000);
@@ -271,14 +330,15 @@ export const SystemSettingsPage = () => {
   if (!edited) return null;
 
   const NAV = [
-    { id: 'general', label: 'Général', icon: Settings },
-    { id: 'appearance', label: 'Apparence', icon: Layers },
-    { id: 'system', label: 'Système', icon: Server },
-    { id: 'access', label: 'Accès & Rôles', icon: Lock },
+    { id: 'general', label: t('admin.tab_general'), icon: Settings },
+    { id: 'appearance', label: t('admin.tab_appearance'), icon: Layers },
+    { id: 'language', label: t('admin.tab_language'), icon: Globe },
+    { id: 'system', label: t('admin.tab_system'), icon: Server },
+    { id: 'access', label: t('admin.tab_access'), icon: Lock },
   ];
 
   return (
-    <AppLayout title="Paramètres Système" subtitle={`Instance ${edited.siteName}`}>
+    <AppLayout title={t('admin.system_settings')} subtitle={`Instance ${edited.siteName}`}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', gap: 32, alignItems: 'flex-start' }}>
@@ -322,7 +382,7 @@ export const SystemSettingsPage = () => {
             }}
           >
             {saving ? <div style={{ width: 14, height: 14, border: '2px solid #374151', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> : <Save style={{ width: 14, height: 14 }} />}
-            {saving ? 'Synchronisation...' : 'Synchroniser'}
+            {saving ? t('admin.syncing') : t('admin.sync_instance')}
           </button>
         </aside>
 
@@ -338,6 +398,7 @@ export const SystemSettingsPage = () => {
             >
               {activeTab === 'general' && <GeneralSection edited={edited} setEdited={setEdited} />}
               {activeTab === 'appearance' && <AppearanceSection edited={edited} setEdited={setEdited} />}
+              {activeTab === 'language' && <LanguageSection edited={edited} setEdited={setEdited} />}
               {activeTab === 'system' && <SystemSection edited={edited} setEdited={setEdited} />}
               {activeTab === 'access' && <AccessSection userCount={edited.currentUsers ?? 0} />}
             </motion.div>

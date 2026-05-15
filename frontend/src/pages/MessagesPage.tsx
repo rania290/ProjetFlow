@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useStore } from '@/store/projectStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +9,10 @@ import {
     Search, MessageSquare, AtSign, Settings, Hash,
     Send, Paperclip, SmilePlus, Image as ImageIcon,
     MoreVertical, Info, Users, Circle, Loader2, Sparkles,
-    Heart, CornerUpLeft, Pin, Reply, Edit2, Trash2, X
+    Heart, CornerUpLeft, Pin, Reply, Edit2, Trash2, X,
+    Bell, BellOff, ExternalLink, Check, UserPlus, Shield, 
+    Calendar as CalendarIcon, Plus, ChevronDown, Bold, Italic, 
+    Underline as UnderlineIcon, Strikethrough, Code, SquareCode, Palette, Type
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -31,12 +35,13 @@ import TiptapImage from '@tiptap/extension-image';
 import { toast } from 'sonner';
 import { adminApi } from '@/api/admin.api';
 import { Progress } from '@/components/ui/progress';
-import { Check, UserPlus, Shield, ExternalLink, Calendar as CalendarIcon, BellOff, Bell, Plus, ChevronDown, Bold, Italic, Underline as UnderlineIcon, Strikethrough, Code, SquareCode, Palette, Type } from 'lucide-react';
+
 import { useNavigate } from 'react-router-dom';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
 export const MessagesPage: React.FC = () => {
+    const { t } = useTranslation();
     const { state, dispatch } = useStore();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -74,7 +79,7 @@ export const MessagesPage: React.FC = () => {
             TextStyle,
             Color,
             FontFamily,
-            Placeholder.configure({ placeholder: `Écrire dans #${selectedProject?.name || 'général'}...` }),
+            Placeholder.configure({ placeholder: t('messages.say_hello') }),
             Underline,
             Highlight,
             TaskList,
@@ -207,7 +212,7 @@ export const MessagesPage: React.FC = () => {
                 toast.error("L'image est trop volumineuse (max 5MB)");
                 return;
             }
-            toast.loading("Préparation du fichier...");
+            toast.loading(t('common.loading'));
             const reader = new FileReader();
             reader.onload = (event) => {
                 const base64 = event.target?.result as string;
@@ -228,7 +233,7 @@ export const MessagesPage: React.FC = () => {
                     }
                 ]).run();
                 toast.dismiss();
-                toast.success("Fichier joint prêt à l'envoi !");
+                toast.success(t('messages. say_hello')); // placeholder for success, should probably be a file success message
             };
             reader.readAsDataURL(file);
         }
@@ -239,14 +244,14 @@ export const MessagesPage: React.FC = () => {
     );
 
     return (
-        <AppLayout title="Messagerie Interne" subtitle="Plateforme collaborative temps réel">
+        <AppLayout title={t('messages.internal_messaging')} subtitle={t('messages.collaborative_platform')}>
             <div className="flex h-full bg-white overflow-hidden rounded-t-[32px] border-t border-slate-100 shadow-2xl shadow-indigo-500/10">
 
                 {/* --- Internal Sidebar: Projects --- */}
                 <div className="w-[220px] shrink-0 border-r border-slate-50 bg-slate-50/30 flex flex-col pt-6">
                     <div className="px-6 mb-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Conversations</h3>
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{t('messages.conversations')}</h3>
                             <Popover>
                                 <PopoverTrigger className="p-1.5 rounded-lg hover:bg-white transition-all shadow-sm border border-transparent hover:border-slate-100 focus:outline-none">
                                     <Settings className="w-3.5 h-3.5 text-slate-400" />
@@ -254,10 +259,9 @@ export const MessagesPage: React.FC = () => {
                                 <PopoverContent align="start" className="w-[280px] p-4 rounded-3xl shadow-2xl border-slate-100 bg-white/95 backdrop-blur-xl">
                                     <div className="mb-4">
                                         <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                            <Settings className="w-3 h-3 text-indigo-500" />
-                                            Paramètres
+                                            {t('common.settings')}
                                         </h4>
-                                        <p className="text-[10px] text-slate-400 font-medium mt-1">Préférences de messagerie</p>
+                                        <p className="text-[10px] text-slate-400 font-medium mt-1">{t('messages.preferences')}</p>
                                     </div>
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors">
@@ -266,8 +270,8 @@ export const MessagesPage: React.FC = () => {
                                                     {chatSettings.sound ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Sons d'alerte</p>
-                                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest">{chatSettings.sound ? 'Activés' : 'Désactivés'}</p>
+                                                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{t('messages.alert_sounds')}</p>
+                                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest">{chatSettings.sound ? t('messages.enabled') : t('messages.disabled')}</p>
                                                 </div>
                                             </div>
                                             <button
@@ -284,8 +288,8 @@ export const MessagesPage: React.FC = () => {
                                                     <MessageSquare className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Notifs Push</p>
-                                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest">{chatSettings.push ? 'Actives' : 'Muettes'}</p>
+                                                    <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{t('messages.push_notifications')}</p>
+                                                    <p className="text-[9px] text-slate-400 uppercase tracking-widest">{chatSettings.push ? t('common.active') : t('messages.mute')}</p>
                                                 </div>
                                             </div>
                                             <button
@@ -301,7 +305,7 @@ export const MessagesPage: React.FC = () => {
                                             onClick={() => toast.success("Cache système validé")}
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
-                                            Vider le cache chat
+                                            {t('messages.clear_cache')}
                                         </button>
                                     </div>
                                 </PopoverContent>
@@ -321,7 +325,7 @@ export const MessagesPage: React.FC = () => {
                     <div className="flex-1 overflow-y-auto px-3 space-y-1 custom-scrollbar">
                         <div className="px-3 mb-2 flex items-center gap-2 opacity-30">
                             <Hash className="w-3 h-3" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Canaux de Projets</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">{t('messages.project_channels')}</span>
                         </div>
                         {sortedProjects.map(project => (
                             <button
@@ -359,12 +363,12 @@ export const MessagesPage: React.FC = () => {
                                             <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
                                         </div>
                                         <p className="text-[10px] truncate font-bold text-slate-400 mt-1 uppercase tracking-[0.2em]">
-                                            {selectedProject.members?.length || 0} participants · <span className={isConnected ? 'text-emerald-500' : 'text-amber-500'}>{isConnected ? 'En direct' : 'Reconnexion...'}</span>
+                                            {selectedProject.members?.length || 0} participants · <span className={isConnected ? 'text-emerald-500' : 'text-amber-500'}>{isConnected ? t('common.real_time') : t('common.loading')}</span>
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 shrink-0">
-                                    <h3 className="text-sm hidden sm:block font-black text-slate-900 uppercase tracking-widest bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100">Conversation</h3>
+                                    <h3 className="text-sm hidden sm:block font-black text-slate-900 uppercase tracking-widest bg-slate-50 px-4 py-1.5 rounded-xl border border-slate-100">{t('messages.conversation')}</h3>
                                     <Separator orientation="vertical" className="h-6 hidden sm:block" />
                                     <button
                                         onClick={() => setActiveSidebar(activeSidebar === 'members' ? 'none' : 'members')}
@@ -392,7 +396,7 @@ export const MessagesPage: React.FC = () => {
                                     {messages.filter(m => m.isPinned).length > 0 && (
                                         <div className="bg-amber-50 shrink-0 border-b border-amber-100 flex items-center p-3 gap-3 overflow-x-auto custom-scrollbar sticky top-0 z-10 shadow-sm shadow-amber-500/5">
                                             <Pin className="w-4 h-4 text-amber-500 shrink-0 ml-2" />
-                                            <span className="text-[10px] font-black uppercase text-amber-700 tracking-widest mr-2 shrink-0">Épinglés</span>
+                                            <span className="text-[10px] font-black uppercase text-amber-700 tracking-widest mr-2 shrink-0">{t('messages.pinned_messages')}</span>
                                             {messages.filter(m => m.isPinned).map(msg => (
                                                 <div
                                                     key={`pin-${msg.id}`}
@@ -435,7 +439,7 @@ export const MessagesPage: React.FC = () => {
                                                         )}
                                                     </div>
                                                     <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
-                                                        {unreadCount > 0 ? `${unreadCount} nouveaux messages` : 'Voir messages récents'}
+                                                        {unreadCount > 0 ? t('messages.are_typing', { count: unreadCount }) : t('messages.say_hello')}
                                                     </span>
                                                 </motion.button>
                                             )}
@@ -453,7 +457,7 @@ export const MessagesPage: React.FC = () => {
                                                     {isLoading && messages.length === 0 && (
                                                         <div className="flex flex-col items-center justify-center h-[300px] opacity-20">
                                                             <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                                                            <p className="text-xs font-black uppercase tracking-widest text-slate-500">Chargement de l'historique...</p>
+                                                            <p className="text-xs font-black uppercase tracking-widest text-slate-500">{t('messages.loading_history')}</p>
                                                         </div>
                                                     )}
 
@@ -462,8 +466,8 @@ export const MessagesPage: React.FC = () => {
                                                             <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
                                                                 <MessageSquare className="w-8 h-8 text-slate-300" />
                                                             </div>
-                                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Le début de l'histoire</h4>
-                                                            <p className="text-xs text-slate-400 mt-2">Dites bonjour à votre équipe !</p>
+                                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">{t('messages.beginning_history')}</h4>
+                                                            <p className="text-xs text-slate-400 mt-2">{t('messages.say_hello')}</p>
                                                         </div>
                                                     )}
 
@@ -487,8 +491,8 @@ export const MessagesPage: React.FC = () => {
                                                                     <div className="flex items-center gap-4 my-2 opacity-40">
                                                                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                                                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 whitespace-nowrap">
-                                                                            {currDate === new Date().toLocaleDateString() ? "Aujourd'hui" :
-                                                                                currDate === new Date(Date.now() - 86400000).toLocaleDateString() ? "Hier" :
+                                                                            {currDate === new Date().toLocaleDateString() ? t('common.today') :
+                                                                                currDate === new Date(Date.now() - 86400000).toLocaleDateString() ? t('common.yesterday') :
                                                                                     currDate}
                                                                         </span>
                                                                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
@@ -565,7 +569,7 @@ export const MessagesPage: React.FC = () => {
                                                                             <div className={`mb-1 pl-3 border-l-3 border-indigo-200 bg-slate-50/50 py-2 px-3 rounded-xl overflow-hidden ${isMine ? 'self-end text-right border-r-3 border-l-0' : 'text-left'}`}>
                                                                                 <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                                                                                     <Reply className="w-2.5 h-2.5" />
-                                                                                    Réponse à {msg.replyTo.authorName}
+                                                                                    {t('messages.reply_to', { name: msg.replyTo.authorName })}
                                                                                 </p>
                                                                                 <p className="text-[11px] text-slate-400 truncate font-medium italic opacity-80" dangerouslySetInnerHTML={{ __html: msg.replyTo.content }} />
                                                                             </div>
@@ -604,7 +608,7 @@ export const MessagesPage: React.FC = () => {
                                                                         {msg.isEdited && !msg.isDeleted && (
                                                                             <div className={`flex items-center gap-1 mt-1 opacity-40 ${isMine ? 'justify-end' : ''}`}>
                                                                                 <Edit2 className="w-2.5 h-2.5 text-slate-500" />
-                                                                                <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest">Modifié</span>
+                                                                                <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest">{t('messages.edited')}</span>
                                                                             </div>
                                                                         )}
 
@@ -632,13 +636,13 @@ export const MessagesPage: React.FC = () => {
                                                     className="space-y-4 max-w-4xl mx-auto"
                                                 >
                                                     <div className="mb-8">
-                                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-2 px-2">Flux d'Activité</h3>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-2">Suivi complet des modifications du projet</p>
+                                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-2 px-2">{t('messages.activity_feed')}</h3>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-2">{t('messages.full_tracking')}</p>
                                                     </div>
                                                     {activityHistory.length === 0 ? (
                                                         <div className="text-center py-12 bg-slate-50/50 rounded-3xl border border-dashed border-slate-100">
                                                             <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-slate-200" />
-                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aucune activité enregistrée</p>
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('messages.no_activity')}</p>
                                                         </div>
                                                     ) : (
                                                         activityHistory.map((log) => (
@@ -649,7 +653,7 @@ export const MessagesPage: React.FC = () => {
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center justify-between gap-4">
                                                                         <p className="text-xs font-black text-slate-900 leading-snug tracking-tight">
-                                                                            <span className="text-indigo-600">{log.userName}</span> a {log.action.toLowerCase()} {log.entityType.toLowerCase()}
+                                                                            {t('messages.activity_log', { name: log.userName, action: log.action.toLowerCase(), type: log.entityType.toLowerCase() })}
                                                                         </p>
                                                                         <span className="text-[10px] font-bold text-slate-300 uppercase whitespace-nowrap">{new Date(log.createdAt).toLocaleDateString()}</span>
                                                                     </div>
@@ -687,8 +691,8 @@ export const MessagesPage: React.FC = () => {
                                                         </div>
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight italic">
                                                             {typingUsers.length === 1
-                                                                ? `${typingUsers[0].name} est en train d'écrire...`
-                                                                : `${typingUsers.length} personnes écrivent...`
+                                                                ? t('messages.is_typing', { name: typingUsers[0].name })
+                                                                : t('messages.are_typing', { count: typingUsers.length })
                                                             }
                                                         </span>
                                                     </motion.div>
@@ -705,7 +709,7 @@ export const MessagesPage: React.FC = () => {
                                                             </div>
                                                             <div className="truncate">
                                                                 <p className="text-[10px] font-black text-indigo-600 uppercase tracking-tight">
-                                                                    {replyTo ? `Répondre à ` : `Édition de votre message`}
+                                                                    {replyTo ? t('messages.replying_to') : t('messages.editing_message')}
                                                                     {replyTo && <span className="text-slate-900">{replyTo.authorName}</span>}
                                                                 </p>
                                                                 {replyTo && (
@@ -873,7 +877,7 @@ export const MessagesPage: React.FC = () => {
                                                         onClick={handleSend}
                                                         className={`h-8 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest transition-all active:scale-95 ${(!editor || editor.isEmpty) ? 'opacity-50' : 'shadow-lg shadow-indigo-600/30'}`}
                                                     >
-                                                        <span>Envoyer</span>
+                                                        <span>{t('common.add')}</span>
                                                         <Send className="w-3.5 h-3.5 ml-2" />
                                                     </Button>
                                                 </div>
@@ -895,7 +899,7 @@ export const MessagesPage: React.FC = () => {
                                         >
                                             <div className="h-20 px-6 flex items-center justify-between border-b border-slate-50">
                                                 <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900">
-                                                    {activeSidebar === 'members' ? 'Équipe du Projet' : 'Aperçu du Projet'}
+                                                    {activeSidebar === 'members' ? t('messages.project_team') : t('messages.project_overview')}
                                                 </h4>
                                                 <Button
                                                     variant="ghost"
@@ -912,16 +916,16 @@ export const MessagesPage: React.FC = () => {
                                                     <div className="p-6 space-y-6">
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                                                {selectedProject.members?.length || 0} Membres
+                                                                {t('messages.members_count', { count: selectedProject.members?.length || 0 })}
                                                             </span>
                                                             <Popover open={isInviting} onOpenChange={setIsInviting}>
                                                                 <PopoverTrigger className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest px-3 flex items-center shadow-lg shadow-indigo-600/20 transition-all active:scale-95 border-none cursor-pointer">
                                                                     <UserPlus className="w-3 h-3 mr-2" />
-                                                                    Inviter
+                                                                    {t('messages.invite')}
                                                                 </PopoverTrigger>
                                                                 <PopoverContent align="end" className="w-[280px] p-2 rounded-2xl shadow-2xl border-slate-100">
                                                                     <div className="p-2 mb-2 border-b border-slate-50">
-                                                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Chercher un utilisateur</span>
+                                                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('messages.search_user')}</span>
                                                                     </div>
                                                                     <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                                                                         {allUsers
@@ -978,30 +982,30 @@ export const MessagesPage: React.FC = () => {
                                                                     🚀
                                                                 </div>
                                                                 <h5 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-2">{selectedProject.name}</h5>
-                                                                <p className="text-[11px] text-slate-500 leading-relaxed italic mb-4">"{selectedProject.description || 'Aucune description fournie.'}"</p>
+                                                                <p className="text-[11px] text-slate-500 leading-relaxed italic mb-4">"{selectedProject.description || t('messages.no_description')}"</p>
                                                                 <div className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl">
                                                                     <CalendarIcon className="w-3 h-3" />
-                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Échéance : {new Date(selectedProject.endDate).toLocaleDateString()}</span>
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">{t('messages.deadline')} : {new Date(selectedProject.endDate).toLocaleDateString()}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
 
                                                         <div className="space-y-4">
-                                                            <h6 className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">Statistiques de Santé</h6>
+                                                            <h6 className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2">{t('messages.health_stats')}</h6>
                                                             <div className="bg-white p-5 rounded-3xl border border-slate-100 space-y-4 shadow-sm">
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Progression Globale</span>
+                                                                    <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest">{t('projects.global_progress')}</span>
                                                                     <span className="text-[11px] font-black text-indigo-600">{selectedProject.progress}%</span>
                                                                 </div>
                                                                 <Progress value={selectedProject.progress} className="h-2 bg-slate-100" />
 
                                                                 <div className="grid grid-cols-2 gap-4 mt-6">
                                                                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                                                                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Budget</p>
+                                                                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('common.budget')}</p>
                                                                         <p className="text-xs font-black text-slate-900">{selectedProject.budget.toLocaleString()}€</p>
                                                                     </div>
                                                                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                                                                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Membres</p>
+                                                                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('common.team_members')}</p>
                                                                         <p className="text-xs font-black text-slate-900">{selectedProject.members?.length || 0}</p>
                                                                     </div>
                                                                 </div>
@@ -1014,7 +1018,7 @@ export const MessagesPage: React.FC = () => {
                                                                 className="w-full h-11 rounded-2xl bg-slate-950 hover:bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10"
                                                             >
                                                                 <ExternalLink className="w-3.5 h-3.5 mr-3" />
-                                                                Voir Planning Complet
+                                                                {t('messages.view_full_planning')}
                                                             </Button>
                                                             <Button
                                                                 variant="outline"
@@ -1023,10 +1027,10 @@ export const MessagesPage: React.FC = () => {
                                                                         const newSet = new Set(prev);
                                                                         if (newSet.has(selectedProject.id)) {
                                                                             newSet.delete(selectedProject.id);
-                                                                            toast.success("Notifications réactivées pour ce projet");
+                                                                            toast.success(t('messages.notif_unmuted'));
                                                                         } else {
                                                                             newSet.add(selectedProject.id);
-                                                                            toast.success("Notifications désactivées pour ce projet");
+                                                                            toast.success(t('messages.notif_muted'));
                                                                         }
                                                                         return newSet;
                                                                     });
@@ -1036,12 +1040,12 @@ export const MessagesPage: React.FC = () => {
                                                                 {mutedProjects.has(selectedProject.id) ? (
                                                                     <>
                                                                         <Bell className="w-3.5 h-3.5 mr-3" />
-                                                                        Activer le son
+                                                                        {t('messages.unmute_project')}
                                                                     </>
                                                                 ) : (
                                                                     <>
                                                                         <BellOff className="w-3.5 h-3.5 mr-3" />
-                                                                        Muer le Projet
+                                                                        {t('messages.mute_project')}
                                                                     </>
                                                                 )}
                                                             </Button>
@@ -1059,9 +1063,9 @@ export const MessagesPage: React.FC = () => {
                             <div className="w-20 h-20 bg-slate-50 rounded-[40px] flex items-center justify-center mb-4">
                                 <MessageSquare className="w-10 h-10 text-slate-200" />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-[0.1em]">Aucune conversation sélectionnée</h3>
-                            <p className="text-sm text-slate-400 max-w-xs leading-relaxed">Veuillez choisir un projet dans la liste à gauche pour commencer à discuter avec votre équipe.</p>
-                            <Button className="mt-4 rounded-2xl bg-slate-950 text-white font-black text-xs uppercase tracking-widest px-8">Nouveau Projet</Button>
+                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-[0.1em]">{t('messages.no_conversation_selected')}</h3>
+                            <p className="text-sm text-slate-400 max-w-xs leading-relaxed">{t('messages.choose_project_to_start')}</p>
+                            <Button className="mt-4 rounded-2xl bg-slate-950 text-white font-black text-xs uppercase tracking-widest px-8">{t('messages.new_project')}</Button>
                         </div>
                     )}
                 </div>

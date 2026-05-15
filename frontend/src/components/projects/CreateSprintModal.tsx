@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import type { Sprint } from '@/types/project.types';
 
 interface CreateSprintModalProps {
@@ -114,20 +115,18 @@ export const CreateSprintModal: React.FC<CreateSprintModalProps> = ({
                                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                             <Calendar className="w-3.5 h-3.5" /> Date début
                                         </Label>
-                                        <Input
-                                            type="date"
-                                            value={form.startDate}
-                                            onChange={e => setForm({ ...form, startDate: e.target.value })}
-                                            className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
+                                        <DatePicker 
+                                            date={form.startDate ? new Date(form.startDate) : undefined}
+                                            setDate={(d) => setForm({ ...form, startDate: d ? d.toISOString().split('T')[0] : '' })}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date Clôture</Label>
-                                        <Input
-                                            type="date"
-                                            value={form.endDate}
-                                            onChange={e => setForm({ ...form, endDate: e.target.value })}
-                                            className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
+                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Calendar className="w-3.5 h-3.5" /> Date Clôture
+                                        </Label>
+                                        <DatePicker 
+                                            date={form.endDate ? new Date(form.endDate) : undefined}
+                                            setDate={(d) => setForm({ ...form, endDate: d ? d.toISOString().split('T')[0] : '' })}
                                         />
                                     </div>
                                 </div>

@@ -72,7 +72,7 @@ export const EmployeeDirectory = ({ users, isLoading: usersLoading }: EmployeeDi
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Rechercher un collaborateur..."
-            className="h-12 w-full pl-12 rounded-2xl border-slate-100 bg-white/60 shadow-sm focus:ring-2 focus:ring-amber-700/20 font-medium text-xs transition-all hover:bg-white"
+            className="h-12 w-full pl-12 rounded-2xl border-slate-100 bg-white/60 text-slate-900 shadow-sm focus:ring-2 focus:ring-amber-700/20 font-medium text-xs transition-all hover:bg-white"
           />
           {searchTerm && (
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-amber-700 animate-pulse">

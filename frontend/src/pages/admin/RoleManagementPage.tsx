@@ -9,7 +9,7 @@ export const RoleManagementPage: React.FC = () => {
       title="Autorisations & Rôles" 
       subtitle="Gestion centralisée du système RBAC et des accès multi-projets"
     >
-      <div className="max-w-7xl mx-auto py-8">
+      <div className="max-w-7xl mx-auto pt-6 pb-2">
         <AdvancedRoleManager />
       </div>
     </AppLayout>

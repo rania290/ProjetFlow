@@ -68,7 +68,7 @@ export const adminApi = {
             return merged;
         } catch {
             return {
-                siteName: 'VAERDIA ProjectFlow',
+                siteName: 'VAERDIA',
                 maintenance: false,
                 version: '1.0.0',
                 maxUsers: 100,

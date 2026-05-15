@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
     FolderKanban, Filter, Search,
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 export const ClientProjectsPage: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const { state } = useStore();
     const projects = state.projects;
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -33,7 +35,7 @@ export const ClientProjectsPage: React.FC = () => {
     );
 
     return (
-        <AppLayout title="Mes Projets" subtitle="Suivi détaillé de vos collaborations">
+        <AppLayout title={t('client.my_projects')} subtitle={t('client.detailed_followup')}>
             <div className="p-6 max-w-7xl mx-auto space-y-6">
                 {/* Premium Header - Condensed Layout but Legible */}
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -42,8 +44,8 @@ export const ClientProjectsPage: React.FC = () => {
                             <FolderKanban className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Mes Projets</h1>
-                            <p className="text-slate-400 text-xs font-black uppercase tracking-widest mt-0.5">Suivi de vos collaborations VAERDIA</p>
+                            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t('client.my_projects')}</h1>
+                            <p className="text-slate-400 text-xs font-black uppercase tracking-widest mt-0.5">{t('client.vaerdia_followup')}</p>
                         </div>
                     </div>
                 </header>
@@ -55,12 +57,12 @@ export const ClientProjectsPage: React.FC = () => {
                         <Input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Rechercher un projet..."
+                            placeholder={t('client.search_project_placeholder')}
                             className="w-full pl-10 h-10 border-slate-100 bg-white rounded-xl text-sm focus-visible:ring-emerald-500/10 placeholder:text-slate-400"
                         />
                     </div>
                     <Button variant="outline" className="h-10 px-5 rounded-xl border-slate-100 font-black text-[10px] uppercase tracking-widest text-slate-500">
-                        <ListFilter className="w-3.5 h-3.5 mr-2" /> Filtres
+                        <ListFilter className="w-3.5 h-3.5 mr-2" /> {t('client.filters')}
                     </Button>
                 </div>
 
@@ -68,7 +70,7 @@ export const ClientProjectsPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredProjects.length === 0 ? (
                         <div className="col-span-full py-12 text-center">
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Aucun projet trouvé</p>
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('client.no_projects_found')}</p>
                         </div>
                     ) : (
                         filteredProjects.map((project, i) => (
@@ -89,7 +91,7 @@ export const ClientProjectsPage: React.FC = () => {
                                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
                                                     : 'bg-blue-50 text-blue-700 border-blue-100'
                                             }`}>
-                                                {project.status === 'IN_PROGRESS' ? 'En Cours' : project.status}
+                                                {project.status === 'IN_PROGRESS' ? t('common.in_progress') : project.status}
                                             </Badge>
                                         </div>
 
@@ -103,18 +105,18 @@ export const ClientProjectsPage: React.FC = () => {
                                         <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                             <span className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg">
                                                 <Calendar className="w-3.5 h-3.5 text-emerald-500" /> 
-                                                {new Date(project.startDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
+                                                {new Date(project.startDate).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: 'numeric' })}
                                             </span>
                                             <span className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg">
                                                 <Users className="w-3.5 h-3.5 text-emerald-500" /> 
-                                                {project.members?.length || 0} Membres
+                                                {t('client.members_count', { count: project.members?.length || 0 })}
                                             </span>
                                         </div>
                                     </div>
 
                                     <div className="px-6 py-5 bg-slate-50/50 border-t border-slate-100 space-y-4">
                                         <div className="flex justify-between items-center px-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Progression globale</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('client.global_progress')}</span>
                                             <span className="text-xs font-black text-emerald-600 font-black">{project.progress}%</span>
                                         </div>
                                         <Progress value={project.progress} className="h-1.5 bg-white" />
@@ -124,7 +126,7 @@ export const ClientProjectsPage: React.FC = () => {
                                             variant="ghost"
                                             className="w-full mt-1 h-9 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all border border-transparent hover:border-emerald-100"
                                         >
-                                            Consulter les détails <ArrowUpRight className="w-4 h-4 ml-2" />
+                                            {t('client.view_details')} <ArrowUpRight className="w-4 h-4 ml-2" />
                                         </Button>
                                     </div>
                                 </Card>

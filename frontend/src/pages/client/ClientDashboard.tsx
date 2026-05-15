@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     TrendingUp,
     CheckCircle2, Target, Printer,
@@ -18,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 export const ClientDashboard: React.FC = () => {
+    const { t } = useTranslation();
     const { state } = useStore();
     const { user } = useAuth();
     const [notification, setNotification] = useState<string | null>(null);
@@ -37,29 +39,29 @@ export const ClientDashboard: React.FC = () => {
 
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(24);
-            doc.text('RAPPORT D\'ACTIVITÉ PROJET', 20, 25);
+            doc.text(t('client.report_title'), 20, 25);
 
             doc.setFontSize(10);
-            doc.text(`Généré le: ${now.toLocaleString()}`, 150, 25);
+            doc.text(`${t('client.generated_on')} ${now.toLocaleString()}`, 150, 25);
 
             doc.setTextColor(30, 41, 59);
             doc.setFontSize(14);
-            doc.text(`Client : ${user?.fullName || 'Client'}`, 20, 55);
+            doc.text(`${t('client.client_label')} ${user?.fullName || 'Client'}`, 20, 55);
             doc.line(20, 58, 190, 58);
 
             doc.setFontSize(12);
-            doc.text('RÉSUMÉ DES INDICATEURS', 20, 70);
+            doc.text(t('client.summary_indicators'), 20, 70);
 
             const avgProgress = Math.round(state.projects.reduce((acc, p) => acc + p.progress, 0) / Math.max(state.projects.length, 1));
             const openTickets = state.tickets.filter(t => t.status !== 'CLOSED' && t.status !== 'RESOLVED').length;
 
             doc.setFontSize(10);
-            doc.text(`- Projets actifs : ${state.projects.length}`, 25, 80);
-            doc.text(`- Progression moyenne : ${avgProgress}%`, 25, 87);
-            doc.text(`- Tickets de support ouverts : ${openTickets}`, 25, 94);
+            doc.text(`- ${t('client.active_projects_label')} ${state.projects.length}`, 25, 80);
+            doc.text(`- ${t('client.avg_progress_label')} ${avgProgress}%`, 25, 87);
+            doc.text(`- ${t('client.open_tickets_label')} ${openTickets}`, 25, 94);
 
             doc.setFontSize(12);
-            doc.text('ÉTAT DÉTAILLÉ DES PROJETS', 20, 110);
+            doc.text(t('client.detailed_state'), 20, 110);
             doc.line(20, 112, 190, 112);
 
             let y = 125;
@@ -71,7 +73,7 @@ export const ClientDashboard: React.FC = () => {
 
                 doc.setFontSize(11);
                 doc.setTextColor(100, 116, 139);
-                doc.text(`Progression: ${p.progress}%`, 25, y + 6);
+                doc.text(`${t('client.progress_label')} ${p.progress}%`, 25, y + 6);
 
                 doc.setFillColor(241, 245, 249);
                 doc.rect(25, y + 10, 100, 2, 'F');
@@ -83,13 +85,13 @@ export const ClientDashboard: React.FC = () => {
 
             doc.setFontSize(8);
             doc.setTextColor(148, 163, 184);
-            doc.text('© 2026 VAERDIA - Ce document est confidentiel et destiné à l\'usage exclusif du client.', 20, 285);
+            doc.text(t('client.footer_confidential'), 20, 285);
 
-            doc.save(`Rapport_Projet_${user?.fullName?.replace(/\s+/g, '_')}_${now.toISOString().split('T')[0]}.pdf`);
-            showNotification('Rapport exporté avec succès');
+            doc.save(`Report_Project_${user?.fullName?.replace(/\s+/g, '_')}_${now.toISOString().split('T')[0]}.pdf`);
+            showNotification(t('client.export_success'));
         } catch (error) {
             console.error('Export error:', error);
-            showNotification('Erreur lors de l\'exportation');
+            showNotification(t('client.export_error'));
         }
     };
 
@@ -98,14 +100,14 @@ export const ClientDashboard: React.FC = () => {
     const openTickets = state.tickets.filter(t => t.status !== 'CLOSED' && t.status !== 'RESOLVED').length;
 
     const stats = [
-        { label: 'Projets Actifs', value: clientProjects.length, icon: <Target className="w-5 h-5" />, color: 'from-emerald-500 to-teal-600' },
-        { label: 'Progression Moyenne', value: `${avgProgress}%`, icon: <TrendingUp className="w-5 h-5" />, color: 'from-blue-500 to-indigo-600' },
-        { label: 'Tickets Support', value: openTickets, icon: <MessageSquare className="w-5 h-5" />, color: 'from-amber-500 to-orange-600' },
-        { label: 'Documents Partagés', value: '12', icon: <FileText className="w-5 h-5" />, color: 'from-violet-500 to-purple-600' },
+        { label: t('client.active_projects'), value: clientProjects.length, icon: <Target className="w-5 h-5" />, color: 'from-emerald-500 to-teal-600' },
+        { label: t('client.average_progress'), value: `${avgProgress}%`, icon: <TrendingUp className="w-5 h-5" />, color: 'from-emerald-400 to-emerald-600' },
+        { label: t('client.support_tickets'), value: openTickets, icon: <MessageSquare className="w-5 h-5" />, color: 'from-emerald-500 to-emerald-700' },
+        { label: t('client.shared_documents'), value: '12', icon: <FileText className="w-5 h-5" />, color: 'from-emerald-600 to-emerald-800' },
     ];
 
     return (
-        <AppLayout title="Espace Client" subtitle="Tableau de bord interactif">
+        <AppLayout title={t('client.client_space')} subtitle={t('client.interactive_dashboard')}>
             {/* Notification - shadcn style - Legible Font */}
             <AnimatePresence>
                 {notification && (
@@ -128,8 +130,8 @@ export const ClientDashboard: React.FC = () => {
                             <LayoutDashboard className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Bonjour, {user?.fullName || 'Client'}</h1>
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mt-1">Activité en temps réel</p>
+                            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">{t('client.welcome')} {user?.fullName || 'Client'}</h1>
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-widest mt-1">{t('client.realtime_activity')}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -138,11 +140,11 @@ export const ClientDashboard: React.FC = () => {
                             onClick={handleExportReport}
                             className="h-8 px-3 rounded-lg font-black text-[9px] uppercase tracking-widest bg-white border-slate-100 shadow-sm hover:bg-slate-50"
                         >
-                            <Printer className="w-3.5 h-3.5 mr-2" /> Exporter PDF
+                            <Printer className="w-3.5 h-3.5 mr-2" /> {t('client.export_pdf')}
                         </Button>
                         <Link to="/client-portal/tickets">
                             <Button className="h-8 px-4 bg-emerald-600 text-white rounded-lg font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-black transition-all">
-                                <Plus className="w-3.5 h-3.5 mr-2" /> Nouveau Ticket
+                                <Plus className="w-3.5 h-3.5 mr-2" /> {t('client.new_ticket')}
                             </Button>
                         </Link>
                     </div>
@@ -179,16 +181,16 @@ export const ClientDashboard: React.FC = () => {
                     <div className="lg:col-span-2">
                         <Card className="border-none shadow-sm rounded-[32px] overflow-hidden bg-white">
                             <CardHeader className="px-8 py-5 border-b border-slate-50 flex flex-row items-center justify-between">
-                                <CardTitle className="text-sm font-black text-slate-900 uppercase tracking-widest">Projets en cours</CardTitle>
+                                <CardTitle className="text-sm font-black text-slate-900 uppercase tracking-widest">{t('client.ongoing_projects')}</CardTitle>
                                 <Link to="/client-portal/projects">
                                     <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl h-9">
-                                        Voir Tout <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                                        {t('client.see_all')} <ArrowRight className="w-3.5 h-3.5 ml-2" />
                                     </Button>
                                 </Link>
                             </CardHeader>
                             <div className="divide-y divide-slate-50">
                                 {clientProjects.length === 0 ? (
-                                    <div className="p-12 text-center text-xs font-black text-slate-400 uppercase tracking-widest">Aucun projet actif</div>
+                                    <div className="p-12 text-center text-xs font-black text-slate-400 uppercase tracking-widest">{t('client.no_active_projects')}</div>
                                 ) : (
                                     clientProjects.map(project => (
                                         <div key={project.id} className="p-4 hover:bg-slate-50/50 transition-colors group">
@@ -204,12 +206,12 @@ export const ClientDashboard: React.FC = () => {
                                                 </div>
                                                 <Badge variant="outline" className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${project.status === 'IN_PROGRESS' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-50 text-slate-500'
                                                     }`}>
-                                                    {project.status === 'IN_PROGRESS' ? 'EN COURS' : project.status}
+                                                    {project.status === 'IN_PROGRESS' ? t('common.in_progress').toUpperCase() : project.status}
                                                 </Badge>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <div className="flex justify-between items-center px-0.5">
-                                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Avancement</span>
+                                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{t('common.progress')}</span>
                                                     <span className="text-xs font-black text-emerald-600">{project.progress}%</span>
                                                 </div>
                                                 <Progress value={project.progress} className="h-1 bg-slate-100" />
@@ -221,11 +223,10 @@ export const ClientDashboard: React.FC = () => {
                         </Card>
                     </div>
 
-                    {/* Sidebar context - Legible sidebar text */}
                     <div className="space-y-6">
                         <Card className="border-none shadow-sm rounded-[24px] overflow-hidden p-5 bg-white">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-4 flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-emerald-500" /> Tickets Récents
+                                <Clock className="w-3.5 h-3.5 text-emerald-500" /> {t('client.recent_tickets')}
                             </h3>
                             <div className="space-y-4">
                                 {state.tickets.slice(0, 3).map(ticket => (
@@ -244,27 +245,12 @@ export const ClientDashboard: React.FC = () => {
                                     </Link>
                                 ))}
                                 <Button variant="ghost" className="w-full mt-1 text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg h-8">
-                                    Voir Tout <ArrowRight className="w-3 h-3 ml-2" />
+                                    {t('client.see_all')} <ArrowRight className="w-3 h-3 ml-2" />
                                 </Button>
                             </div>
                         </Card>
 
-                        {/* Premium Support Card Compact */}
-                        <div className="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-[24px] p-5 text-white shadow-xl shadow-emerald-500/10 relative overflow-hidden group">
-                            <ShieldCheck className="absolute -right-4 -bottom-4 w-20 h-20 text-white/10 rotate-12 group-hover:scale-110 transition-transform duration-500" />
-                            <div className="relative z-10">
-                                <div className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center mb-4">
-                                    <MessageSquare className="w-4 h-4" />
-                                </div>
-                                <h3 className="font-black text-lg mb-1 tracking-tight">Support</h3>
-                                <p className="text-white/80 text-xs font-medium mb-5 leading-snug">
-                                    Expertise VAERDIA dédiée 24/7.
-                                </p>
-                                <Button className="w-full h-9 bg-white text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] hover:bg-slate-100 shadow-md shadow-black/5">
-                                    Contacter
-                                </Button>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>

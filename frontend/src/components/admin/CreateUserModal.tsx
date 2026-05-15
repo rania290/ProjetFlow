@@ -303,7 +303,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="jean.dupont@entreprise.com"
+                      placeholder="m.benali@entreprise.com"
                     />
                     {errors.email && (
                       <p className="mt-1 text-xs text-red-600">{errors.email}</p>

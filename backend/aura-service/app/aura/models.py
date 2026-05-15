@@ -16,3 +16,13 @@ class AuraAlert(Base):
     target_id = Column(UUID(as_uuid=True), nullable=True) # id of task or sprint
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class AuraReport(Base):
+    __tablename__ = 'aura_reports'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), index=True)
+    content = Column(Text)  # Markdown content
+    summary = Column(String(500))
+    metrics = Column(Text)  # JSON string of metrics
+    created_at = Column(DateTime, default=datetime.utcnow)

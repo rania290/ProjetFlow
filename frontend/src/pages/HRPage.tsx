@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Calendar, CheckCircle, Clock, Search, Filter,
   FileText, Download, User, Briefcase, Plus,
@@ -7,6 +8,7 @@ import {
   ShieldCheck, MoreHorizontal, X, Menu
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useStore } from '../store/projectStore';
 import { useLeaveRequests } from '../features/hr/leave/hooks/useLeaveRequests';
 import { useLeaveActions } from '../features/hr/leave/hooks/useLeaveActions';
 import { LeaveTable } from '../features/hr/leave/components/LeaveTable';
@@ -20,6 +22,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Card } from '../components/ui/card';
 
 export const HRPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'validations' | 'leaves'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,8 +34,14 @@ export const HRPage = () => {
     ? 'HR_ADMIN' : (userRole === 'PROJECT_MANAGER' || userRole === 'MANAGER' || userRole === 'CHEF' || userRole === 'CHEF DE PROJET')
       ? 'MANAGER' : 'EMPLOYEE';
 
-  const { data: allLeaves, isLoading: isAllLoading, refetch: refetchAll } = useLeaveRequests();
-  const { data: pendingLeaves, isLoading: isPendingLoading, refetch: refetchPending } = useLeaveRequests(role === 'HR_ADMIN' ? undefined : employeeId, 'MANAGER');
+  const { data: allLeaves, isLoading: isAllLoading, refetch: refetchAll } = useLeaveRequests(
+    role === 'HR_ADMIN' ? undefined : employeeId,
+    role === 'HR_ADMIN' ? 'ALL' : 'OWNER'
+  );
+  const { data: pendingLeaves, isLoading: isPendingLoading, refetch: refetchPending } = useLeaveRequests(
+    role === 'HR_ADMIN' ? undefined : employeeId, 
+    role === 'HR_ADMIN' ? 'MANAGER' : 'MANAGER' // HR_ADMIN uses undefined ID to get all pending, MANAGER uses their ID
+  );
 
   const { approveLeave, rejectLeave, isReviewing } = useLeaveActions();
 
@@ -52,46 +61,58 @@ export const HRPage = () => {
     refetchAll();
   }, [rejectLeave, employeeId, refetchPending, refetchAll]);
 
+  const { dashboardStats } = useStore();
+
+  const activeLeavesCount = allLeaves.filter(l => {
+    const now = new Date();
+    const start = new Date(l.startDate);
+    const end = new Date(l.endDate);
+    return l.status === 'FULLY_APPROVED' && now >= start && now <= end;
+  }).length;
+
+  const totalEmployees = Math.max(dashboardStats.teamMembers || 0, 1); // Use real team count, fallback to 1 to avoid division by zero
+  const presentStaffPercent = Math.round(((totalEmployees - activeLeavesCount) / totalEmployees) * 100);
+
   const stats = [
     {
-      label: 'En attente',
+      label: t('hr.pending'),
       value: pendingLeaves.length,
       icon: Clock,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
-      change: 'À traiter',
+      change: t('hr.to_process'),
       trend: 'up'
     },
     {
-      label: 'Effectif présent',
-      value: '94%',
+      label: t('hr.present_staff'),
+      value: `${presentStaffPercent}%`,
       icon: Users,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
-      change: 'Présence active',
+      change: t('hr.active_presence'),
       trend: 'up'
     },
     {
-      label: 'Congés approuvés',
+      label: t('hr.approved_leaves'),
       value: allLeaves.filter(l => l.status === 'FULLY_APPROVED').length,
       icon: CheckCircle,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
-      change: 'Ce mois-ci',
+      change: t('hr.this_month'),
       trend: 'up'
     }
   ];
 
   return (
-    <AppLayout title="Portail RH" subtitle="Gestion globale des ressources humaines">
+    <AppLayout title={t('hr.hr_portal')} subtitle={t('hr.hr_management')}>
       <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Navigation Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="flex gap-1.5 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-100">
             {[
-              { id: 'overview', label: 'Vue d\'ensemble' },
-              { id: 'validations', label: 'Validations' },
-              { id: 'leaves', label: 'Toutes les demandes' }
+              { id: 'overview', label: t('hr.overview') },
+              { id: 'validations', label: t('hr.validations') },
+              { id: 'leaves', label: t('hr.all_requests_short') }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -111,7 +132,7 @@ export const HRPage = () => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-amber-800 transition-colors" />
               <input
                 type="text"
-                placeholder="Rechercher..."
+                placeholder={t('common.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-11 pr-6 py-2.5 bg-slate-100 border-0 rounded-2xl text-xs font-bold w-64 focus:ring-2 focus:ring-amber-200 transition-all"
@@ -158,11 +179,11 @@ export const HRPage = () => {
               <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-8 flex-[2]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Dernières validations</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Action immédiate recommandée</p>
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{t('hr.latest_validations')}</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('hr.immediate_action')}</p>
                   </div>
                   <button onClick={() => setActiveTab('validations')} className="text-[10px] font-black text-amber-800 uppercase tracking-widest flex items-center gap-2 hover:translate-x-2 transition-transform">
-                    Voir tout <ChevronRight className="w-4 h-4" />
+                    {t('common.see_all')} <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
                 <LeaveTable
@@ -177,8 +198,8 @@ export const HRPage = () => {
               {role !== 'EMPLOYEE' && (
                 <Card className="p-8 rounded-[3rem] border-slate-100 shadow-sm flex-1">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">Activité récente</h2>
-                    <Badge variant="outline" className="bg-slate-50 text-slate-400 border-slate-100 uppercase text-[9px]">Temps réel</Badge>
+                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">{t('hr.recent_activity')}</h2>
+                    <Badge variant="outline" className="bg-slate-50 text-slate-400 border-slate-100 uppercase text-[9px]">{t('common.real_time')}</Badge>
                   </div>
                   <div className="space-y-4">
                     {pendingLeaves.slice(0, 4).map((l, i) => (
@@ -191,14 +212,14 @@ export const HRPage = () => {
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{l.type} - {l.durationDays}j</p>
                         </div>
                         <div className="ml-auto text-[9px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full uppercase tracking-tighter">
-                          À traiter
+                          {t('hr.to_process')}
                         </div>
                       </div>
                     ))}
                     {pendingLeaves.length === 0 && (
                       <div className="text-center py-10 opacity-50">
                         <Clock className="w-8 h-8 mx-auto mb-3 text-slate-300" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest">Aucune activité</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest">{t('hr.no_activity')}</p>
                       </div>
                     )}
                   </div>
@@ -212,9 +233,9 @@ export const HRPage = () => {
           <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-8 min-h-[500px]">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Validations en attente</h2>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{t('hr.pending_validations')}</h2>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-amber-500" /> Action requise pour {pendingLeaves.length} demande(s)
+                  <Clock className="w-3.5 h-3.5 text-amber-500" /> {t('hr.action_required', { count: pendingLeaves.length })}
                 </p>
               </div>
             </div>
@@ -224,8 +245,8 @@ export const HRPage = () => {
                   <div className="h-20 w-20 rounded-3xl bg-emerald-100/50 text-emerald-600 flex items-center justify-center mb-6">
                     <CheckCircle className="w-10 h-10" />
                   </div>
-                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Tout est à jour !</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Aucune demande en attente de traitement.</p>
+                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">{t('hr.all_up_to_date')}</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{t('hr.no_pending_requests')}</p>
                 </motion.div>
               ) : (
                 <LeaveTable
@@ -242,9 +263,9 @@ export const HRPage = () => {
         {activeTab === 'leaves' && (
           <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-8 min-h-[500px]">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Toutes les demandes</h2>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{t('hr.all_requests')}</h2>
               <Badge variant="outline" className="rounded-xl px-4 py-1.5 text-[10px] font-black uppercase tracking-widest bg-slate-50 border-slate-200">
-                {allLeaves.length} demandes au total
+                {t('hr.total_requests', { count: allLeaves.length })}
               </Badge>
             </div>
             <LeaveTable

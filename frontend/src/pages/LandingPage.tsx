@@ -25,7 +25,11 @@ import {
     Play,
     Database,
     BookOpen,
-    HelpCircle
+    HelpCircle,
+    LayoutDashboard,
+    FolderKanban,
+    CheckSquare,
+    TrendingUp
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { FadeInView } from '../components/ui/FadeInView';
@@ -56,11 +60,33 @@ export const LandingPage: React.FC = () => {
                 scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-100 py-3 shadow-sm' : 'bg-transparent'
             }`}>
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2 group">
-                        <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-200 group-hover:scale-110 transition-transform duration-300">
-                            <Layers className="text-white w-6 h-6" />
+                    <Link to="/" className="flex items-center gap-3 group">
+                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg shadow-slate-100 group-hover:scale-110 transition-transform duration-300 border border-slate-100 overflow-hidden">
+                            <svg viewBox="0 0 100 100" className="w-7 h-7">
+                                <defs>
+                                    <linearGradient id="logo-gradient-nav" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style={{ stopColor: '#2bd8a7', stopOpacity: 1 }} />
+                                        <stop offset="50%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                                        <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                                    </linearGradient>
+                                </defs>
+                                <path
+                                    d="M30 65c-8 0-15-7-15-15s7-15 15-15c5 0 10 3 13 8l4-7c-5-6-11-10-17-10-14 0-25 11-25 25s11 25 25 25c6 0 12-4 17-10l-4-7c-3 5-8 8-13 8z"
+                                    fill="url(#logo-gradient-nav)"
+                                />
+                                <path
+                                    d="M70 35c8 0 15 7 15 15s-7 15-15 15c-5 0-10-3-13-8l-4 7c5 6 11 10 17 10 14 0 25-11 25-25s-11-25-25-25c-6 0-12 4-17 10l4 7c3-5 8-8 13-8z"
+                                    fill="url(#logo-gradient-nav)"
+                                />
+                                <rect x="47" y="25" width="6" height="30" rx="3" fill="#0f172a" />
+                                <circle cx="50" cy="18" r="4" fill="#0f172a" />
+                            </svg>
                         </div>
-                        <span className="text-2xl font-black tracking-tighter text-slate-900 font-display uppercase">VAERDIA</span>
+                        <div className="flex flex-col">
+                            <span className="text-xl font-black tracking-[0.1em] text-slate-900 font-display uppercase leading-none">
+                                VAER<span className="text-emerald-500">DIA</span>
+                            </span>
+                        </div>
                     </Link>
 
                     {/* Desktop Nav */}
@@ -136,18 +162,36 @@ export const LandingPage: React.FC = () => {
                                 {/* Sidebar Mockup */}
                                 <div className="w-64 bg-white border-r border-slate-100 hidden md:flex flex-col p-6">
                                     <div className="flex items-center gap-3 mb-10">
-                                        <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-                                            <Layers className="text-white w-5 h-5" />
+                                        <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 overflow-hidden">
+                                            <svg viewBox="0 0 100 100" className="w-5 h-5">
+                                                <defs>
+                                                    <linearGradient id="logo-gradient-mockup" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" style={{ stopColor: '#2bd8a7', stopOpacity: 1 }} />
+                                                        <stop offset="50%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                                                        <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <path
+                                                    d="M30 65c-8 0-15-7-15-15s7-15 15-15c5 0 10 3 13 8l4-7c-5-6-11-10-17-10-14 0-25 11-25 25s11 25 25 25c6 0 12-4 17-10l-4-7c-3 5-8 8-13 8z"
+                                                    fill="url(#logo-gradient-mockup)"
+                                                />
+                                                <path
+                                                    d="M70 35c8 0 15 7 15 15s-7 15-15 15c-5 0-10-3-13-8l-4 7c5 6 11 10 17 10 14 0 25-11 25-25s-11-25-25-25c-6 0-12 4-17 10l4 7c3-5 8-8 13-8z"
+                                                    fill="url(#logo-gradient-mockup)"
+                                                />
+                                                <rect x="47" y="25" width="6" height="30" rx="3" fill="#0f172a" />
+                                                <circle cx="50" cy="18" r="4" fill="#0f172a" />
+                                            </svg>
                                         </div>
-                                        <span className="text-sm font-black tracking-tighter">VAERDIA</span>
+                                        <span className="text-xs font-black tracking-tighter uppercase">VAERDIA</span>
                                     </div>
                                     <div className="space-y-4">
                                         {[
-                                            { icon: Layout, label: 'Dashboard', active: true },
-                                            { icon: Kanban, label: 'Board', active: false },
-                                            { icon: Clock, label: 'Timeline', active: false },
+                                            { icon: LayoutDashboard, label: 'Dashboard', active: true },
+                                            { icon: FolderKanban, label: 'Projets', active: false },
+                                            { icon: CheckSquare, label: 'Tâches', active: false },
                                             { icon: Users, label: 'Équipe', active: false },
-                                            { icon: BarChart3, label: 'Analytics', active: false },
+                                            { icon: TrendingUp, label: 'Reporting', active: false },
                                             { icon: MessageSquare, label: 'Messages', active: false },
                                         ].map((item) => (
                                             <div key={item.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${item.active ? 'bg-primary-50 text-primary-600' : 'text-slate-400'}`}>
@@ -255,7 +299,7 @@ export const LandingPage: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
                         <StatCard value={6} suffix="" label="Microservices" delay={0} />
                         <StatCard value={100} suffix="%" label="Dockerisé" delay={0.1} />
-                        <StatCard value={1} suffix="" label="IA Aura (RAG)" delay={0.2} />
+                        <StatCard value={1} suffix="" label="IA Aura" delay={0.2} />
                         <StatCard value={3} suffix="" label="Bases de Données" delay={0.3} />
                     </div>
                 </div>
@@ -496,11 +540,34 @@ export const LandingPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
                     <div className="relative mb-10 group">
                         <div className="absolute inset-0 bg-primary-100 blur-[80px] rounded-full opacity-50" />
-                        <div className="relative flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center shadow-xl shadow-primary-100">
-                                <Layers className="text-white w-7 h-7" />
+                        <div className="relative flex items-center gap-4">
+                            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-xl shadow-slate-100 border border-slate-100 overflow-hidden">
+                                <svg viewBox="0 0 100 100" className="w-10 h-10">
+                                    <defs>
+                                        <linearGradient id="logo-gradient-footer" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style={{ stopColor: '#2bd8a7', stopOpacity: 1 }} />
+                                            <stop offset="50%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
+                                            <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                                        </linearGradient>
+                                    </defs>
+                                    <path
+                                        d="M30 65c-8 0-15-7-15-15s7-15 15-15c5 0 10 3 13 8l4-7c-5-6-11-10-17-10-14 0-25 11-25 25s11 25 25 25c6 0 12-4 17-10l-4-7c-3 5-8 8-13 8z"
+                                        fill="url(#logo-gradient-footer)"
+                                    />
+                                    <path
+                                        d="M70 35c8 0 15 7 15 15s-7 15-15 15c-5 0-10-3-13-8l-4 7c5 6 11 10 17 10 14 0 25-11 25-25s-11-25-25-25c-6 0-12 4-17 10l4 7c3-5 8-8 13-8z"
+                                        fill="url(#logo-gradient-footer)"
+                                    />
+                                    <rect x="47" y="25" width="6" height="30" rx="3" fill="#0f172a" />
+                                    <circle cx="50" cy="18" r="4" fill="#0f172a" />
+                                </svg>
                             </div>
-                            <span className="text-3xl font-black tracking-tighter text-slate-900 font-display uppercase">VAERDIA</span>
+                            <div className="flex flex-col items-start">
+                                <span className="text-3xl font-black tracking-[0.1em] text-slate-900 font-display uppercase leading-none">
+                                    VAER<span className="text-emerald-500">DIA</span>
+                                </span>
+
+                            </div>
                         </div>
                     </div>
                     <p className="text-slate-500 text-sm leading-relaxed max-w-md mb-12 font-medium">
@@ -509,7 +576,7 @@ export const LandingPage: React.FC = () => {
                     </p>
                     <div className="w-full pt-10 border-t border-slate-100">
                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em]">
-                            © 2026 VAERDIA ProjectFlow · Tous droits réservés
+                            © 2026 VAERDIA · Tous droits réservés
                         </p>
                     </div>
                 </div>
@@ -545,7 +612,7 @@ export const LandingPage: React.FC = () => {
                                     {[
                                         { id: 'basics', label: 'Espace & Sprints', icon: Kanban },
                                         { id: 'tickets', label: 'Support Client', icon: MessageSquare },
-                                        { id: 'aura', label: 'IA Aura (RAG)', icon: Sparkles },
+                                        { id: 'aura', label: 'IA Aura', icon: Sparkles },
                                         { id: 'bi', label: 'Analytics & Pilotage', icon: BarChart3 },
                                     ].map((tab) => (
                                         <button
@@ -632,9 +699,9 @@ export const LandingPage: React.FC = () => {
                                         )}
                                         {guideTab === 'aura' && (
                                             <>
-                                                <h2 className="text-4xl font-black text-slate-900 leading-tight">Intelligence Assistée (RAG)</h2>
+                                                <h2 className="text-4xl font-black text-slate-900 leading-tight">Intelligence Assistée</h2>
                                                 <p className="text-slate-500 font-medium text-lg leading-relaxed">
-                                                    Aura n'est pas qu'un assistant, c'est le moteur cognitif de votre projet, propulsé par une architecture Retrieval-Augmented Generation.
+                                                    Aura n'est pas qu'un assistant, c'est le moteur cognitif de votre projet, capable d'analyser vos données en temps réel.
                                                 </p>
                                                 <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
                                                     <Sparkles className="absolute -right-16 -bottom-16 w-64 h-64 text-primary-500/10 rotate-12" />

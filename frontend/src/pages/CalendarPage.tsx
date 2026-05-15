@@ -282,7 +282,7 @@ export const CalendarPage: React.FC = () => {
                     </div>
 
                     {/* Grid Content */}
-                    <div className="flex-1 overflow-hidden relative group/grid">
+                    <div className="flex-1 overflow-y-auto relative">
                         <AnimatePresence mode="popLayout" custom={direction}>
                             <motion.div
                                 key={currentDate.toISOString()}
@@ -291,7 +291,7 @@ export const CalendarPage: React.FC = () => {
                                 animate={{ x: 0, opacity: 1 }}
                                 exit={{ x: direction * -40, opacity: 0 }}
                                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                                className="grid grid-cols-7 h-full absolute inset-0"
+                                className="grid grid-cols-7 w-full"
                             >
                                 {/* Start Empty Cells */}
                                 {Array.from({ length: startDayIndex }).map((_, i) => (
@@ -306,7 +306,7 @@ export const CalendarPage: React.FC = () => {
                                     const isToday = new Date().toISOString().split('T')[0] === dateStr;
 
                                     return (
-                                        <div key={day} className={`relative flex flex-col group/day border-r border-b border-slate-100 p-2 min-h-0 bg-white hover:bg-indigo-50/10 transition-colors`}>
+                                        <div key={day} className={`relative flex flex-col group/day border-r border-b border-slate-100 p-2 min-h-[110px] bg-white hover:bg-indigo-50/10 transition-colors`}>
                                             <div className="flex justify-between items-start mb-2">
                                                 <span className={`w-7 h-7 flex items-center justify-center rounded-xl text-xs font-black transition-all ${isToday ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 group-hover/day:text-slate-900'}`}>
                                                     {day}
@@ -319,7 +319,7 @@ export const CalendarPage: React.FC = () => {
                                                 </button>
                                             </div>
 
-                                            <div className="flex-1 space-y-1 overflow-hidden pr-0.5">
+                                            <div className="flex-1 space-y-1 overflow-y-auto pr-0.5 max-h-[80px] custom-scrollbar">
                                                 {dayEvents.slice(0, 3).map(event => {
                                                     const project = projects.find(p => p.id === event.project);
                                                     const typeIcon = TYPE_CONFIG[event.type as keyof typeof TYPE_CONFIG] || TYPE_CONFIG.EVENT;

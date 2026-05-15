@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users } from 'lucide-react';
 import { adminApi } from '../../api/admin.api';
 import type { User as AuthUser } from '../../types/auth.types';
@@ -6,6 +7,7 @@ import { EmployeeDirectory } from '../../features/hr/directory/components/Employ
 import { AppLayout } from '../../components/layout/AppLayout';
 
 export const HRAnnuairePage = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,13 +26,13 @@ export const HRAnnuairePage = () => {
   }, []);
 
   return (
-    <AppLayout title="Annuaire de l'entreprise" subtitle="Retrouvez tous vos collègues">
+    <AppLayout title={t('hr.company_directory')} subtitle={t('hr.find_colleagues')}>
       <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Tous les collaborateurs</h2>
+            <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{t('hr.all_colleagues')}</h2>
             <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-[0.2em] flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-amber-700" /> Une équipe de {users.length} talents
+              <Users className="w-3.5 h-3.5 text-amber-700" /> {t('hr.team_of_talents', { count: users.length })}
             </p>
           </div>
         </header>

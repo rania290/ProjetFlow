@@ -127,13 +127,21 @@ function reducer(state: StoreState, action: Action): StoreState {
             };
         }
         case 'UPDATE_TASK_STATUS': {
-            const nextTasks = safeTasks.map(t => t.id === action.id ? { ...t, status: action.status } : t);
+            const nextTasks = safeTasks.map(t => t.id === action.id ? { 
+                ...t, 
+                status: action.status,
+                completedAt: action.status === 'DONE' ? new Date().toISOString() : t.completedAt
+            } : t);
             return {
                 ...state,
                 tasks: nextTasks,
                 projects: recalculateProgress(safeProjects, nextTasks),
                 sprints: safeSprints.map(s => ({
-                    ...s, tasks: (s.tasks || []).map(t => t.id === action.id ? { ...t, status: action.status } : t)
+                    ...s, tasks: (s.tasks || []).map(t => t.id === action.id ? { 
+                        ...t, 
+                        status: action.status,
+                        completedAt: action.status === 'DONE' ? new Date().toISOString() : t.completedAt
+                    } : t)
                 }))
             };
         }

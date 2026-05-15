@@ -1,12 +1,12 @@
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import text
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from .models import AuraAlert
+from .models import AuraAlert, AuraReport
 from ..database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -18,13 +18,15 @@ async def get_project_context(project_id: str) -> dict:
     try:
         with SessionLocal() as db:
             tasks_result = db.execute(text("""
-                SELECT id, title, status, "dueDate", "assignee_id", "storyPoints" 
-                FROM tasks WHERE project_id = :pid
+                SELECT t.id, t.title, t.status, t."dueDate", t."assignee_id", t."storyPoints", ra.user_full_name as assignee_name
+                FROM tasks t
+                LEFT JOIN role_assignments ra ON t.assignee_id::text = ra.user_id::text AND ra.project_id::text = :pid
+                WHERE t.project_id = :pid
             """), {"pid": project_id}).mappings().all()
             
             try:
                 sprints_result = db.execute(text("""
-                    SELECT id, name, start_date, end_date, status
+                    SELECT id, name, "startDate", "endDate", status
                     FROM sprints WHERE project_id = :pid AND status = 'ACTIVE'
                 """), {"pid": project_id}).mappings().all()
             except Exception as e:
@@ -68,11 +70,12 @@ async def get_project_context(project_id: str) -> dict:
 async def detect_late_tasks(project_id: str) -> list[dict]:
     with SessionLocal() as db:
         late_tasks = db.execute(text("""
-            SELECT t.id as task_id, t.title, t."assignee_id" as assignee_name, t."dueDate" as due_date,
+            SELECT t.id as task_id, t.title, ra.user_full_name as assignee_name, t."dueDate" as due_date,
                    EXTRACT(DAY FROM (NOW() - t."dueDate")) as days_late,
                    p.name as project_name
             FROM tasks t
-            JOIN projects p ON t.project_id::varchar = p.id::varchar
+            JOIN projects p ON t.project_id::text = p.id::text
+            LEFT JOIN role_assignments ra ON t.assignee_id::text = ra.user_id::text AND ra.project_id::text = :pid
             WHERE t.project_id = :pid AND t.status != 'DONE' AND t."dueDate" < NOW()
         """), {"pid": project_id}).mappings().all()
         
@@ -83,10 +86,10 @@ async def detect_at_risk_sprints(project_id: str) -> list[dict]:
         with SessionLocal() as db:
             # A sprint is at risk if it's ACTIVE and end_date is near with pending tasks
             at_risk = db.execute(text("""
-                SELECT s.id, s.name, s.end_date,
-                       (SELECT COUNT(*) FROM tasks t WHERE t.sprint_id = s.id AND t.status != 'DONE') as pending_tasks
+                SELECT s.id, s.name, s."endDate",
+                       (SELECT COUNT(*) FROM tasks t WHERE t.sprint_id::uuid = s.id AND t.status != 'DONE') as pending_tasks
                 FROM sprints s
-                WHERE s.project_id = :pid AND s.status = 'ACTIVE' AND s.end_date < NOW() + INTERVAL '3 days'
+                WHERE s.project_id = :pid AND s.status = 'ACTIVE' AND s."endDate" < NOW() + INTERVAL '3 days'
             """), {"pid": project_id}).mappings().all()
             
         return [dict(s) for s in at_risk]
@@ -156,7 +159,8 @@ Règles de comportement strictes :
 5. Si on te demande une action technique (créer, modifier en base de données), dis que tu ne peux que conseiller et que l'utilisateur doit le faire via l'interface.
 6. Si l'utilisateur demande des suggestions de tâches, des idées de décomposition ou des étapes techniques pour une User Story, propose une liste structurée et pertinente de 3 à 6 tâches concrètes en utilisant ton expertise Agile.
 7. ANALYSE DE CHARGE ET RECOMMANDATION : Si l'utilisateur te demande qui est disponible, qui devrait faire une tâche, ou quelle est la charge de l'équipe, utilise les données de "team_workload" dans le contexte. Recommande le membre le plus pertinent (celui avec le moins de story points ou de tâches, tout en respectant son rôle) et justifie clairement ton choix par des chiffres.
-8. RÈGLE CRUCIALE : Ne montre JAMAIS d'identifiants techniques (IDs) à l'utilisateur. Utilise toujours le champ "name" pour désigner les membres de l'équipe.
+8. RÈGLE CRUCIALE : Ne montre JAMAIS d'identifiants techniques (IDs, UUIDs) à l'utilisateur dans tes réponses. Utilise TOUJOURS les noms (ex: "Jean Dupont") pour désigner les membres de l'équipe ou les titres pour les tâches.
+9. RAPPORTS HEBDOMADAIRES : Si l'utilisateur demande "où est le rapport", "génère un rapport" ou "montre moi le suivi hebdomadaire", explique-lui que les rapports détaillés générés par l'IA sont disponibles dans l'onglet "RAPPORTS" juste au-dessus de cette fenêtre de chat. Ne confonds pas cela avec les tâches de développement du projet qui pourraient avoir "Rapport" dans leur titre.
 """
         
         messages = [
@@ -177,14 +181,116 @@ Règles de comportement strictes :
         traceback.print_exc()
         return "Désolé, une erreur interne empêche Aura de vous répondre."
 
+async def get_weekly_stats(project_id: str) -> dict:
+    try:
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        with SessionLocal() as db:
+            # Tasks completed this week
+            completed_this_week = db.execute(text("""
+                SELECT t.id, t.title, t."completedAt", ra.user_full_name as assignee_name
+                FROM tasks t
+                LEFT JOIN role_assignments ra ON t.assignee_id = ra.user_id AND ra.project_id = :pid
+                WHERE t.project_id = :pid AND t.status = 'DONE' AND t."completedAt" >= :since
+            """), {"pid": project_id, "since": seven_days_ago}).mappings().all()
+
+            # Tasks created this week
+            created_this_week = db.execute(text("""
+                SELECT id, title, created_at
+                FROM tasks 
+                WHERE project_id = :pid AND created_at >= :since
+            """), {"pid": project_id, "since": seven_days_ago}).mappings().all()
+
+            # New blockers (tasks late since last week)
+            new_late = db.execute(text("""
+                SELECT id, title, "dueDate"
+                FROM tasks 
+                WHERE project_id = :pid AND status != 'DONE' AND "dueDate" BETWEEN :since AND NOW()
+            """), {"pid": project_id, "since": seven_days_ago}).mappings().all()
+
+        return {
+            "completed_count": len(completed_this_week),
+            "completed_items": [dict(t) for t in completed_this_week],
+            "created_count": len(created_this_week),
+            "new_late_count": len(new_late),
+            "new_late_items": [dict(t) for t in new_late]
+        }
+    except Exception as e:
+        logger.error(f"Error in get_weekly_stats: {e}")
+        return {"error": str(e)}
+
 async def generate_weekly_report(project_id: str) -> dict:
-    analysis = await analyze_project_progress(project_id)
-    return {
-        "project_id": project_id,
-        "report_date": datetime.now().isoformat(),
-        "analysis": analysis,
-        "recommendations": "Veuillez vérifier les tâches en retard."
-    }
+    try:
+        analysis = await analyze_project_progress(project_id)
+        weekly_stats = await get_weekly_stats(project_id)
+        context = await get_project_context(project_id)
+        
+        project_name = context.get("project", {}).get("name", "Projet")
+        
+        report_data = {
+            "overall_progress": analysis,
+            "weekly_stats": weekly_stats,
+            "sprints": context.get("sprints", [])
+        }
+
+        # Conversion sécurisée en JSON (UTF-8)
+        try:
+            report_data_json = json.dumps(report_data, default=str, ensure_ascii=False)
+        except Exception as json_err:
+            logger.warning(f"JSON encoding issue, falling back to ascii: {json_err}")
+            report_data_json = json.dumps(report_data, default=str)
+
+        system_prompt = f"""Tu es Aura AI, expert en management de projet. 
+Ta mission est de générer un rapport hebdomadaire professionnel, encourageant et factuel pour le projet "{project_name}".
+
+Données de la semaine :
+{report_data_json}
+
+Le rapport doit être au format Markdown et contenir les sections suivantes :
+1. 📈 **État Global** : Résumé rapide de l'avancement.
+2. ✅ **Réalisations de la Semaine** : Ce qui a été terminé (basé sur completed_items).
+3. ⚠️ **Points d'Attention & Risques** : Tâches en retard ou sprints à risque.
+4. 💡 **Recommandations d'Aura** : Conseils concrets pour la semaine prochaine.
+
+Sois précis, utilise un ton professionnel mais dynamique. Réponds en Français."""
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content="Génère le rapport hebdomadaire pour mon équipe.")
+        ]
+
+        response = await llm.ainvoke(messages)
+        content = response.content
+        summary = f"Rapport de la semaine : {weekly_stats['completed_count']} tâches terminées, {weekly_stats['new_late_count']} nouvelles alertes."
+
+        with SessionLocal() as db:
+            try:
+                metrics_json = json.dumps(report_data, default=str, ensure_ascii=False)
+            except:
+                metrics_json = json.dumps(report_data, default=str)
+                
+            report = AuraReport(
+                project_id=project_id,
+                content=content,
+                summary=summary,
+                metrics=metrics_json
+            )
+            db.add(report)
+            db.commit()
+            db.refresh(report)
+            
+            return {
+                "id": str(report.id),
+                "project_id": project_id,
+                "content": content,
+                "summary": summary,
+                "created_at": report.created_at.isoformat()
+            }
+
+    except Exception as e:
+        logger.error(f"Error generating weekly report: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": "Échec de la génération du rapport."}
 
 async def get_quick_insights(project_id: str) -> list[str]:
     try:

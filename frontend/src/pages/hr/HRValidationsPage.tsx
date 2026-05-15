@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLeaveRequests } from '../../features/hr/leave/hooks/useLeaveRequests';
@@ -10,6 +11,7 @@ import { AppLayout } from '../../components/layout/AppLayout';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export const HRValidationsPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const employeeId = user?.id ?? 'unknown';
   const userRole = (user?.role || '').toUpperCase();
@@ -38,13 +40,13 @@ export const HRValidationsPage = () => {
   }, [rejectLeave, employeeId, refetch]);
 
   return (
-    <AppLayout title="Validations RH" subtitle="Approuvez ou rejetez les demandes de votre équipe">
+    <AppLayout title={t('hr.hr_validations')} subtitle={t('hr.validate_subtitle')}>
       <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">Demandes en attente</h2>
+            <h2 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">{t('hr.pending_requests')}</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-amber-500" /> Action requise pour {pendingLeaves.length} demande(s)
+              <Clock className="w-3.5 h-3.5 text-amber-500" /> {t('hr.action_required', { count: pendingLeaves.length })}
             </p>
           </div>
         </header>
@@ -68,8 +70,8 @@ export const HRValidationsPage = () => {
                 <div className="h-24 w-24 rounded-3xl bg-emerald-100/50 text-emerald-600 flex items-center justify-center mb-6 shadow-xl shadow-emerald-100/20">
                   <CheckCircle className="w-12 h-12" />
                 </div>
-                <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase">Tout est à jour !</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Aucune demande en attente de traitement.</p>
+                <h3 className="text-lg font-black text-slate-800 tracking-tight uppercase">{t('hr.all_caught_up')}</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{t('hr.no_pending_requests')}</p>
               </motion.div>
             ) : (
               <motion.div key="table" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden border-t-4 border-t-amber-800">

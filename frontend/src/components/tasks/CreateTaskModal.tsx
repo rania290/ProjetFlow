@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Select, SelectContent, SelectItem,
     SelectTrigger, SelectValue
@@ -344,12 +345,12 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                                     </AnimatePresence>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Échéance</Label>
-                                    <Input
-                                        type="date"
-                                        value={form.dueDate}
-                                        onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                                        className="h-11 rounded-xl font-bold border-slate-100 bg-slate-50/30"
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Calendar className="w-3.5 h-3.5" /> Échéance
+                                    </Label>
+                                    <DatePicker 
+                                        date={form.dueDate ? new Date(form.dueDate) : undefined}
+                                        setDate={(d) => setForm({ ...form, dueDate: d ? d.toISOString().split('T')[0] : '' })}
                                     />
                                 </div>
                             </motion.div>

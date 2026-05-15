@@ -583,11 +583,11 @@ export const UsersManagementPage: React.FC = () => {
                             <select
                                 value={roleFilter}
                                 onChange={e => setRoleFilter(e.target.value)}
-                                className="py-1.5 pl-3 pr-8 bg-white/50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all hover:bg-white"
+                                className="py-1.5 pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight text-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                             >
-                                <option value="ALL">Tous les rôles</option>
+                                <option value="ALL" className="text-slate-800 bg-white font-black">Tous les rôles</option>
                                 {Object.entries(roleConfig).map(([k, v]) => (
-                                    <option key={k} value={k}>{v.label}</option>
+                                    <option key={k} value={k} className="text-slate-800 bg-white font-black">{v.label}</option>
                                 ))}
                             </select>
                         </div>
@@ -651,19 +651,7 @@ export const UsersManagementPage: React.FC = () => {
                                                                 Inscrit le {new Date(user.createdAt).toLocaleDateString('fr-FR')}
                                                             </div>
                                                         )}
-                                                        {user.managerIds && user.managerIds.length > 0 && (
-                                                            <div className="flex flex-col gap-1 mt-1">
-                                                                {user.managerIds.map(mId => {
-                                                                    const m = users.find(u => u.id === mId);
-                                                                    return m ? (
-                                                                        <div key={mId} className="flex items-center gap-1.5 text-[9px] font-black text-indigo-500 uppercase tracking-widest">
-                                                                            <Users className="w-3 h-3" />
-                                                                            Manager: {m.fullName}
-                                                                        </div>
-                                                                    ) : null;
-                                                                })}
-                                                            </div>
-                                                        )}
+
                                                     </div>
                                                 </div>
 
@@ -819,17 +807,17 @@ export const UsersManagementPage: React.FC = () => {
                                 <div className="px-6 py-6 space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-3">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-indigo-500 pl-3">Identité Nominale</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest pr-2 border-l-2 border-indigo-500 pl-3">Identité Nominale</label>
                                             <input
                                                 type="text"
                                                 placeholder="ex. Alexander Sterling"
                                                 value={form.fullName ?? ''}
                                                 onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-                                                className="w-full bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
+                                                className="w-full bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-sm font-medium text-slate-950 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
                                             />
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Contact Professionnel</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Contact Professionnel</label>
                                             <div className="relative">
                                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
                                                 <input
@@ -837,7 +825,7 @@ export const UsersManagementPage: React.FC = () => {
                                                     placeholder="sterling@vaerdia.tech"
                                                     value={form.email ?? ''}
                                                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                                                    className="w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl text-sm font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
+                                                    className="w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl text-sm font-medium text-slate-950 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -845,12 +833,12 @@ export const UsersManagementPage: React.FC = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-3">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-indigo-500 pl-3">Accréditation Système</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest pr-2 border-l-2 border-indigo-500 pl-3">Accréditation Système</label>
                                             <div className="relative">
                                                 <select
                                                     value={form.role ?? ''}
                                                     onChange={e => setForm(f => ({ ...f, role: e.target.value as any }))}
-                                                    className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-[11px] font-black uppercase tracking-widest text-slate-700 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
+                                                    className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-slate-900 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
                                                 >
                                                     <option value="" disabled>Choisir un profil</option>
                                                     {Object.entries(ROLE_PERMISSIONS_CONFIG).map(([k, cfg]) => (
@@ -861,7 +849,7 @@ export const UsersManagementPage: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="space-y-3">
-                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Sécurité & Pass</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Sécurité & Pass</label>
                                             <div className="relative">
                                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                                                 <input
@@ -869,48 +857,13 @@ export const UsersManagementPage: React.FC = () => {
                                                     placeholder="••••••••••••"
                                                     value={form.password ?? ''}
                                                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                                                    className="w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl text-sm font-bold focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
+                                                    className="w-full pl-11 pr-5 py-3.5 bg-slate-50/50 border border-slate-200/60 rounded-2xl text-sm font-medium text-slate-950 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pr-2 border-l-2 border-slate-200 pl-3">Supérieurs Hiérarchiques (Managers)</label>
-                                        <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto p-4 bg-slate-50/50 rounded-[2rem] border border-slate-100">
-                                            {users
-                                                .filter(u => u.id !== form.id && (u.role === 'ADMIN' || u.role === 'PROJECT_MANAGER' || u.role === 'RH'))
-                                                .map(u => {
-                                                    const isSelected = (form.managerIds || []).includes(u.id);
-                                                    return (
-                                                        <button
-                                                            key={u.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const current = form.managerIds || [];
-                                                                const updated = isSelected 
-                                                                    ? current.filter(id => id !== u.id)
-                                                                    : [...current, u.id];
-                                                                setForm(f => ({ ...f, managerIds: updated }));
-                                                            }}
-                                                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isSelected 
-                                                                ? 'bg-white border-indigo-200 shadow-sm' 
-                                                                : 'bg-transparent border-transparent hover:bg-white/50'}`}
-                                                        >
-                                                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-200'}`}>
-                                                                {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                                            </div>
-                                                            <div className="flex-1 text-left">
-                                                                <p className={`text-[11px] font-black uppercase tracking-tight ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>{u.fullName}</p>
-                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{u.role}</p>
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                })
-                                            }
-                                        </div>
-                                        <p className="text-[9px] text-slate-400 font-medium px-2 italic">Sélectionnez les managers qui pourront valider les demandes de cet utilisateur.</p>
-                                    </div>
+
 
                                     {/* STATUS BLOCK (PURE LIGHT VERSION) */}
                                     <div className="p-5 bg-slate-50/60 rounded-3xl border border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group">

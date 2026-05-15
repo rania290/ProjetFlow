@@ -25,6 +25,7 @@ import {
     SelectValue 
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useStore } from '../../store/projectStore';
 import type { ProjectType, ProjectStatus } from '../../types/project.types';
 import { projectsService } from '../../api/projects.service';
@@ -297,22 +298,19 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                                             <Calendar className="w-3.5 h-3.5" /> Date de début <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input 
-                                            type="date" 
-                                            value={form.startDate} 
-                                            onChange={e => set('startDate', e.target.value)}
-                                            className="h-11 rounded-xl font-bold border-slate-200"
+                                        <DatePicker 
+                                            date={form.startDate ? new Date(form.startDate) : undefined}
+                                            setDate={(d) => set('startDate', d ? d.toISOString().split('T')[0] : '')}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
-                                            Date de livraison <span className="text-red-500">*</span>
+                                        <Label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Calendar className="w-3.5 h-3.5" /> Date de livraison <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input 
-                                            type="date" 
-                                            value={form.endDate} 
-                                            onChange={e => set('endDate', e.target.value)}
-                                            className={cn("h-11 rounded-xl font-bold border-slate-200", errors.endDate && "border-red-300")}
+                                        <DatePicker 
+                                            date={form.endDate ? new Date(form.endDate) : undefined}
+                                            setDate={(d) => set('endDate', d ? d.toISOString().split('T')[0] : '')}
+                                            className={cn(errors.endDate && "border-red-300")}
                                         />
                                     </div>
                                 </div>

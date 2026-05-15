@@ -46,7 +46,7 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       {/* Projects List Sidebar */}
       <div className="lg:col-span-4 flex flex-col gap-4">
-        <Card className="flex flex-col h-[700px] border-none shadow-sm bg-white rounded-[32px] overflow-hidden">
+        <Card className="flex flex-col h-[calc(100vh-220px)] min-h-[400px] border-none shadow-sm bg-white rounded-[32px] overflow-hidden">
           <div className="p-6 border-b border-slate-50 bg-slate-50/30">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Catalogue Projets</h2>
             <div className="relative group">
@@ -138,7 +138,7 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
             </Card>
 
             {/* Team List */}
-            <Card className="border-none shadow-sm bg-white rounded-[40px] overflow-hidden min-h-[450px]">
+            <Card className="border-none shadow-sm bg-white rounded-[40px] overflow-hidden min-h-[300px]">
                <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
                  <div className="flex items-center gap-3">
                      <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
@@ -215,7 +215,7 @@ export const ProjectCentricView: React.FC<ProjectCentricViewProps> = ({
             
           </div>
         ) : (
-          <Card className="h-[730px] flex items-center justify-center flex-col text-center p-12 border-none shadow-sm bg-white rounded-[40px] relative overflow-hidden group">
+          <Card className="h-[calc(100vh-220px)] min-h-[400px] flex items-center justify-center flex-col text-center p-12 border-none shadow-sm bg-white rounded-[40px] relative overflow-hidden group">
             <div className="absolute inset-0 bg-grid-slate-100 [mask-image:radial-gradient(ellipse_at_center,white,transparent)] opacity-20" />
             <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[32px] flex items-center justify-center mb-8 relative z-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
                 <Briefcase className="w-10 h-10 text-slate-200" />

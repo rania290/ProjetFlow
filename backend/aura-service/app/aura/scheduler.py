@@ -1,17 +1,32 @@
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import text
-from .engine import detect_late_tasks, detect_at_risk_sprints
+from .engine import detect_late_tasks, detect_at_risk_sprints, generate_weekly_report
 from .models import AuraAlert
 from ..database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
+async def run_weekly_reports():
+    logger.info("Starting weekly aura reports generation...")
+    with SessionLocal() as db:
+        try:
+            projects = db.execute(text("SELECT id FROM projects WHERE status IN ('IN_PROGRESS', 'PENDING', 'PLANNED')")).mappings().all()
+            for p in projects:
+                pid = str(p['id'])
+                logger.info(f"Generating weekly report for project {pid}")
+                await generate_weekly_report(pid)
+            db.commit()
+        except Exception as e:
+            import traceback
+            logger.error(f"Weekly reports error: {e}")
+            traceback.print_exc()
+
 async def run_analysis():
     logger.info("Running aura scheduler analysis...")
     with SessionLocal() as db:
         try:
-            projects = db.execute(text("SELECT id FROM projects WHERE status = 'ACTIVE'")).mappings().all()
+            projects = db.execute(text("SELECT id FROM projects WHERE status IN ('IN_PROGRESS', 'PENDING', 'PLANNED')")).mappings().all()
             for p in projects:
                 pid = str(p['id'])
                 
@@ -39,6 +54,9 @@ async def run_analysis():
 
 def start_scheduler():
     scheduler = AsyncIOScheduler()
+    # Analysis every 2 hours
     scheduler.add_job(run_analysis, 'interval', hours=2)
+    # Weekly report every Monday at 8:00 AM
+    scheduler.add_job(run_weekly_reports, 'cron', day_of_week='mon', hour=8, minute=0)
     scheduler.start()
-    logger.info("Aura scheduler started.")
+    logger.info("Aura scheduler started with weekly reporting.")

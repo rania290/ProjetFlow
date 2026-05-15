@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { StoreProvider } from './store/projectStore';
 import { AuthProvider } from './store/authStore';
+import { useAuth } from './hooks/useAuth';
 import { UiProvider } from './store/uiStore';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -35,9 +36,7 @@ const HRDashboardPage = lazy(() => import('./pages/hr/HRDashboardPage').then(mod
 const HRMyLeavesPage = lazy(() => import('./pages/hr/HRMyLeavesPage').then(module => ({ default: module.HRMyLeavesPage })));
 const HRValidationsPage = lazy(() => import('./pages/hr/HRValidationsPage').then(module => ({ default: module.HRValidationsPage })));
 const HRAnnuairePage = lazy(() => import('./pages/hr/HRAnnuairePage').then(module => ({ default: module.HRAnnuairePage })));
-const HRHierarchyPage = lazy(() => import('./pages/hr/HRHierarchyPage').then(module => ({ default: module.HRHierarchyPage })));
 import { TimeTrackingPage } from './features/hr/time-tracking/pages/TimeTrackingPage';
-
 
 // Client Portal Pages
 const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard').then(module => ({ default: module.ClientDashboard })));
@@ -55,18 +54,14 @@ const LoadingScreen = () => (
   </div>
 );
 
-// Simple placeholder pages for routes still being built
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-3">
-    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-      <Construction className="w-7 h-7 text-slate-400" />
-    </div>
-    <h2 className="text-base font-bold text-slate-700">{title}</h2>
-    <p className="text-sm text-slate-400">Ce module est en cours de développement.</p>
-  </div>
-);
-
-
+// Wrapper for automatic client redirection
+const ClientRedirectWrapper = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  if (user?.role === 'CLIENT') {
+    return <Navigate to="/client-portal" replace />;
+  }
+  return <>{children}</>;
+};
 
 const MyTasksPage = () => <AppLayout title="Mes tâches"><MyTasksPageReal /></AppLayout>;
 const TeamPage = () => <AppLayout title="Équipe"><TeamPageReal /></AppLayout>;
@@ -74,12 +69,11 @@ const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const MessagesPage = () => <MessagesPageReal />;
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
 
-// HR Portal Routes Wrapper (legacy - eventually we can remove HRPageLazy)
+// HR Portal Routes Wrapper
 const HRDashboard = () => <HRDashboardPage />;
 const HRMyLeaves = () => <HRMyLeavesPage />;
 const HRValidations = () => <HRValidationsPage />;
 const HRAnnuaire = () => <HRAnnuairePage />;
-const HRHierarchy = () => <HRHierarchyPage />;
 
 function App() {
   return (
@@ -91,7 +85,6 @@ function App() {
               <Suspense fallback={<LoadingScreen />}>
                 <Routes>
                   {/* Public Auth Routes */}
-
                   <Route path="/login" element={<LoginPage />} />
 
                   {/* Protected Main App Routes */}
@@ -100,7 +93,9 @@ function App() {
                     path="/dashboard"
                     element={
                       <ProtectedRoute>
-                        <DashboardPage />
+                        <ClientRedirectWrapper>
+                          <DashboardPage />
+                        </ClientRedirectWrapper>
                       </ProtectedRoute>
                     }
                   />
@@ -210,7 +205,6 @@ function App() {
                     }
                   />
 
-
                   {/* HR Portal Routes */}
                   <Route
                     path="/hr"
@@ -245,14 +239,6 @@ function App() {
                     }
                   />
                   <Route
-                    path="/hr/hierarchy"
-                    element={
-                      <ProtectedRoute>
-                        <HRHierarchy />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
                     path="/hr/pointage"
                     element={
                       <ProtectedRoute>
@@ -261,8 +247,7 @@ function App() {
                     }
                   />
 
-                  {/* Client Portal Routes */}
-                  <Route path="/client-portal" element={<Navigate to="/client-portal/dashboard" replace />} />
+                  {/* Admin Routes */}
                   <Route
                     path="/admin/dashboard"
                     element={
@@ -311,8 +296,6 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-
-                  {/* Permissions management page */}
                   <Route
                     path="/admin/permissions"
                     element={

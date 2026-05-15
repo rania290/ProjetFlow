@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, ClipboardList, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLeaveRequests } from '../../features/hr/leave/hooks/useLeaveRequests';
@@ -18,9 +19,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 type LeaveFilter = 'all' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export const HRMyLeavesPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const employeeId = user?.id ?? 'unknown';
-  const employeeName = user?.fullName ?? user?.email ?? 'Utilisateur';
+  const employeeName = user?.fullName ?? user?.email ?? t('admin.roles.TEAM_MEMBER');
 
   const { data: leaves, isLoading, refetch } = useLeaveRequests(employeeId);
   const [filter, setFilter] = useState<LeaveFilter>('all');
@@ -68,10 +70,10 @@ export const HRMyLeavesPage = () => {
   }, [deleteLeave, refetch]);
 
   const FILTERS: { id: LeaveFilter; label: string }[] = [
-    { id: 'all', label: 'Toutes' },
-    { id: 'PENDING', label: 'En attente' },
-    { id: 'APPROVED', label: 'Approuvées' },
-    { id: 'REJECTED', label: 'Rejetées' },
+    { id: 'all', label: t('hr.all_requests_short') },
+    { id: 'PENDING', label: t('hr.pending') },
+    { id: 'APPROVED', label: t('hr.approved') },
+    { id: 'REJECTED', label: t('hr.rejected') },
   ];
 
   const userRole = (user?.role || '').toUpperCase();
@@ -80,7 +82,7 @@ export const HRMyLeavesPage = () => {
       ? 'MANAGER' : 'EMPLOYEE';
 
   return (
-    <AppLayout title="Mes Congés" subtitle="Gérez vos demandes d'absence">
+    <AppLayout title={t('hr.my_leaves')} subtitle={t('hr.manage_absences')}>
       <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
@@ -117,16 +119,16 @@ export const HRMyLeavesPage = () => {
             className="group flex items-center gap-3 rounded-2xl bg-amber-800 px-8 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-stone-900 transition-all shadow-xl shadow-amber-100"
           >
             <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform duration-500" />
-            Nouvelle demande
+            {t('hr.new_request')}
           </button>
 
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogContent className="sm:max-w-md border-0 bg-white shadow-[0_0_100px_rgba(0,0,0,0.15)] p-0 overflow-hidden rounded-[3rem]">
               <DialogHeader className="px-10 pt-10 pb-6 border-b border-slate-100 bg-slate-50/50">
                 <DialogTitle className="text-2xl font-black text-slate-800 tracking-tighter uppercase">
-                  Nouvelle demande
+                  {t('hr.new_request')}
                 </DialogTitle>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Saisissez les détails de votre absence</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('hr.request_details')}</p>
               </DialogHeader>
               <div className="p-10">
                 <LeaveRequestForm

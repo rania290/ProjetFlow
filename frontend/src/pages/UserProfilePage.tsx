@@ -370,7 +370,7 @@ export const UserProfilePage: React.FC = () => {
                         type="tel"
                         value={profile.phoneNumber || ''}
                         onChange={(e) => setProfile({ ...profile, phoneNumber: e.target.value })}
-                        placeholder="+33 6 -- -- -- --"
+                        placeholder="+216 -- --- ---"
                         className="h-11 bg-slate-50/50"
                       />
                     </div>

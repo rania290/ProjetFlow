@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Search, Plus, Filter, MessageSquare,
     Clock, AlertCircle, CheckCircle2, X,
     ChevronRight, Send, Paperclip, Loader2,
-    Calendar, User, Tag, MessageCircle, Info
+    Calendar, User, Tag, MessageCircle, Info, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -28,22 +29,25 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
-const STATUS_CONFIG: Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; color: string; bg: string; icon: React.ReactNode }> = {
-    OPEN: { label: 'Nouveau', variant: "default", color: 'text-emerald-700', bg: 'bg-emerald-50', icon: <AlertCircle className="w-3.5 h-3.5" /> },
-    IN_PROGRESS: { label: 'En cours', variant: "secondary", color: 'text-amber-700', bg: 'bg-amber-50', icon: <Clock className="w-3.5 h-3.5" /> },
-    WAITING_ON_CLIENT: { label: 'En attente', variant: "outline", color: 'text-violet-700', bg: 'bg-violet-50', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-    RESOLVED: { label: 'Résolu', variant: "default", color: 'text-emerald-700', bg: 'bg-emerald-50', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    CLOSED: { label: 'Fermé', variant: "outline", color: 'text-slate-600', bg: 'bg-slate-100', icon: <X className="w-3.5 h-3.5" /> }
-};
+const getStatusConfig = (t: any): Record<TicketStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; color: string; bg: string; icon: React.ReactNode }> => ({
+    OPEN: { label: t('client.status_labels.OPEN'), variant: "default", color: 'text-emerald-700', bg: 'bg-emerald-50', icon: <AlertCircle className="w-3.5 h-3.5" /> },
+    IN_PROGRESS: { label: t('client.status_labels.IN_PROGRESS'), variant: "secondary", color: 'text-amber-700', bg: 'bg-amber-50', icon: <Clock className="w-3.5 h-3.5" /> },
+    WAITING_ON_CLIENT: { label: t('client.status_labels.WAITING_ON_CLIENT'), variant: "outline", color: 'text-violet-700', bg: 'bg-violet-50', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+    RESOLVED: { label: t('client.status_labels.RESOLVED'), variant: "default", color: 'text-emerald-700', bg: 'bg-emerald-50', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+    CLOSED: { label: t('client.status_labels.CLOSED'), variant: "outline", color: 'text-slate-600', bg: 'bg-slate-100', icon: <X className="w-3.5 h-3.5" /> }
+});
 
-const PRIORITY_CONFIG: Record<TicketPriority, { label: string; color: string; bg: string }> = {
-    LOW: { label: 'Basse', color: 'text-slate-500', bg: 'bg-slate-50' },
-    MEDIUM: { label: 'Moyenne', color: 'text-blue-500', bg: 'bg-blue-50' },
-    HIGH: { label: 'Haute', color: 'text-amber-600', bg: 'bg-amber-50' },
-    URGENT: { label: 'Urgent', color: 'text-rose-600', bg: 'bg-rose-50' }
-};
+const getPriorityConfig = (t: any): Record<TicketPriority, { label: string; color: string; bg: string }> => ({
+    LOW: { label: t('client.priority_labels.LOW'), color: 'text-slate-500', bg: 'bg-slate-50' },
+    MEDIUM: { label: t('client.priority_labels.MEDIUM'), color: 'text-blue-500', bg: 'bg-blue-50' },
+    HIGH: { label: t('client.priority_labels.HIGH'), color: 'text-amber-600', bg: 'bg-amber-50' },
+    URGENT: { label: t('client.priority_labels.URGENT'), color: 'text-rose-600', bg: 'bg-rose-50' }
+});
 
 export const ClientTicketsPage: React.FC = () => {
+    const { t } = useTranslation();
+    const STATUS_CONFIG = getStatusConfig(t);
+    const PRIORITY_CONFIG = getPriorityConfig(t);
     const { state, dispatch } = useStore();
     const { user } = useAuth();
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(state.tickets[0]?.id || null);
@@ -101,10 +105,10 @@ export const ClientTicketsPage: React.FC = () => {
                 });
             }
             setPendingAttachments([...pendingAttachments, ...newAttachments]);
-            toast.success(`${files.length} fichier(s) prêt(s)`);
+            toast.success(t('client.files_ready', { count: files.length }));
         } catch (error) {
             console.error('Upload failed:', error);
-            toast.error("Erreur lors de l'envoi des fichiers (Pièces jointes)");
+            toast.error(t('client.upload_error'));
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -128,25 +132,27 @@ export const ClientTicketsPage: React.FC = () => {
                 type: 'UPDATE_TICKET',
                 ticket: updatedTicket
             });
-            toast.success("Message envoyé !");
+            toast.success(t('client.message_sent'));
             setReplyText('');
             setPendingAttachments([]);
         } catch (error: any) {
             console.error('Failed to send reply:', error);
-            const errorMsg = error.response?.data?.message || error.message || "Erreur inconnue";
-            toast.error(`Erreur Base de données : ${errorMsg}`);
+            const errorMsg = error.response?.data?.message || error.message || t('client.unknown_error');
+            toast.error(`${t('client.db_error')} ${errorMsg}`);
         }
     };
 
+
+
     return (
-        <AppLayout title="Support" subtitle="Gestion de vos tickets et assistance technique">
+        <AppLayout title={t('client.tickets_title')} subtitle={t('client.tickets_subtitle')}>
             <div className="absolute inset-0 flex bg-slate-50/50 overflow-hidden">
                 {/* Left Sidebar - Tickets List - High Density but Legible Text */}
                 <div className="w-[320px] border-r border-slate-100 bg-white flex flex-col flex-shrink-0 shadow-sm relative z-10 transition-all">
                     <div className="p-5 space-y-4 border-b border-slate-50">
                         <div className="flex items-center justify-between mb-1">
                             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Tag className="w-4 h-4 text-emerald-500" /> Tickets Support ({filteredTickets.length})
+                                <Tag className="w-4 h-4 text-emerald-500" /> {t('client.your_tickets')} ({filteredTickets.length})
                             </h2>
                         </div>
                         <div className="flex gap-2">
@@ -155,7 +161,7 @@ export const ClientTicketsPage: React.FC = () => {
                                 <Input
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Chercher..."
+                                    placeholder={t('client.search_tickets')}
                                     className="pl-9 h-10 border-slate-100 bg-slate-50/50 rounded-xl text-sm focus-visible:ring-emerald-500/10 placeholder:text-slate-400"
                                 />
                             </div>
@@ -170,10 +176,10 @@ export const ClientTicketsPage: React.FC = () => {
                         
                         <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val as any)}>
                             <SelectTrigger className="h-9 border-slate-100 bg-slate-50/50 rounded-xl text-[10px] font-black uppercase tracking-tight text-slate-500">
-                                <SelectValue placeholder="Tous les statuts" />
+                                <SelectValue placeholder={t('client.all_statuses')} />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-slate-100">
-                                <SelectItem value="ALL" className="text-[10px] font-black uppercase m-1">Tous les statuts</SelectItem>
+                                <SelectItem value="ALL" className="text-[10px] font-black uppercase m-1">{t('client.all_statuses')}</SelectItem>
                                 {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                                     <SelectItem key={key} value={key} className="text-[10px] font-black uppercase m-1">{config.label}</SelectItem>
                                 ))}
@@ -226,7 +232,15 @@ export const ClientTicketsPage: React.FC = () => {
                                         <div className="flex items-center gap-3 mt-1">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedTicket.projectName}</span>
                                             <Separator orientation="vertical" className="h-3.5" />
-                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">TICKET #{selectedTicket.id.split('-')[0]}</span>
+                                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{t('client.ticket_id')}{selectedTicket.id.split('-')[0]}</span>
+                                            {selectedTicket.projectId && (
+                                                <>
+                                                    <Separator orientation="vertical" className="h-3.5" />
+                                                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                                                        CM: {state.projects.find(p => p.id === selectedTicket.projectId)?.managerName || t('client.support_team')}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -241,20 +255,22 @@ export const ClientTicketsPage: React.FC = () => {
                                     {/* Info Header */}
                                     <div className="grid grid-cols-3 gap-6 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                                         <div className="space-y-1.5">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agent Vaerdia</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('client.project_manager')}</p>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                <p className="text-sm font-black text-emerald-600 uppercase tracking-tight">Support Actif</p>
+                                                <p className="text-sm font-black text-emerald-600 uppercase tracking-tight">
+                                                    {state.projects.find(p => p.id === selectedTicket.projectId)?.managerName || t('client.technical_support')}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="space-y-1.5 border-x border-slate-50 px-6">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Priorité</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('client.priority_label')}</p>
                                             <p className={`text-sm font-black uppercase tracking-tight ${PRIORITY_CONFIG[selectedTicket.priority].color}`}>
                                                 {PRIORITY_CONFIG[selectedTicket.priority].label}
                                             </p>
                                         </div>
                                         <div className="space-y-1.5 text-right">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dernière mise à jour</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('client.last_update')}</p>
                                             <p className="text-sm font-black text-slate-700 uppercase tracking-tight">
                                                 {new Date(selectedTicket.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
@@ -266,11 +282,15 @@ export const ClientTicketsPage: React.FC = () => {
                                         <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
                                         <div className="flex items-center gap-2 mb-3">
                                             <Info className="w-4 h-4 text-emerald-500" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Description initiale</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('client.initial_description')}</span>
                                         </div>
                                         <p className="text-sm text-slate-600 leading-relaxed font-medium">
                                             {selectedTicket.description}
                                         </p>
+                                        <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight bg-slate-50 p-2 rounded-xl border border-slate-100 w-fit">
+                                            <Sparkles className="w-3 h-3 text-emerald-500" />
+                                            {t('client.analysis_message')}
+                                        </div>
                                     </div>
 
                                     {/* Chat Thread */}
@@ -366,8 +386,8 @@ export const ClientTicketsPage: React.FC = () => {
                                         <textarea
                                             value={replyText}
                                             onChange={e => setReplyText(e.target.value)}
-                                            placeholder="Écrivez votre message ici..."
-                                            className="w-full min-h-[60px] max-h-40 p-3 bg-transparent border-none text-sm font-medium focus:outline-none resize-none placeholder:text-slate-400"
+                                            placeholder={t('client.write_message')}
+                                            className="w-full min-h-[60px] max-h-40 p-3 bg-transparent border-none text-sm font-black text-slate-900 focus:outline-none resize-none placeholder:text-slate-400"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
@@ -396,7 +416,7 @@ export const ClientTicketsPage: React.FC = () => {
                                                         : 'bg-slate-200 text-slate-400 shadow-none'
                                                 }`}
                                             >
-                                                Envoyer
+                                                {t('client.send')}
                                                 <Send className="w-3.5 h-3.5 ml-2" />
                                             </Button>
                                         </div>
@@ -409,7 +429,7 @@ export const ClientTicketsPage: React.FC = () => {
                             <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center mb-5 border border-slate-100">
                                 <MessageCircle className="w-10 h-10 opacity-20" />
                             </div>
-                            <p className="text-xs font-black uppercase tracking-[0.3em]">Sélectionnez une discussion</p>
+                            <p className="text-xs font-black uppercase tracking-[0.3em]">{t('client.select_discussion')}</p>
                         </div>
                     )}
                 </div>

@@ -156,7 +156,7 @@ export const LoginPage: React.FC = () => {
                     {/* Footer Info */}
                     <div className="mt-10 text-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em]">
-                            © 2026 Vaerdia Platform • Projet de Soutenance
+                            © 2026 Vaerdia Platform • 
                         </p>
                     </div>
                 </motion.div>

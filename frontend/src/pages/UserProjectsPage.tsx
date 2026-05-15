@@ -73,8 +73,6 @@ export const UserProjectsPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedProjectForSettings, setSelectedProjectForSettings] = useState<GlobalProject | null>(null);
 
@@ -119,35 +117,9 @@ export const UserProjectsPage: React.FC = () => {
 
   const filteredProjects = userProjects?.projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || project.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'active' && project.isActive) ||
-      (statusFilter === 'inactive' && !project.isActive);
 
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch;
   }) || [];
-
-  const getRoleStats = () => {
-    const stats = {
-      ADMIN: 0,
-      PROJECT_MANAGER: 0,
-      TEAM_MEMBER: 0,
-      CLIENT: 0,
-      active: 0,
-      expired: 0
-    };
-
-    userProjects.projects.forEach(project => {
-      stats[project.role]++;
-      if (project.isActive) {
-        stats.active++;
-      } else {
-        stats.expired++;
-      }
-    });
-
-    return stats;
-  };
 
   const isExpired = (expiresAt?: string) => {
     if (!expiresAt) return false;
@@ -176,7 +148,7 @@ export const UserProjectsPage: React.FC = () => {
     );
   }
 
-  const roleStats = getRoleStats();
+
 
   return (
     <AppLayout title="Mes Projets" subtitle="Accès et rôles administratifs">
@@ -226,57 +198,13 @@ export const UserProjectsPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Filters & Quick Stats */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-xl text-[10px] font-black text-emerald-700 border border-emerald-100 shadow-sm uppercase tracking-tighter">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Actifs : {roleStats.active || 0}</span>
-                </div>
-                
-                {Object.entries(ROLE_CONFIG).map(([role, config]) => {
-                    const count = roleStats[role as keyof typeof roleStats] || 0;
-                    if (count === 0) return null;
-                    const Icon = config.icon;
-                    return (
-                        <div key={role} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border shadow-sm uppercase tracking-tighter transition-transform hover:-translate-y-0.5 cursor-default ${config.color}`}>
-                            <span>{config.label}: {count}</span>
-                        </div>
-                    );
-                })}
-            </div>
-
-            <div className="flex items-center gap-2">
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="py-1.5 pl-3 pr-8 bg-white/50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                >
-                  <option value="all">Tous les rôles</option>
-                  {Object.entries(ROLE_CONFIG).map(([role, config]) => (
-                    <option key={role} value={role}>{config.label}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="py-1.5 pl-3 pr-8 bg-white/50 border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                >
-                  <option value="all">Tous les statuts</option>
-                  <option value="active">Actifs</option>
-                  <option value="inactive">Inactifs</option>
-                </select>
-            </div>
-        </div>
-
         {/* Projects Grid/List */}
         {filteredProjects.length === 0 ? (
           <Card className="p-12 text-center shadow-sm border-slate-100">
             <Briefcase className="w-16 h-16 mx-auto mb-4 text-slate-300" />
             <h3 className="text-lg font-black text-slate-800 font-display uppercase tracking-tight">Aucun projet trouvé</h3>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 font-black">
-              {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
+              {searchTerm
                 ? 'Essayez de modifier vos filtres'
                 : 'Vous n\'êtes assigné à aucun projet pour le moment'}
             </p>

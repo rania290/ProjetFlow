@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { documentsService } from '../api/documents.service';
 import type { DocumentInfo } from '../api/documents.service';
 import { projectsService } from '../api/projects.service';
@@ -59,9 +60,9 @@ const MOCK_FILES = [
     { id: '6', name: 'Budget_2026.xlsx', type: 'sheet', size: '1.5 MB', date: '2026-04-05', category: 'Admin', project: 'Core' },
 ];
 
-const CATEGORIES = [
-    { id: 'all', label: 'Tous les fichiers', icon: <Home className="w-4 h-4" /> },
-    { id: 'recent', label: 'Récents', icon: <Clock className="w-4 h-4" /> },
+const getCategories = (t: any) => [
+    { id: 'all', label: t('documents.all_files'), icon: <Home className="w-4 h-4" /> },
+    { id: 'recent', label: t('documents.recent'), icon: <Clock className="w-4 h-4" /> },
 ];
 
 const FOLDER_COLORS = ['text-blue-500', 'text-indigo-500', 'text-emerald-500', 'text-amber-500', 'text-pink-500', 'text-violet-500'];
@@ -86,7 +87,9 @@ const getFileColorClass = (type: string) => {
     }
 };
 
-export const DocumentsPage: React.FC = () => {
+export const DocumentsPage = () => {
+    const { t } = useTranslation();
+    const CATEGORIES = getCategories(t);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -95,7 +98,7 @@ export const DocumentsPage: React.FC = () => {
     const [files, setFiles] = useState<DocumentInfo[]>([]);
     const [projects, setProjects] = useState<any[]>([]);
     const [uploadProjectId, setUploadProjectId] = useState<string>('none');
-    const [uploadCategory, setUploadCategory] = useState<string>('Général');
+    const [uploadCategory, setUploadCategory] = useState<string>(t('documents.categories.GENERAL'));
     const [loading, setLoading] = useState(true);
     const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
 
@@ -133,7 +136,7 @@ export const DocumentsPage: React.FC = () => {
 
     const dynamicFolders = useMemo(() => {
         const counts = files.reduce((acc, file) => {
-            const cat = file.category || 'Général';
+            const cat = file.category || t('documents.categories.GENERAL');
             acc[cat] = (acc[cat] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
@@ -194,7 +197,7 @@ export const DocumentsPage: React.FC = () => {
                 setIsUploadOpen(false);
                 setUploadProgress(0);
                 setUploadProjectId('none');
-                setUploadCategory('Général');
+                setUploadCategory(t('documents.categories.GENERAL'));
             }, 1000);
         } catch (error) {
             console.error('Upload failed:', error);
@@ -227,7 +230,7 @@ export const DocumentsPage: React.FC = () => {
     };
 
     return (
-        <AppLayout title="Gestion Documentaire">
+        <AppLayout title={t('documents.title')}>
             <div className="flex h-[calc(100vh-theme(spacing.20))] overflow-hidden bg-slate-50/50">
 
                 {/* --- Left Sidebar --- */}
@@ -238,7 +241,7 @@ export const DocumentsPage: React.FC = () => {
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl h-12 flex items-center gap-2 shadow-xl shadow-indigo-600/20 transition-all active:scale-[0.98]"
                         >
                             <Upload className="w-4 h-4" />
-                            <span className="font-bold text-sm">Transférer</span>
+                            <span className="font-bold text-sm">{t('documents.transfer')}</span>
                         </Button>
                     </div>
 
@@ -257,7 +260,7 @@ export const DocumentsPage: React.FC = () => {
 
                     <div className="space-y-4 pt-4 border-t border-slate-100">
                         <div className="flex items-center justify-between px-2">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Dossiers</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{t('documents.folders')}</h3>
                             <Plus className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-600 cursor-pointer" />
                         </div>
                         <div className="space-y-1">
@@ -270,7 +273,7 @@ export const DocumentsPage: React.FC = () => {
                                     <span className="text-[10px] text-slate-300">{folder.count}</span>
                                 </button>
                             )) : (
-                                <p className="text-[10px] font-bold text-slate-400 text-center py-2">Aucun dossier trouvé</p>
+                                <p className="text-[10px] font-bold text-slate-400 text-center py-2">{t('documents.no_folders')}</p>
                             )}
                         </div>
                     </div>
@@ -281,7 +284,7 @@ export const DocumentsPage: React.FC = () => {
                                 <HardDrive className="w-4 h-4 text-slate-400" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase">Stockage</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase">{t('documents.storage')}</p>
                                 <p className="text-xs font-bold text-slate-900">{storageUsed} / 2 GB</p>
                             </div>
                         </div>
@@ -299,7 +302,7 @@ export const DocumentsPage: React.FC = () => {
                             <div className="flex items-center gap-2 text-slate-400 text-sm font-bold">
                                 <Home className="w-4 h-4" />
                                 <ChevronRight className="w-4 h-4" />
-                                <span className="text-slate-900">Tous les fichiers</span>
+                                <span className="text-slate-900">{t('documents.all_files')}</span>
                             </div>
                         </div>
 
@@ -307,7 +310,7 @@ export const DocumentsPage: React.FC = () => {
                             <div className="relative group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
                                 <Input
-                                    placeholder="Rechercher..."
+                                    placeholder={t('documents.search')}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-10 pr-4 h-10 w-64 bg-slate-50 border-transparent focus:bg-white focus:ring-indigo-500/20 rounded-xl text-sm font-bold transition-all"
@@ -329,7 +332,7 @@ export const DocumentsPage: React.FC = () => {
                             </div>
                             <Button variant="outline" className="rounded-xl border-slate-200 h-10 px-4 flex items-center gap-2">
                                 <Filter className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="text-xs font-black text-slate-700 uppercase tracking-widest">Filtrer</span>
+                                <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{t('documents.filter')}</span>
                             </Button>
                         </div>
                     </div>
@@ -351,13 +354,13 @@ export const DocumentsPage: React.FC = () => {
                                             <FileText className="w-16 h-16 text-indigo-200" />
                                         </div>
                                     </div>
-                                    <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Aucun document trouvé</h3>
-                                    <p className="text-sm font-bold text-slate-500 max-w-sm mb-8">Ce dossier est vide ou aucun document ne correspond à votre recherche actuelle.</p>
+                                    <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight">{t('documents.no_documents')}</h3>
+                                    <p className="text-sm font-bold text-slate-500 max-w-sm mb-8">{t('documents.empty_desc')}</p>
                                     <Button 
                                         onClick={() => setIsUploadOpen(true)}
                                         className="bg-indigo-600 hover:bg-indigo-700 shadow-[0_8px_30px_rgb(79,70,229,0.2)] hover:shadow-[0_8px_30px_rgb(79,70,229,0.3)] text-white font-bold rounded-2xl h-12 px-6 transition-all"
                                     >
-                                        Transférer un fichier
+                                        {t('documents.transfer_file')}
                                     </Button>
                                 </motion.div>
                             ) : viewMode === 'grid' ? (
@@ -420,10 +423,10 @@ export const DocumentsPage: React.FC = () => {
                                     <table className="w-full">
                                         <thead className="bg-slate-50/50 border-b border-slate-100">
                                             <tr>
-                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">Nom</th>
-                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">Modifié</th>
-                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">Taille</th>
-                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">Projet</th>
+                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">{t('documents.name')}</th>
+                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">{t('documents.modified')}</th>
+                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">{t('documents.size')}</th>
+                                                <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">{t('documents.project')}</th>
                                                 <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
                                             </tr>
                                         </thead>
@@ -477,13 +480,13 @@ export const DocumentsPage: React.FC = () => {
                 <DialogContent className="max-w-md bg-white/80 backdrop-blur-3xl rounded-[2.5rem] p-8 border border-white max-h-[90vh] overflow-y-auto shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 -z-10" />
                     <DialogHeader className="mb-2 text-center flex flex-col items-center">
-                        <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight">Nouveau Document</DialogTitle>
-                        <p className="text-sm font-bold text-slate-500 mt-1">Ajoutez un fichier à un projet existant.</p>
+                        <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight">{t('documents.new_document')}</DialogTitle>
+                        <p className="text-sm font-bold text-slate-500 mt-1">{t('documents.add_file_desc')}</p>
                     </DialogHeader>
 
                     <div className="space-y-4 mt-6">
                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Projet lié</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5 block">{t('documents.linked_project')}</label>
                             <Select value={uploadProjectId} onValueChange={setUploadProjectId}>
                                 <SelectTrigger className="w-full bg-white/50 border-white/60 focus:ring-indigo-500/30 rounded-xl h-11 text-sm font-bold shadow-sm backdrop-blur-sm">
                                     <SelectValue placeholder="Sélectionner un projet">
@@ -493,7 +496,7 @@ export const DocumentsPage: React.FC = () => {
                                     </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="bg-white/90 backdrop-blur-xl border-white/50 rounded-xl shadow-xl">
-                                    <SelectItem value="none" className="text-slate-400 font-bold focus:bg-slate-50">Aucun projet (Général)</SelectItem>
+                                    <SelectItem value="none" className="text-slate-400 font-bold focus:bg-slate-50">{t('documents.no_project_general')}</SelectItem>
                                     {projects.map(p => {
                                         const pid = p.id || p.projectId;
                                         if (!pid) return null;
@@ -508,17 +511,17 @@ export const DocumentsPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Catégorie</label>
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5 block">{t('documents.category')}</label>
                             <Select value={uploadCategory} onValueChange={setUploadCategory}>
                                 <SelectTrigger className="w-full bg-white/50 border-white/60 focus:ring-indigo-500/30 rounded-xl h-11 text-sm font-bold shadow-sm backdrop-blur-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white/90 backdrop-blur-xl border-white/50 rounded-xl shadow-xl">
-                                    <SelectItem value="Général" className="font-bold focus:bg-indigo-50 focus:text-indigo-700">Général</SelectItem>
-                                    <SelectItem value="Design" className="font-bold focus:bg-indigo-50 focus:text-indigo-700">Design</SelectItem>
-                                    <SelectItem value="Développement" className="font-bold focus:bg-indigo-50 focus:text-indigo-700">Développement</SelectItem>
-                                    <SelectItem value="Administratif" className="font-bold focus:bg-indigo-50 focus:text-indigo-700">Administratif</SelectItem>
-                                    <SelectItem value="Marketing" className="font-bold focus:bg-indigo-50 focus:text-indigo-700">Marketing</SelectItem>
+                                    <SelectItem value={t('documents.categories.GENERAL')} className="font-bold focus:bg-indigo-50 focus:text-indigo-700">{t('documents.categories.GENERAL')}</SelectItem>
+                                    <SelectItem value={t('documents.categories.DESIGN')} className="font-bold focus:bg-indigo-50 focus:text-indigo-700">{t('documents.categories.DESIGN')}</SelectItem>
+                                    <SelectItem value={t('documents.categories.DEVELOPMENT')} className="font-bold focus:bg-indigo-50 focus:text-indigo-700">{t('documents.categories.DEVELOPMENT')}</SelectItem>
+                                    <SelectItem value={t('documents.categories.ADMIN')} className="font-bold focus:bg-indigo-50 focus:text-indigo-700">{t('documents.categories.ADMIN')}</SelectItem>
+                                    <SelectItem value={t('documents.categories.MARKETING')} className="font-bold focus:bg-indigo-50 focus:text-indigo-700">{t('documents.categories.MARKETING')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -532,8 +535,8 @@ export const DocumentsPage: React.FC = () => {
                         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 xl:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-indigo-500/20 transition-all duration-300 relative z-10 pointer-events-none">
                             <Upload className="w-8 h-8 text-slate-300 group-hover:text-indigo-600 transition-colors" />
                         </div>
-                        <p className="text-sm font-bold text-slate-700 relative z-10 pointer-events-none">Cliquez ou déposez vos fichiers ici</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 relative z-10 pointer-events-none">Maximum 50 MB par fichier</p>
+                        <p className="text-sm font-bold text-slate-700 relative z-10 pointer-events-none">{t('documents.drop_zone')}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 relative z-10 pointer-events-none">{t('documents.max_size')}</p>
 
                         <input
                             title=""
@@ -547,7 +550,7 @@ export const DocumentsPage: React.FC = () => {
                     {uploadProgress > 0 && (
                         <div className="mt-6 space-y-2">
                             <div className="flex justify-between items-center px-1">
-                                <span className="text-[10px] font-black uppercase text-slate-500">Progression</span>
+                                <span className="text-[10px] font-black uppercase text-slate-500">{t('common.progress')}</span>
                                 <span className="text-[10px] font-black uppercase text-indigo-600">{uploadProgress}%</span>
                             </div>
                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -561,17 +564,17 @@ export const DocumentsPage: React.FC = () => {
                     )}
 
                     <DialogFooter className="mt-8 flex items-center justify-center border-none sm:justify-center">
-                        <Button variant="ghost" className="text-slate-400 font-bold hover:bg-slate-50 rounded-xl" onClick={() => setIsUploadOpen(false)}>Annuler</Button>
+                        <Button variant="ghost" className="text-slate-400 font-bold hover:bg-slate-50 rounded-xl" onClick={() => setIsUploadOpen(false)}>{t('common.cancel')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             <ConfirmDialog 
                 isOpen={!!deleteDocId}
-                title="Supprimer le document"
-                message="Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible."
-                confirmText="Supprimer"
-                cancelText="Annuler"
+                title={t('documents.delete_title')}
+                message={t('documents.delete_confirm')}
+                confirmText={t('common.delete')}
+                cancelText={t('common.cancel')}
                 type="danger"
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteDocId(null)}

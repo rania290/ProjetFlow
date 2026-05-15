@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useParams, useNavigate } from 'react-router-dom';
-
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuraStore } from '../store/auraStore';
 
 import {
 
@@ -124,28 +125,26 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 // ===== CONSTANTS =====
 
-const STATUS_COLUMNS: { id: TaskStatus; label: string; color: string; headerBg: string; dot: string }[] = [
-    { id: 'TODO', label: 'À faire', color: 'text-slate-500', headerBg: 'bg-slate-50', dot: 'bg-slate-400' },
-    { id: 'IN_PROGRESS', label: 'En cours', color: 'text-blue-600', headerBg: 'bg-blue-50', dot: 'bg-blue-500' },
-    { id: 'IN_TEST', label: 'En test', color: 'text-violet-600', headerBg: 'bg-violet-50', dot: 'bg-violet-500' },
-    { id: 'DONE', label: 'Terminé', color: 'text-emerald-600', headerBg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+const getStatusColumns = (t: any): { id: TaskStatus; label: string; color: string; headerBg: string; dot: string }[] => [
+    { id: 'TODO', label: t('projects.task_status.TODO'), color: 'text-slate-500', headerBg: 'bg-slate-50', dot: 'bg-slate-400' },
+    { id: 'IN_PROGRESS', label: t('projects.task_status.IN_PROGRESS'), color: 'text-blue-600', headerBg: 'bg-blue-50', dot: 'bg-blue-500' },
+    { id: 'IN_TEST', label: t('projects.task_status.IN_TEST'), color: 'text-violet-600', headerBg: 'bg-violet-50', dot: 'bg-violet-500' },
+    { id: 'DONE', label: t('projects.task_status.DONE'), color: 'text-emerald-600', headerBg: 'bg-emerald-50', dot: 'bg-emerald-500' },
 ];
 
+const getPriorityConfig = (t: any): Record<TaskPriority, { label: string; dot: string; color: string; bg: string; border: string; icon: React.ReactNode }> => ({
+    CRITICAL: { label: t('projects.task_priority.CRITICAL'), dot: 'bg-red-500', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', icon: <AlertCircle className="w-3.5 h-3.5 text-red-500" /> },
+    HIGH: { label: t('projects.task_priority.HIGH'), dot: 'bg-orange-500', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200', icon: <TrendingUp className="w-3.5 h-3.5 text-orange-500" /> },
+    MEDIUM: { label: t('projects.task_priority.MEDIUM'), dot: 'bg-amber-400', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', icon: <MoreHorizontal className="w-3.5 h-3.5 text-amber-500" /> },
+    LOW: { label: t('projects.task_priority.LOW'), dot: 'bg-blue-400', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: <Clock className="w-3.5 h-3.5 text-blue-500" /> },
+});
 
-
-const PRIORITY_CONFIG: Record<TaskPriority, { label: string; dot: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
-    CRITICAL: { label: 'Critique', dot: 'bg-red-500', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', icon: <AlertCircle className="w-3.5 h-3.5 text-red-500" /> },
-    HIGH: { label: 'Haute', dot: 'bg-orange-500', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-200', icon: <TrendingUp className="w-3.5 h-3.5 text-orange-500" /> },
-    MEDIUM: { label: 'Moyenne', dot: 'bg-amber-400', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', icon: <MoreHorizontal className="w-3.5 h-3.5 text-amber-500" /> },
-    LOW: { label: 'Basse', dot: 'bg-blue-400', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200', icon: <Clock className="w-3.5 h-3.5 text-blue-500" /> },
-};
-
-const TYPE_CONFIG: Record<TaskType, { label: string; color: string; icon: React.ReactNode }> = {
-    STORY: { label: 'Story', color: 'text-primary-600', icon: <div className="w-4 h-4 bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold rounded">S</div> },
-    TASK: { label: 'Tâche', color: 'text-slate-600', icon: <CheckSquare className="w-3.5 h-3.5 text-slate-400" /> },
-    BUG: { label: 'Bug', color: 'text-red-600', icon: <AlertCircle className="w-3.5 h-3.5 text-red-400" /> },
-    IMPROVEMENT: { label: 'Amélioration', color: 'text-violet-600', icon: <TrendingUp className="w-3.5 h-3.5 text-violet-400 rotate-45" /> },
-};
+const getTypeConfig = (t: any): Record<TaskType, { label: string; color: string; icon: React.ReactNode }> => ({
+    STORY: { label: t('projects.task_type.STORY'), color: 'text-primary-600', icon: <div className="w-4 h-4 bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-bold rounded">S</div> },
+    TASK: { label: t('projects.task_type.TASK'), color: 'text-slate-600', icon: <CheckSquare className="w-3.5 h-3.5 text-slate-400" /> },
+    BUG: { label: t('projects.task_type.BUG'), color: 'text-red-600', icon: <AlertCircle className="w-3.5 h-3.5 text-red-400" /> },
+    IMPROVEMENT: { label: t('projects.task_type.IMPROVEMENT'), color: 'text-violet-600', icon: <TrendingUp className="w-3.5 h-3.5 text-violet-400 rotate-45" /> },
+});
 
 const FIBONACCI_POINTS = [0, 1, 2, 3, 5, 8, 13, 21];
 
@@ -164,16 +163,18 @@ const FIBONACCI_POINTS = [0, 1, 2, 3, 5, 8, 13, 21];
 
 
 
-const STATUS_CONFIG: Record<string, { label: string, color: string }> = {
-    PLANNED: { label: 'PLANIFIÉ', color: 'bg-slate-100 text-slate-600 border-slate-200' },
-    IN_PROGRESS: { label: 'EN COURS', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-    DELIVERED: { label: 'LIVRÉ', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-    SUSPENDED: { label: 'SUSPENDU', color: 'bg-amber-50 text-amber-800 border-amber-200' },
-};
+const getStatusConfig = (t: any): Record<string, { label: string, color: string }> => ({
+    PLANNED: { label: t('projects.status_labels.PLANNED').toUpperCase(), color: 'bg-slate-100 text-slate-600 border-slate-200' },
+    IN_PROGRESS: { label: t('projects.status_labels.IN_PROGRESS').toUpperCase(), color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    DELIVERED: { label: t('projects.status_labels.DELIVERED').toUpperCase(), color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+    SUSPENDED: { label: t('projects.status_labels.SUSPENDED').toUpperCase(), color: 'bg-amber-50 text-amber-800 border-amber-200' },
+});
 
 // ===== MAIN PAGE =====
 
 export const ProjectDetailPage: React.FC = () => {
+    const { t } = useTranslation();
+    const STATUS_CONFIG = getStatusConfig(t);
 
     const { projectId } = useParams<{ projectId: string }>();
 
@@ -183,17 +184,8 @@ export const ProjectDetailPage: React.FC = () => {
 
 
 
-    // Aura IA contextual state
-
-    const [showAura, setShowAura] = useState(false);
-
-    const [auraMessages, setAuraMessages] = useState<{ role: 'ai' | 'user', content: string }[]>([
-
-        { role: 'ai', content: "Bonjour ! Je suis Aura. Laissez-moi analyser ce projet..." }
-
-    ]);
-
-    const [auraInput, setAuraInput] = useState('');
+    // Aura IA global state
+    const { toggleOpen, isOpen: isAuraOpen } = useAuraStore();
 
 
 
@@ -326,31 +318,18 @@ export const ProjectDetailPage: React.FC = () => {
 
 
     if (!project) {
-
         return (
-
-            <AppLayout title="Projet introuvable">
-
+            <AppLayout title={t('projects.project_not_found')}>
                 <div className="p-12 text-center">
-
                     <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-
-                    <p className="text-slate-500 mb-4">Ce projet n'existe pas.</p>
-
+                    <p className="text-slate-500 mb-4">{t('projects.project_not_exist')}</p>
                     <button onClick={() => navigate('/projects')}
-
                         className="text-primary-600 font-semibold hover:underline">
-
-                        ← Retour aux projets
-
+                        {t('common.back_to_projects')}
                     </button>
-
                 </div>
-
             </AppLayout>
-
         );
-
     }
 
 
@@ -374,11 +353,13 @@ export const ProjectDetailPage: React.FC = () => {
     return (
 
         <AppLayout
-
             title={project.name}
-
-            subtitle={`Vue ${project.viewMode || 'BOARD'} · ${project.type} · ${project.clientName ?? 'Interne'} · ${project.members?.length || 0} membre(s)`}
-
+            subtitle={t('projects.view_mode', { 
+                mode: project.viewMode || 'BOARD', 
+                type: project.type, 
+                client: project.clientName ?? 'Interne', 
+                count: project.members?.length || 0 
+            })}
         >
 
             <div className="absolute top-4 right-20 z-50">
@@ -410,13 +391,9 @@ export const ProjectDetailPage: React.FC = () => {
                         {/* Progress */}
 
                         <div className="flex-1 max-w-xs">
-
                             <div className="flex justify-between text-xs text-slate-400 mb-1">
-
-                                <span>Progression globale</span>
-
+                                <span>{t('common.global_progress')}</span>
                                 <span className="font-semibold text-slate-600">{project.progress}%</span>
-
                             </div>
 
                             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -452,7 +429,7 @@ export const ProjectDetailPage: React.FC = () => {
                                 <button
                                     onClick={() => setShowAddMember(true)}
                                     className="w-8 h-8 rounded-xl bg-slate-50 border-2 border-white flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all z-10 shadow-sm"
-                                    title="Ajouter des membres"
+                                    title={t('projects.add_members')}
                                 >
                                     <Plus className="w-4 h-4" />
                                 </button>
@@ -466,19 +443,12 @@ export const ProjectDetailPage: React.FC = () => {
 
 
                         <button
-
                             onClick={() => setShowDiscussion(true)}
-
                             className="p-1.5 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all border border-transparent shadow-sm flex items-center gap-1.5"
-
-                            title="Board Discussion"
-
+                            title={t('common.discussion')}
                         >
-
                             <MessageCircle className="w-4 h-4" />
-
-                            <span className="text-[10px] font-bold">Discussion</span>
-
+                            <span className="text-[10px] font-bold">{t('common.discussion')}</span>
                         </button>
 
 
@@ -494,19 +464,12 @@ export const ProjectDetailPage: React.FC = () => {
                     <div className="flex gap-0 border-b-0 bg-white">
 
                         {([
-
-                            { id: 'table', label: `Tableau principal`, icon: <List className="w-3.5 h-3.5" /> },
-
-                            { id: 'board', label: `Vue Kanban`, icon: <Layers className="w-3.5 h-3.5" /> },
-
-                            { id: 'calendar', label: `Calendrier`, icon: <CalendarDays className="w-3.5 h-3.5" /> },
-
-                            { id: 'backlog', label: 'Backlog', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-
-                            { id: 'sprints', label: 'Sprints', icon: <Zap className="w-3.5 h-3.5" /> },
-
-                            { id: 'dashboard', label: 'Indicateurs clés (KPI)', icon: <Activity className="w-3.5 h-3.5" /> },
-
+                            { id: 'table', label: t('projects.main_table'), icon: <List className="w-3.5 h-3.5" /> },
+                            { id: 'board', label: t('projects.kanban_view'), icon: <Layers className="w-3.5 h-3.5" /> },
+                            { id: 'calendar', label: t('projects.calendar_view'), icon: <CalendarDays className="w-3.5 h-3.5" /> },
+                            { id: 'backlog', label: t('projects.backlog'), icon: <CheckSquare className="w-3.5 h-3.5" /> },
+                            { id: 'sprints', label: t('projects.sprints'), icon: <Zap className="w-3.5 h-3.5" /> },
+                            { id: 'dashboard', label: t('projects.kpi_indicators'), icon: <Activity className="w-3.5 h-3.5" /> },
                         ] as { id: 'table' | 'board' | 'calendar' | 'backlog' | 'sprints' | 'dashboard'; label: string; icon: React.ReactNode }[]).map(t => (
 
                             <button
@@ -562,9 +525,7 @@ export const ProjectDetailPage: React.FC = () => {
                                     {s.name}
 
                                     <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${s.status === 'ACTIVE' ? 'bg-white/30' : s.status === 'COMPLETED' ? 'bg-slate-200 text-slate-400' : 'bg-slate-100 text-slate-400'}`}>
-
-                                        {s.status === 'ACTIVE' ? 'Actif' : s.status === 'PLANNED' ? 'Planifié' : 'Terminé'}
-
+                                        {s.status === 'ACTIVE' ? t('common.active') : s.status === 'PLANNED' ? t('common.planned') : t('common.completed')}
                                     </span>
 
                                 </button>
@@ -755,7 +716,7 @@ export const ProjectDetailPage: React.FC = () => {
                                                     const { id, createdAt, updatedAt, ...newTaskData } = task;
                                                     const duplicatedTask = await projectsService.createTask({
                                                         ...newTaskData,
-                                                        title: `${task.title} (copie)`
+                                                        title: `${task.title} ${t('projects.copy_suffix')}`
                                                     });
                                                     dispatch({ type: 'ADD_TASK', task: duplicatedTask });
                                                 } catch (error) {
@@ -926,196 +887,20 @@ export const ProjectDetailPage: React.FC = () => {
 
 
 
-            {/* AURA IA FLOATING PANEL */}
-
-            <AnimatePresence>
-
-                {showAura && (
-
-                    <motion.div
-
-                        initial={{ opacity: 0, scale: 0.9, y: 20, x: 20 }}
-
-                        animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-
-                        exit={{ opacity: 0, scale: 0.9, y: 20, x: 20 }}
-
-                        className="fixed bottom-24 right-8 w-80 bg-slate-900 border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden z-40 flex flex-col backdrop-blur-md"
-
-                        style={{ height: '400px' }}
-
-                    >
-
-                        {/* Aura Header */}
-
-                        <div className="px-4 py-3 bg-slate-800/80 border-b border-slate-700/50 flex items-center justify-between">
-
-                            <div className="flex items-center gap-2">
-
-                                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-
-                                <span className="text-sm font-bold text-white tracking-wide">Aura IA</span>
-
-                            </div>
-
-                            <button onClick={() => setShowAura(false)} className="text-slate-400 hover:text-white transition-colors">
-
-                                <X className="w-4 h-4" />
-
-                            </button>
-
-                        </div>
-
-
-
-                        {/* Messages Area */}
-
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
-
-                            <div className="flex justify-center mb-4">
-
-                                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest bg-slate-800/50 px-2 py-0.5 rounded-full">Analyse de {project.name}</span>
-
-                            </div>
-
-                            {auraMessages.map((msg, i) => (
-
-                                <div key={i} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
-
-                                    <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${msg.role === 'ai'
-
-                                        ? 'bg-slate-800 text-slate-200 border border-slate-700/50 rounded-tl-sm'
-
-                                        : 'bg-primary-600 text-white rounded-tr-sm'
-
-                                        }`}>
-
-                                        {msg.content}
-
-                                    </div>
-
-                                </div>
-
-                            ))}
-
-                        </div>
-
-
-
-                        {/* Input Area */}
-
-                        <div className="p-3 bg-slate-800/80 border-t border-slate-700/50">
-
-                            <div className="relative">
-
-                                <input
-
-                                    type="text"
-
-                                    value={auraInput}
-
-                                    onChange={(e) => setAuraInput(e.target.value)}
-
-                                    onKeyDown={(e) => {
-
-                                        if (e.key === 'Enter' && auraInput.trim()) {
-
-                                            const question = auraInput.trim();
-
-                                            setAuraMessages(prev => [...prev, { role: 'user', content: question }]);
-
-                                            setAuraInput('');
-
-                                            // Mock response
-
-                                            setTimeout(() => {
-
-                                                const insights = [
-
-                                                    "Le sprint avance bien, mais 2 tâches critiques sont bloquées en test.",
-
-                                                    "Alice a une surcharge de travail prévue pour jeudi.",
-
-                                                    "L'objectif global du projet est atteint à 65%."
-
-                                                ];
-
-                                                setAuraMessages(prev => [...prev, { role: 'ai', content: insights[Math.floor(Math.random() * insights.length)] }]);
-
-                                            }, 1000);
-
-                                        }
-
-                                    }}
-
-                                    placeholder="Demandez à Aura..."
-
-                                    className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl pl-3 pr-10 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500"
-
-                                />
-
-                                <button className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-blue-500 hover:bg-blue-400 rounded-lg flex items-center justify-center text-white transition-colors">
-
-                                    <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </motion.div>
-
-                )}
-
-            </AnimatePresence>
-
-
-
-            {/* Aura Toggle Button */}
-
+            {/* Aura Toggle Button - Global Trigger */}
             <motion.button
-
                 whileHover={{ scale: 1.05 }}
-
                 whileTap={{ scale: 0.95 }}
-
-                onClick={() => {
-
-                    setShowAura(!showAura);
-
-                    if (!showAura && auraMessages.length === 1) {
-
-                        setTimeout(() => {
-
-                            const todoCount = currentSprintForBoard ? projectTasks.filter(t => t.sprintId === currentSprintForBoard.id && t.status === 'TODO').length : 0;
-
-                            const doneCount = currentSprintForBoard ? projectTasks.filter(t => t.sprintId === currentSprintForBoard.id && t.status === 'DONE').length : 0;
-
-                            setAuraMessages(prev => [...prev, { role: 'ai', content: `L'analyse rapide montre que vous avez ${doneCount} tâches terminées et ${todoCount} à faire dans ce sprint. Souhaitez-vous identifier des points de blocage potentiels ?` }]);
-
-                        }, 1500);
-
-                    }
-
-                }}
-
-                className={`fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-50 transition-all duration-300 ${showAura
-
-                    ? 'bg-slate-800 text-white border-2 border-slate-700'
-
-                    : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-2 border-white/20 shadow-[0_0_20px_rgba(37,99,235,0.3)]'
-
-                    }`}
-
+                onClick={toggleOpen}
+                className={`fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-50 transition-all duration-300 ${
+                    isAuraOpen
+                        ? 'bg-slate-800 text-white border-2 border-slate-700'
+                        : 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white border-2 border-white/20 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+                }`}
             >
-
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${showAura ? '' : 'animate-pulse'}`}>
-
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isAuraOpen ? '' : 'animate-pulse'}`}>
                     <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_10px_white]" />
-
                 </div>
-
             </motion.button>
 
 

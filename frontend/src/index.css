@@ -541,3 +541,53 @@ body {
     @apply font-sans;
   }
 }
+
+/* ===== PRINT / PDF STYLES ===== */
+@media print {
+  /* Reset layout for print */
+  body {
+    background: white !important;
+    color: #0f172a !important;
+    font-size: 11pt;
+  }
+
+  /* Hide non-essential elements */
+  aside,
+  header,
+  nav,
+  [data-print="hidden"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Make main content fill the full page */
+  .flex.h-screen {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .flex-1.flex.flex-col.overflow-hidden {
+    display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure cards print with borders */
+  .rounded-2xl,
+  .rounded-xl {
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+  }
+
+  /* Ensure gradients / colors are printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

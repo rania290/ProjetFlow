@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Copy, Shield, Zap, User, Cpu, Calendar, CheckCircle2, Clock } from 'lucide-react';
+import { Mail, MapPin, Copy, Shield, Zap, User, Cpu, Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '../../../../components/ui/Badge';
 import type { LeaveRequest } from '../../leave/types/leave.types';
@@ -110,10 +110,7 @@ export const EmployeeCard = ({ employee, index, leaves = [] }: EmployeeCardProps
             </button>
           </div>
 
-          <div className="flex items-center gap-3 text-sm text-slate-400 font-medium italic opacity-60">
-             <Phone className="w-4 h-4 text-slate-300 shrink-0" />
-             <span>Non renseigné</span>
-          </div>
+
 
           {upcomingLeave && !currentLeave && (
             <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 p-2 rounded-xl border border-slate-100">

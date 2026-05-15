@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AppLayout } from '../layout/AppLayout';
 import api from '../../api/api-client';
 import {
@@ -86,59 +87,61 @@ interface CreateUserDto {
   role: string;
 }
 
-const ROLE_CONFIG: Record<string, any> = {
+const getRoleConfig = (t: any): Record<string, any> => ({
   ADMIN: {
-    label: 'Administrateur',
+    label: t('admin.roles.ADMIN'),
     color: 'bg-purple-100 text-purple-700 border-purple-200',
     icon: Crown,
-    description: 'Accès complet',
+    description: t('admin.role_descriptions.ADMIN'),
     gradient: 'from-purple-500 to-indigo-600'
   },
   PROJECT_MANAGER: {
-    label: 'Chef de Projet',
+    label: t('admin.roles.PROJECT_MANAGER'),
     color: 'bg-blue-100 text-blue-700 border-blue-200',
     icon: Briefcase,
-    description: 'Gestion projets',
+    description: t('admin.role_descriptions.PROJECT_MANAGER'),
     gradient: 'from-blue-500 to-cyan-600'
   },
   DEVELOPER: {
-    label: 'Développeur',
+    label: t('admin.roles.DEVELOPER'),
     color: 'bg-cyan-100 text-cyan-700 border-cyan-200',
     icon: Code,
-    description: 'Tech & Code',
+    description: t('admin.role_descriptions.DEVELOPER'),
     gradient: 'from-cyan-500 to-blue-600'
   },
   DESIGNER: {
-    label: 'Designer',
+    label: t('admin.roles.DESIGNER'),
     color: 'bg-pink-100 text-pink-700 border-pink-200',
     icon: Shield,
-    description: 'UX & UI',
+    description: t('admin.role_descriptions.DESIGNER'),
     gradient: 'from-pink-500 to-rose-600'
   },
   TESTER: {
-    label: 'Testeur',
+    label: t('admin.roles.TESTER'),
     color: 'bg-amber-100 text-amber-700 border-amber-200',
     icon: Eye,
-    description: 'QA & Tests',
+    description: t('admin.role_descriptions.TESTER'),
     gradient: 'from-amber-500 to-orange-600'
   },
   TEAM_MEMBER: {
-    label: 'Membre équipe',
+    label: t('admin.roles.TEAM_MEMBER'),
     color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     icon: UserCheck,
-    description: 'Membre standard',
+    description: t('admin.role_descriptions.TEAM_MEMBER'),
     gradient: 'from-emerald-500 to-teal-600'
   },
   CLIENT: {
-    label: 'Client',
+    label: t('admin.roles.CLIENT'),
     color: 'bg-orange-100 text-orange-700 border-orange-200',
     icon: UserX,
-    description: 'Accès portail',
+    description: t('admin.role_descriptions.CLIENT'),
     gradient: 'from-orange-500 to-red-600'
   }
-};
+});
 
 export const UserManagement: React.FC = () => {
+  const { t } = useTranslation();
+  const ROLE_CONFIG = getRoleConfig(t);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,7 +160,7 @@ export const UserManagement: React.FC = () => {
       const response = await api.get('/users').catch(() => ({ data: [] }));
       setUsers(response.data || []);
     } catch (err) {
-      console.error('Erreur chargement utilisateurs:', err);
+      console.error('Error loading users:', err);
     } finally {
       setLoading(false);
     }
@@ -166,12 +169,12 @@ export const UserManagement: React.FC = () => {
   const handleCreateUser = async (userData: CreateUserDto) => {
     try {
       setLoading(true);
-      const response = await api.post('/users', userData);
+       const response = await api.post('/users', userData);
       setUsers([...users, response.data]);
-      toast.success(`Utilisateur ${userData.fullName} créé avec succès !`);
+      toast.success(t('common.success_create', { name: userData.fullName }));
       setShowCreateModal(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la création');
+      toast.error(err.response?.data?.message || t('admin.error_creating'));
     } finally {
       setLoading(false);
     }
@@ -180,27 +183,27 @@ export const UserManagement: React.FC = () => {
   const handleUpdateUser = async (userId: string, updateData: Partial<User>) => {
     try {
       setLoading(true);
-      const response = await api.patch(`/users/${userId}`, updateData);
+       const response = await api.patch(`/users/${userId}`, updateData);
       setUsers(users.map(u => u.id === userId ? { ...u, ...response.data } : u));
-      toast.success(`Utilisateur mis à jour avec succès !`);
+      toast.success(t('common.success_update'));
       setShowEditModal(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la mise à jour');
+      toast.error(err.response?.data?.message || t('admin.error_updating'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
+   const handleDeleteUser = async (userId: string) => {
+    if (!confirm(t('common.confirm_delete'))) return;
 
     try {
       setLoading(true);
-      await api.delete(`/users/${userId}`);
+       await api.delete(`/users/${userId}`);
       setUsers(users.filter(u => u.id !== userId));
-      toast.success('Utilisateur supprimé avec succès !');
+      toast.success(t('common.success_delete'));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.message || t('admin.error_deleting'));
     } finally {
       setLoading(false);
     }
@@ -219,8 +222,8 @@ export const UserManagement: React.FC = () => {
     ...ROLE_CONFIG[role]
   }));
 
-  return (
-    <AppLayout title="Gestion des Utilisateurs" subtitle="Administration des comptes et rôles">
+   return (
+    <AppLayout title={t('admin.user_management')} subtitle={t('admin.account_administration')}>
       <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
         
         {/* Statistics Cards */}
@@ -246,26 +249,26 @@ export const UserManagement: React.FC = () => {
         {/* Action Bar */}
         <Card className="border-none shadow-sm bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden">
           <CardHeader className="p-6 pb-0 flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-xl font-black text-slate-900 uppercase tracking-tight">Liste des Utilisateurs</CardTitle>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Total: {users.length} membres</p>
+             <div>
+              <CardTitle className="text-xl font-black text-slate-900 uppercase tracking-tight">{t('admin.users_list')}</CardTitle>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('admin.total_members', { count: users.length })}</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input 
-                  placeholder="Rechercher..." 
+                 <Input 
+                  placeholder={t('common.search')} 
                   className="pl-10 h-10 rounded-xl border-slate-100 bg-slate-50/50"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button 
+               <Button 
                 onClick={() => setShowCreateModal(true)}
                 className="rounded-xl flex items-center gap-2 font-bold uppercase text-xs tracking-widest"
               >
                 <UserPlus className="w-4 h-4" />
-                Ajouter
+                {t('common.add')}
               </Button>
               <Button 
                 variant="outline" 
@@ -282,12 +285,12 @@ export const UserManagement: React.FC = () => {
             <Table>
               <TableHeader className="bg-slate-50/50 border-b border-slate-100">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="px-8 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">Utilisateur</TableHead>
-                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">Rôle</TableHead>
-                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">Département</TableHead>
-                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">Statut</TableHead>
-                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14 text-center">Projets</TableHead>
-                  <TableHead className="px-8 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14 text-right">Actions</TableHead>
+                  <TableHead className="px-8 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">{t('admin.user')}</TableHead>
+                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">{t('admin.role')}</TableHead>
+                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">{t('admin.department')}</TableHead>
+                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14">{t('admin.status')}</TableHead>
+                  <TableHead className="px-6 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14 text-center">{t('common.projects')}</TableHead>
+                  <TableHead className="px-8 font-black text-[10px] uppercase tracking-widest text-slate-400 h-14 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -297,10 +300,10 @@ export const UserManagement: React.FC = () => {
                       <TableCell colSpan={6} className="h-16 animate-pulse bg-slate-50/20" />
                     </TableRow>
                   ))
-                ) : filteredUsers.length === 0 ? (
+                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-40 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                      Aucun utilisateur trouvé
+                      {t('admin.no_users_found')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -331,10 +334,10 @@ export const UserManagement: React.FC = () => {
                           <span className="text-[12px] font-bold text-slate-600">{user.department || 'N/A'}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-6 py-5">
+                       <TableCell className="px-6 py-5">
                         <div className={`h-2 w-2 rounded-full ${user.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         <span className={`ml-2 text-[11px] font-black uppercase tracking-tighter ${user.isActive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {user.isActive ? 'Actif' : 'Inactif'}
+                          {user.isActive ? t('common.active') : t('common.inactive')}
                         </span>
                       </TableCell>
                       <TableCell className="px-6 py-5 text-center">
@@ -344,25 +347,23 @@ export const UserManagement: React.FC = () => {
                       </TableCell>
                       <TableCell className="px-8 py-5 text-right">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="rounded-xl hover:bg-slate-100 h-8 w-8">
-                              <MoreVertical className="w-4 h-4 text-slate-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
+                        <DropdownMenuTrigger className="rounded-xl hover:bg-slate-100 h-8 w-8 inline-flex items-center justify-center transition-colors">
+                            <MoreVertical className="w-4 h-4 text-slate-400" />
+                        </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-xl border-slate-100 p-1 w-40 shadow-xl">
-                            <DropdownMenuItem 
+                             <DropdownMenuItem 
                               className="rounded-lg gap-2 text-xs font-bold text-slate-600 focus:bg-slate-50"
                               onClick={() => { setSelectedUser(user); setShowEditModal(true); }}
                             >
                               <Edit className="w-3.5 h-3.5" />
-                              MODIFIER
+                              {t('common.edit').toUpperCase()}
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="rounded-lg gap-2 text-xs font-bold text-rose-600 focus:bg-rose-50"
                               onClick={() => handleDeleteUser(user.id)}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              SUPPRIMER
+                              {t('common.delete').toUpperCase()}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -402,8 +403,10 @@ const CreateUserModal: React.FC<{
   isOpen: boolean; 
   onOpenChange: (val: boolean) => void;
   onSubmit: (data: CreateUserDto) => void;
-  loading: boolean;
+   loading: boolean;
 }> = ({ isOpen, onOpenChange, onSubmit, loading }) => {
+  const { t } = useTranslation();
+  const ROLE_CONFIG = getRoleConfig(t);
   const [formData, setFormData] = useState<CreateUserDto>({
     fullName: '', email: '', password: '', role: 'TEAM_MEMBER'
   });
@@ -411,53 +414,53 @@ const CreateUserModal: React.FC<{
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white/95 backdrop-blur-xl max-w-md">
-        <div className="bg-primary/5 p-8 border-b border-primary/10">
+         <div className="bg-primary/5 p-8 border-b border-primary/10">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">Nouvel Utilisateur</DialogTitle>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Créez un compte membre pour l'équipe</p>
+            <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">{t('admin.new_user')}</DialogTitle>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('admin.create_team_account')}</p>
           </DialogHeader>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="p-8 space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Nom Complet</Label>
+              <Label className="text-[11px] font-black uppercase tracking-widest text-black ml-1">{t('admin.full_name')}</Label>
               <Input 
                 required 
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50" 
+                className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-semibold" 
                 value={formData.fullName}
                 onChange={e => setFormData({...formData, fullName: e.target.value})}
               />
-            </div>
+             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Email</Label>
+              <Label className="text-[11px] font-black uppercase tracking-widest text-black ml-1">{t('common.email')}</Label>
               <Input 
                 required type="email"
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50" 
+                className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-semibold" 
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
               />
-            </div>
+             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Mot de passe</Label>
+              <Label className="text-[11px] font-black uppercase tracking-widest text-black ml-1">{t('common.password')}</Label>
               <Input 
                 required type="password"
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50" 
+                className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-semibold" 
                 value={formData.password}
                 onChange={e => setFormData({...formData, password: e.target.value})}
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Rôle Système</Label>
-              <Select 
+              <Label className="text-[11px] font-black uppercase tracking-widest text-black ml-1">{t('admin.system_role')}</Label>
+               <Select 
                 value={formData.role} 
                 onValueChange={(val) => setFormData({...formData, role: val})}
               >
-                <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50">
-                  <SelectValue placeholder="Choisir un rôle" />
+                <SelectTrigger className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-bold uppercase tracking-widest text-[10px]">
+                  <SelectValue placeholder={t('admin.choose_role')} />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100">
+                <SelectContent className="bg-white rounded-xl border-slate-200 z-[100] shadow-xl p-1">
                   {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key} className="text-xs font-bold uppercase tracking-widest">
+                    <SelectItem key={key} value={key} className="text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-slate-100 py-2">
                       {cfg.label}
                     </SelectItem>
                   ))}
@@ -466,12 +469,12 @@ const CreateUserModal: React.FC<{
             </div>
           </div>
           <DialogFooter className="pt-4">
-            <Button 
+             <Button 
               type="submit" 
               className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
               disabled={loading}
             >
-              {loading ? 'CRÉATION...' : 'CRÉER L\'UTILISATEUR'}
+              {loading ? t('admin.creating') : t('admin.create_user')}
             </Button>
           </DialogFooter>
         </form>
@@ -484,9 +487,11 @@ const EditUserModal: React.FC<{
   isOpen: boolean; 
   onOpenChange: (val: boolean) => void;
   user: User;
-  onSubmit: (data: Partial<User>) => void;
+   onSubmit: (data: Partial<User>) => void;
   loading: boolean;
 }> = ({ isOpen, onOpenChange, user, onSubmit, loading }) => {
+  const { t } = useTranslation();
+  const ROLE_CONFIG = getRoleConfig(t);
   const [formData, setFormData] = useState<Partial<User>>({
     fullName: user.fullName,
     email: user.email,
@@ -497,35 +502,35 @@ const EditUserModal: React.FC<{
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white/95 backdrop-blur-xl max-w-md">
-        <div className="bg-indigo-50/50 p-8 border-b border-indigo-100/50">
+         <div className="bg-indigo-50/50 p-8 border-b border-indigo-100/50">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">Modifier Profil</DialogTitle>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Mise à jour des informations membres</p>
+            <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">{t('admin.edit_profile')}</DialogTitle>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('admin.update_members_info')}</p>
           </DialogHeader>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="p-8 space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Nom Complet</Label>
+              <Label className="text-[11px] font-black uppercase tracking-widest text-black ml-1">{t('admin.full_name')}</Label>
               <Input 
                 required 
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50" 
+                className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-semibold" 
                 value={formData.fullName}
                 onChange={e => setFormData({...formData, fullName: e.target.value})}
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-slate-500 ml-1">Rôle Système</Label>
-              <Select 
+              <Label className="text-[11px] font-black uppercase tracking-widest text-black ml-1">{t('admin.system_role')}</Label>
+               <Select 
                 value={formData.role} 
                 onValueChange={(val: any) => setFormData({...formData, role: val})}
               >
-                <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50">
-                  <SelectValue placeholder="Choisir un rôle" />
+                <SelectTrigger className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-bold uppercase tracking-widest text-[10px]">
+                  <SelectValue placeholder={t('admin.choose_role')} />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-slate-100">
+                <SelectContent className="bg-white rounded-xl border-slate-200 z-[100] shadow-xl p-1">
                   {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key} className="text-xs font-bold uppercase tracking-widest">
+                    <SelectItem key={key} value={key} className="text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-slate-100 py-2">
                       {cfg.label}
                     </SelectItem>
                   ))}
@@ -533,14 +538,14 @@ const EditUserModal: React.FC<{
               </Select>
             </div>
             <div className="flex items-center space-x-2 pt-2">
-               <input 
+              <input 
                 type="checkbox" 
                 id="active" 
                 checked={formData.isActive}
                 onChange={e => setFormData({...formData, isActive: e.target.checked})}
                 className="w-4 h-4 rounded border-slate-200 text-primary h-5 w-5"
                />
-               <Label htmlFor="active" className="text-xs font-bold text-slate-600">Compte Actif</Label>
+              <Label htmlFor="active" className="text-xs font-bold text-slate-600 cursor-pointer">{t('admin.account_active')}</Label>
             </div>
           </div>
           <DialogFooter className="pt-4">
@@ -549,7 +554,7 @@ const EditUserModal: React.FC<{
               className="w-full h-12 rounded-2xl font-black uppercase tracking-widest text-xs"
               disabled={loading}
             >
-              {loading ? 'SAUVEGARDE...' : 'METTRE À JOUR'}
+              {loading ? t('common.loading') : t('admin.update_user')}
             </Button>
           </DialogFooter>
         </form>

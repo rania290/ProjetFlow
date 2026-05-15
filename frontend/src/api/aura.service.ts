@@ -49,6 +49,16 @@ export const auraService = {
     return response.data;
   },
 
+  getReportsList: async (projectId: string): Promise<any[]> => {
+    const response = await auraDirectApi.get<any[]>(`/aura/reports/${projectId}`);
+    return response.data;
+  },
+
+  getReportDetail: async (reportId: string): Promise<any> => {
+    const response = await auraDirectApi.get<any>(`/aura/reports/detail/${reportId}`);
+    return response.data;
+  },
+
   getInsights: async (projectId: string): Promise<string[]> => {
     const response = await auraDirectApi.get<string[]>(`/aura/insights/${projectId}`);
     return response.data;

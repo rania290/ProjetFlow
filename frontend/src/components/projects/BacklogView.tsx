@@ -382,15 +382,12 @@ const BacklogTaskRow: React.FC<{
 
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-[10px] font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg flex items-center gap-1 border-none"
-                            >
-                                Actions
-                            </Button>
-                        </DropdownMenuTrigger>
+                    <DropdownMenuTrigger
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 px-2 text-[10px] font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg flex items-center gap-1 border-none cursor-pointer outline-none transition-colors"
+                    >
+                        Actions
+                    </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 p-1 rounded-xl shadow-2xl border-slate-100">
                             <DropdownMenuItem className="text-[11px] font-bold text-slate-600 rounded-lg py-2 flex items-center gap-2 cursor-pointer" onClick={() => onEdit(true)}>
                                 Voir les détails

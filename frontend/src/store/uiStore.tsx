@@ -12,7 +12,7 @@ export type UiSettings = {
 const STORAGE_KEY = 'vaerdia.ui.settings.v1';
 
 const DEFAULT_SETTINGS: UiSettings = {
-  siteName: 'VAERDIA ProjectFlow',
+  siteName: 'VAERDIA',
   maintenance: false,
   theme: 'light',
 };

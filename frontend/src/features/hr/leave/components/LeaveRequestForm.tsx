@@ -14,6 +14,7 @@ import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Textarea } from '../../../../components/ui/textarea';
 import { Label } from '../../../../components/ui/label';
+import { DatePicker } from '../../../../components/ui/date-picker';
 
 const leaveSchema = z.object({
   type: z.enum(['ANNUAL', 'UNPAID', 'SICK', 'MATERNITY', 'PATERNITY', 'PERSONAL'] as const),
@@ -196,10 +197,9 @@ export const LeaveRequestForm = ({ employeeId, employeeName, onSubmit, isSubmitt
                   <Label htmlFor="startDate" className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                     <Calendar className="w-3 h-3" /> Début
                   </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    {...register('startDate')}
+                  <DatePicker 
+                    date={startDate ? new Date(startDate) : undefined}
+                    setDate={(d) => setValue('startDate', d ? d.toISOString().split('T')[0] : '', { shouldValidate: true })}
                     className="h-11 rounded-xl border-slate-200 bg-white shadow-sm focus:ring-amber-700 font-bold text-xs"
                   />
                 </div>
@@ -208,10 +208,9 @@ export const LeaveRequestForm = ({ employeeId, employeeName, onSubmit, isSubmitt
                   <Label htmlFor="endDate" className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                     <Calendar className="w-3 h-3" /> Fin
                   </Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    {...register('endDate')}
+                  <DatePicker 
+                    date={endDate ? new Date(endDate) : undefined}
+                    setDate={(d) => setValue('endDate', d ? d.toISOString().split('T')[0] : '', { shouldValidate: true })}
                     className={`h-11 rounded-xl border-slate-200 bg-white shadow-sm focus:ring-amber-700 font-bold text-xs ${errors.endDate ? 'border-rose-400 bg-rose-50' : ''}`}
                   />
                 </div>

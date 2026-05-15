@@ -197,13 +197,7 @@ export const LeaveDetailsModal: React.FC<LeaveDetailsModalProps> = ({
                     </Button>
                   )}
 
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="flex-1 h-12 rounded-2xl border-slate-200 font-black text-[10px] uppercase tracking-widest text-slate-500"
-                  >
-                    Fermer
-                  </Button>
+
                 </div>
 
                 {leave.status === 'PENDING' && onCancel && (

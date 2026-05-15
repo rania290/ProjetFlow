@@ -9,6 +9,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { ticketsService } from '../../api/tickets.service';
 import { storageService } from '../../api/storage.service';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     Dialog,
     DialogContent,
     DialogHeader,
@@ -37,8 +44,9 @@ const PRIORITIES = [
 ];
 
 export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, onClose }) => {
-    const { dispatch } = useStore();
+
     const { user } = useAuth();
+    const { state, dispatch } = useStore();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('MEDIUM');
@@ -113,7 +121,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
                             placeholder="Entrez le sujet..."
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            className="h-10 border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm"
+                            className="h-10 border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm text-slate-900"
                             required
                         />
                     </div>
@@ -138,12 +146,12 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Description détaillée</Label>
+                        <Label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Description détaillée du problème</Label>
                         <Textarea
-                            placeholder="Décrivez votre problème ici..."
+                            placeholder="Expliquez-nous le problème rencontré ou votre réclamation..."
                             value={description}
                             onChange={e => setDescription(e.target.value)}
-                            className="min-h-[120px] border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm resize-none"
+                            className="min-h-[120px] border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm text-slate-900 resize-none"
                             required
                         />
                     </div>
