@@ -487,7 +487,7 @@ export const DocumentsPage = () => {
                     <div className="space-y-4 mt-6">
                         <div>
                             <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5 block">{t('documents.linked_project')}</label>
-                            <Select value={uploadProjectId} onValueChange={setUploadProjectId}>
+                            <Select value={uploadProjectId} onValueChange={(val) => setUploadProjectId(val || 'none')}>
                                 <SelectTrigger className="w-full bg-white/50 border-white/60 focus:ring-indigo-500/30 rounded-xl h-11 text-sm font-bold shadow-sm backdrop-blur-sm">
                                     <SelectValue placeholder="Sélectionner un projet">
                                         {uploadProjectId === 'none' 
@@ -512,7 +512,7 @@ export const DocumentsPage = () => {
 
                         <div>
                             <label className="text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5 block">{t('documents.category')}</label>
-                            <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                            <Select value={uploadCategory} onValueChange={(val) => setUploadCategory(val || '')}>
                                 <SelectTrigger className="w-full bg-white/50 border-white/60 focus:ring-indigo-500/30 rounded-xl h-11 text-sm font-bold shadow-sm backdrop-blur-sm">
                                     <SelectValue />
                                 </SelectTrigger>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ChevronLeft,
     ChevronRight,
@@ -35,27 +36,35 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-// Removed static MOCK_EVENTS - now dynamic
-
-const TYPE_CONFIG = {
-    TASK: { icon: <CheckCircle2 className="w-3 h-3" />, color: 'text-slate-600', label: 'Tâche' },
-    BUG: { icon: <AlertTriangle className="w-3 h-3 text-red-500" />, color: 'text-red-600', label: 'Bug' },
-    STORY: { icon: <Star className="w-3 h-3 text-amber-500" />, color: 'text-amber-600', label: 'Story' },
-    LEAVE: { icon: <Palmtree className="w-3 h-3 text-emerald-500" />, color: 'text-emerald-600', label: 'Congé' },
-    EVENT: { icon: <Clock className="w-3 h-3 text-blue-500" />, color: 'text-blue-600', label: 'Événement' },
-};
-
-const DAYS_OF_WEEK = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-const MONTHS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+// TYPE_CONFIG and DAYS_OF_WEEK/MONTHS are built inside the component to use t()
 
 export const CalendarPage: React.FC = () => {
     const { state } = useStore();
+    const { t, i18n } = useTranslation();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [direction, setDirection] = useState(0);
     const [selectedProjectFilter, setSelectedProjectFilter] = useState<string | 'all'>('all');
     const [selectedType, setSelectedType] = useState<string | 'all'>('all');
     const [isAddEventOpen, setIsAddEventOpen] = useState(false);
     const [newEvent, setNewEvent] = useState({ title: '', date: '', project: '', type: 'TASK' });
+
+    const locale = i18n.language === 'en' ? 'en-GB' : 'fr-FR';
+
+    const TYPE_CONFIG = {
+        TASK: { icon: <CheckCircle2 className="w-3 h-3" />, color: 'text-slate-600', label: t('calendar_custom.task') },
+        BUG: { icon: <AlertTriangle className="w-3 h-3 text-red-500" />, color: 'text-red-600', label: t('calendar_custom.bug') },
+        STORY: { icon: <Star className="w-3 h-3 text-amber-500" />, color: 'text-amber-600', label: t('calendar_custom.story') },
+        LEAVE: { icon: <Palmtree className="w-3 h-3 text-emerald-500" />, color: 'text-emerald-600', label: t('calendar_custom.leave') },
+        EVENT: { icon: <Clock className="w-3 h-3 text-blue-500" />, color: 'text-blue-600', label: t('calendar_custom.event') },
+    };
+
+    const DAYS_OF_WEEK = i18n.language === 'en'
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+    const MONTHS = i18n.language === 'en'
+        ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        : ["Janvier", "F\u00e9vrier", "Mars", "Avril", "Mai", "Juin", "Juillet", "A\u00f4t", "Septembre", "Octobre", "Novembre", "D\u00e9cembre"];
 
     // Dynamic Projects mapping
     const projects = useMemo(() => {
@@ -183,7 +192,7 @@ export const CalendarPage: React.FC = () => {
                         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                             {/* Mini Grid Placeholder */}
                             <div className="grid grid-cols-7 gap-1">
-                                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map(d => <div key={d} className="text-[10px] text-center font-bold text-slate-400 py-1">{d}</div>)}
+                                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, idx) => <div key={`day-${idx}`} className="text-[10px] text-center font-bold text-slate-400 py-1">{d}</div>)}
                                 {Array.from({ length: 31 }).map((_, i) => (
                                     <div key={i} className={`aspect-square flex items-center justify-center text-[10px] font-bold rounded-md ${i + 1 === currentDate.getDate() ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-white cursor-pointer transition-colors'}`}>
                                         {i + 1}
@@ -342,10 +351,8 @@ export const CalendarPage: React.FC = () => {
                                                 })}
                                                 {dayEvents.length > 3 && (
                                                     <Popover>
-                                                        <PopoverTrigger asChild>
-                                                            <button className="w-full text-left px-1.5 py-1 text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition-colors mt-1">
-                                                                + {dayEvents.length - 3} autre{dayEvents.length - 3 > 1 ? 's' : ''}...
-                                                            </button>
+                                                        <PopoverTrigger className="w-full text-left px-1.5 py-1 text-[9px] font-bold text-slate-500 hover:text-indigo-600 transition-colors mt-1 bg-transparent border-none cursor-pointer">
+                                                            + {dayEvents.length - 3} autre{dayEvents.length - 3 > 1 ? 's' : ''}...
                                                         </PopoverTrigger>
                                                         <PopoverContent className="w-64 p-2 bg-white rounded-2xl shadow-xl border-slate-100 z-50 max-h-64 overflow-y-auto custom-scrollbar">
                                                             <div className="space-y-1.5">

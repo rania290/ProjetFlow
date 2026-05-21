@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             email: response.user?.email,
             role: response.user?.role || 'TEAM_MEMBER',
             profilePhoto: (response.user as any).profilePhoto,
+            preferredLanguage: (response.user as any).preferredLanguage,
             managerId: (response.user as any).managerId,
         };
         setUser(loggedInUser);
@@ -111,6 +112,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             email: response.user?.email,
             role: response.user?.role || 'TEAM_MEMBER',
             profilePhoto: (response.user as any).profilePhoto,
+            preferredLanguage: (response.user as any).preferredLanguage,
         };
         setUser(loggedInUser);
         return loggedInUser;

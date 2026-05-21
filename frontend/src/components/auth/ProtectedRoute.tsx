@@ -23,11 +23,32 @@ export const ROLE_PERMISSIONS = {
     'READ_ANALYTICS', 'EXPORT_DATA',
     'READ_HR', 'APPROVE_LEAVE', 'REJECT_LEAVE'
   ],
-  TEAM_MEMBER: [
+  DEVELOPER: [
     'READ_TASK', 'UPDATE_OWN_TASK', 'COMPLETE_OWN_TASK',
     'READ_TICKET', 'UPDATE_OWN_TICKET', 'DELETE_OWN_TICKET',
     'SEND_MESSAGE', 'READ_MESSAGE',
     'READ_HR', 'CREATE_LEAVE', 'READ_OWN_LEAVE'
+  ],
+  DESIGNER: [
+    'READ_TASK', 'UPDATE_OWN_TASK', 'COMPLETE_OWN_TASK',
+    'READ_TICKET', 'UPDATE_OWN_TICKET', 'DELETE_OWN_TICKET',
+    'SEND_MESSAGE', 'READ_MESSAGE',
+    'READ_HR', 'CREATE_LEAVE', 'READ_OWN_LEAVE'
+  ],
+  TESTER: [
+    'READ_TASK', 'UPDATE_OWN_TASK', 'COMPLETE_OWN_TASK',
+    'READ_TICKET', 'UPDATE_OWN_TICKET', 'DELETE_OWN_TICKET',
+    'SEND_MESSAGE', 'READ_MESSAGE',
+    'READ_HR', 'CREATE_LEAVE', 'READ_OWN_LEAVE'
+  ],
+  RH: [
+    'READ_USER', 'UPDATE_USER', 'DELETE_USER', 'CREATE_USER',
+    'READ_PROJECT', 'CREATE_PROJECT', 'UPDATE_PROJECT', 'DELETE_PROJECT', 'ASSIGN_PROJECT',
+    'CREATE_TASK', 'READ_TASK', 'UPDATE_TASK', 'DELETE_TASK', 'ASSIGN_TASK', 'COMPLETE_TASK',
+    'CREATE_TICKET', 'READ_TICKET', 'UPDATE_TICKET', 'DELETE_TICKET', 'ASSIGN_TICKET',
+    'SEND_MESSAGE', 'READ_MESSAGE', 'CREATE_CHANNEL', 'MANAGE_CHANNELS',
+    'READ_ANALYTICS', 'EXPORT_DATA', 'VIEW_ADMIN_PANEL',
+    'READ_HR', 'MANAGE_HR', 'APPROVE_LEAVE', 'REJECT_LEAVE', 'CREATE_LEAVE'
   ],
   HR_ADMIN: [
     'READ_USER', 'UPDATE_USER', 'DELETE_USER', 'CREATE_USER',
@@ -66,8 +87,10 @@ export const ROLE_PERMISSIONS = {
 export const ROLE_LEVELS = {
   ADMIN: 100,
   PROJECT_MANAGER: 80,
-  TEAM_MEMBER: 60,
-  HR_ADMIN: 70,
+  DEVELOPER: 60,
+  DESIGNER: 60,
+  TESTER: 55,
+  RH: 70,
   MANAGER: 75,
   EMPLOYEE: 50,
   CLIENT: 40,
@@ -106,6 +129,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!isAuthenticated) {
         // Save the attempted path to redirect back after login
         return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // CLIENT role: auto-redirect to client portal for all non-client routes
+    if (user?.role === 'CLIENT') {
+        const allowedClientPaths = ['/client-portal', '/profile'];
+        const isAllowed = allowedClientPaths.some(p => location.pathname.startsWith(p));
+        if (!isAllowed) {
+            return <Navigate to="/client-portal" replace />;
+        }
     }
 
     // Vérification des rôles

@@ -8,6 +8,7 @@ export enum UserRole {
   EMPLOYEE = 'EMPLOYEE',
   TEAM_MEMBER = 'TEAM_MEMBER',
   CLIENT = 'CLIENT',
+  RH = 'RH',
   AURA_AI = 'AURA_AI',
   ROOT = 'ROOT',
 }

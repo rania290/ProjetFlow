@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Shield, 
   Eye, 
@@ -106,7 +107,7 @@ interface ProjectPermission {
     name: string;
     description?: string;
   };
-  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'TEAM_MEMBER' | 'CLIENT' | 'RH';
+  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'RH' | 'CLIENT' | 'TESTER' | 'DESIGNER';
   permissions: Permission;
   createdAt: string;
 }
@@ -115,12 +116,14 @@ const ROLE_THEMES: Record<string, { bg: string, text: string, icon: string, bord
   'ADMIN': { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', icon: '👑' },
   'PROJECT_MANAGER': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', icon: '📋' },
   'DEVELOPER': { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100', icon: '💻' },
-  'TEAM_MEMBER': { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', icon: '👥' },
+  'RH': { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100', icon: '👤' },
+  'TESTER': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', icon: '🔍' },
+  'DESIGNER': { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-100', icon: '🎨' },
   'CLIENT': { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', icon: '🤝' },
-  'RH': { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100', icon: '🗓️' },
 };
 
 export const SuperSimpleAccessManager: React.FC = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [permissions, setPermissions] = useState<ProjectPermission[]>([]);
@@ -145,7 +148,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
       setProjects(pRes.data || []);
       setPermissions(permRes.data || []);
     } catch (e) {
-      toast.error("Erreur lors du chargement des données");
+      toast.error(t('admin.data_load_error'));
     } finally {
       setLoading(false);
     }
@@ -156,30 +159,30 @@ export const SuperSimpleAccessManager: React.FC = () => {
       setLoading(true);
       if (editingPermission) {
         await api.put(`/permissions/${editingPermission.id}`, data);
-        toast.success("Permission mise à jour");
+        toast.success(t('admin.permission_updated_msg'));
       } else {
         await api.post('/permissions', data);
-        toast.success("Permission ajoutée");
+        toast.success(t('admin.permission_added_msg'));
       }
       loadData();
       setShowAddModal(false);
       setEditingPermission(null);
     } catch (e) {
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(t('admin.error_saving_permission'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer cette permission ?")) return;
+    if (!confirm(t('admin.delete_permission_confirm'))) return;
     try {
       setLoading(true);
       await api.delete(`/permissions/${id}`);
-      toast.success("Permission supprimée");
+      toast.success(t('admin.permission_deleted_msg'));
       loadData();
     } catch (e) {
-      toast.error("Erreur lors de la suppression");
+      toast.error(t('admin.error_deleting_permission'));
     } finally {
       setLoading(false);
     }
@@ -191,7 +194,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
   );
 
   return (
-    <AppLayout title="Gestion des Accès" subtitle="Sécurité et contrôle granulaire">
+    <AppLayout title={t('admin.access_management_title')} subtitle={t('admin.security_granular_subtitle')}>
       <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
         
         {/* Header Section */}
@@ -199,10 +202,10 @@ export const SuperSimpleAccessManager: React.FC = () => {
           <div>
             <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 italic uppercase">
               <ShieldCheck className="w-8 h-8 text-primary-600" />
-              Permissions <span className="text-primary-600">Système</span>
+              {t('admin.permissions_system_title')} <span className="text-primary-600">{t('admin.system_label')}</span>
             </h2>
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-1">
-              {permissions.length} Accès configurés • {users.length} Utilisateurs actifs
+              {t('admin.configured_access_count', { count: permissions.length, users: users.length })}
             </p>
           </div>
           
@@ -210,7 +213,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
             <div className="relative w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input 
-                placeholder="Rechercher..." 
+                placeholder={t('common.search')} 
                 className="pl-11 h-12 bg-white border-slate-200 rounded-2xl shadow-sm focus:ring-primary-500/20 font-bold"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -221,7 +224,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
                 className="h-12 rounded-2xl px-6 font-black uppercase tracking-widest text-xs flex items-center gap-2 shadow-lg shadow-primary-500/20"
             >
               <Plus className="w-4 h-4" />
-              Nouvel Accès
+              {t('admin.new_access')}
             </Button>
           </div>
         </div>
@@ -232,10 +235,10 @@ export const SuperSimpleAccessManager: React.FC = () => {
             <Table>
               <TableHeader className="bg-slate-50/50 border-b border-slate-100">
                 <TableRow className="h-16 hover:bg-transparent border-none">
-                  <TableHead className="px-8 font-black text-[11px] uppercase tracking-widest text-slate-400">Utilisateur & Projet</TableHead>
-                  <TableHead className="px-6 font-black text-[11px] uppercase tracking-widest text-slate-400">Rôle</TableHead>
-                  <TableHead className="px-6 font-black text-[11px] uppercase tracking-widest text-slate-400">Capacités</TableHead>
-                  <TableHead className="px-8 font-black text-[11px] uppercase tracking-widest text-slate-400 text-right">Actions</TableHead>
+                  <TableHead className="px-8 font-black text-[11px] uppercase tracking-widest text-slate-400">{t('admin.user_and_project')}</TableHead>
+                  <TableHead className="px-6 font-black text-[11px] uppercase tracking-widest text-slate-400">{t('admin.role_column')}</TableHead>
+                  <TableHead className="px-6 font-black text-[11px] uppercase tracking-widest text-slate-400">{t('admin.capabilities_column')}</TableHead>
+                  <TableHead className="px-8 font-black text-[11px] uppercase tracking-widest text-slate-400 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,7 +247,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
                     <TableRow key={i}><TableCell colSpan={4} className="h-20 animate-pulse bg-slate-50/20" /></TableRow>
                   ))
                 ) : filteredPermissions.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="h-60 text-center text-slate-400 font-black uppercase tracking-widest text-xs italic">Aucune permission configurée</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="h-60 text-center text-slate-400 font-black uppercase tracking-widest text-xs italic">{t('admin.no_permissions_configured')}</TableCell></TableRow>
                 ) : (
                   filteredPermissions.map(perm => (
                     <TableRow key={perm.id} className="group hover:bg-primary-50/30 transition-all border-b border-slate-50">
@@ -259,7 +262,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
                           <div>
                             <p className="font-black text-slate-900 tracking-tight group-hover:text-primary-700 transition-colors">{perm.user.fullName}</p>
                             <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-400 mt-1">
-                                <span className="bg-slate-100 px-1.5 py-0.5 rounded italic">Projet:</span>
+                                <span className="bg-slate-100 px-1.5 py-0.5 rounded italic">{t('admin.project_prefix')}</span>
                                 <span className="text-slate-500">{perm.project.name}</span>
                             </div>
                           </div>
@@ -267,7 +270,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
                       </TableCell>
                       <TableCell className="px-6 py-6">
                         <Badge className={`rounded-xl px-3 py-1 text-[10px] font-black uppercase tracking-widest border-none ${ROLE_THEMES[perm.role]?.bg} ${ROLE_THEMES[perm.role]?.text}`}>
-                          {ROLE_THEMES[perm.role]?.icon} {perm.role}
+                          {ROLE_THEMES[perm.role]?.icon} {t(`admin.roles.${perm.role}`, perm.role)}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-6 py-6">
@@ -278,7 +281,7 @@ export const SuperSimpleAccessManager: React.FC = () => {
                                 </span>
                             ))}
                             {Object.entries(perm.permissions).filter(([_, v]) => v === true).length > 5 && (
-                                <span className="text-[9px] font-black uppercase tracking-widest text-primary-600 bg-primary-50 px-2 py-0.5 rounded-lg cursor-help" title="Plus de permissions...">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-primary-600 bg-primary-50 px-2 py-0.5 rounded-lg cursor-help">
                                     +{Object.entries(perm.permissions).filter(([_, v]) => v === true).length - 5}
                                 </span>
                             )}
@@ -338,6 +341,7 @@ const AccessModal: React.FC<{
     onSave: (data: any) => void,
     loading: boolean
 }> = ({ isOpen, onOpenChange, users, projects, initialData, onSave, loading }) => {
+    const { t } = useTranslation();
     
     const [selectedUser, setSelectedUser] = useState('');
     const [selectedProject, setSelectedProject] = useState('');
@@ -372,10 +376,10 @@ const AccessModal: React.FC<{
     };
 
     const sections = [
-        { title: "Général", icon: Shield, fields: ['canView', 'canEdit', 'canDelete', 'canManageUsers', 'canViewReports', 'canManageTasks'], color: 'bg-indigo-500' },
-        { title: "Scrum & Backlog", icon: Layers, fields: ['canVoirBacklog', 'canCreerBacklog', 'canModifierBacklog', 'canSupprimerBacklog', 'canGererBacklog', 'canCreerUserStory', 'canVoirUserStory', 'canModifierUserStory', 'canGererUserStory'], color: 'bg-emerald-500' },
-        { title: "Sprints", icon: GitBranch, fields: ['canVoirSprint', 'canCreerSprint', 'canModifierSprint', 'canSupprimerSprint', 'canGererSprint'], color: 'bg-blue-500' },
-        { title: "RH & Divers", icon: Calendar, fields: ['canModifierConges', 'canGererConges', 'canUploadFiles', 'canComment', 'canExport', 'canAccessSettings'], color: 'bg-purple-500' },
+        { title: t('admin.general_section'), icon: Shield, fields: ['canView', 'canEdit', 'canDelete', 'canManageUsers', 'canViewReports', 'canManageTasks'], color: 'bg-indigo-500' },
+        { title: t('admin.scrum_backlog_section'), icon: Layers, fields: ['canVoirBacklog', 'canCreerBacklog', 'canModifierBacklog', 'canSupprimerBacklog', 'canGererBacklog', 'canCreerUserStory', 'canVoirUserStory', 'canModifierUserStory', 'canGererUserStory'], color: 'bg-emerald-500' },
+        { title: t('admin.sprints_section'), icon: GitBranch, fields: ['canVoirSprint', 'canCreerSprint', 'canModifierSprint', 'canSupprimerSprint', 'canGererSprint'], color: 'bg-blue-500' },
+        { title: t('admin.hr_misc_section'), icon: Calendar, fields: ['canModifierConges', 'canGererConges', 'canUploadFiles', 'canComment', 'canExport', 'canAccessSettings'], color: 'bg-purple-500' },
     ];
 
     return (
@@ -389,17 +393,17 @@ const AccessModal: React.FC<{
                                 <Lock className="w-6 h-6" />
                             </div>
                             <DialogHeader>
-                                <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight italic">Accès <span className="text-primary-600">Projet</span></DialogTitle>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Configurez les droits d'accès</p>
+                                <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight italic">{t('admin.access_project_title')} <span className="text-primary-600">{t('admin.project_word')}</span></DialogTitle>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('admin.configure_access_rights')}</p>
                             </DialogHeader>
                         </div>
 
                         <div className="space-y-5">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Utilisateur</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{t('admin.user_select_label')}</Label>
                                 <Select value={selectedUser} onValueChange={setSelectedUser} disabled={!!initialData}>
                                     <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-100 font-bold">
-                                        <SelectValue placeholder="Choisir membre" />
+                                        <SelectValue placeholder={t('admin.choose_member')} />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-slate-100">
                                         {users.map(u => (
@@ -410,10 +414,10 @@ const AccessModal: React.FC<{
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Projet</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{t('admin.project_select_label')}</Label>
                                 <Select value={selectedProject} onValueChange={setSelectedProject} disabled={!!initialData}>
                                     <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-100 font-bold text-slate-600">
-                                        <SelectValue placeholder="Choisir projet" />
+                                        <SelectValue placeholder={t('admin.choose_project')} />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-slate-100">
                                         {projects.map(p => (
@@ -424,14 +428,16 @@ const AccessModal: React.FC<{
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Rôle Projet</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{t('admin.project_role_label')}</Label>
                                 <Select value={selectedRole} onValueChange={setSelectedRole}>
                                     <SelectTrigger className="h-12 rounded-2xl bg-white border-slate-100 font-bold">
-                                        <SelectValue placeholder="Choisir rôle" />
+                                        <SelectValue placeholder={t('admin.choose_role_access')} />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-slate-100">
-                                        {Object.keys(ROLE_THEMES).map(r => (
-                                            <SelectItem key={r} value={r} className="font-bold text-[11px] uppercase tracking-widest">{r.replace('_', ' ')}</SelectItem>
+                                        {Object.entries(ROLE_THEMES).map(([r, theme]) => (
+                                            <SelectItem key={r} value={r} className="font-bold text-[11px] uppercase tracking-widest">
+                                                {t(`admin.roles.${r}`, r.replace('_', ' '))}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -444,7 +450,7 @@ const AccessModal: React.FC<{
                                 disabled={loading || !selectedUser || !selectedProject}
                                 onClick={() => onSave({ userId: selectedUser, projectId: selectedProject, role: selectedRole, permissions: perms })}
                             >
-                                {loading ? 'TRAITEMENT...' : (initialData ? 'METTRE À JOUR' : 'CRÉER L\'ACCÈS')}
+                                {loading ? t('admin.processing') : (initialData ? t('admin.update_access') : t('admin.create_access'))}
                             </Button>
                         </div>
                     </div>
@@ -452,7 +458,7 @@ const AccessModal: React.FC<{
                     {/* Right Panel: Permissions Grid */}
                     <div className="flex-1 flex flex-col">
                         <div className="p-8 pb-4 border-b border-slate-100 bg-white">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary-600">Droits d'accès détaillés</h3>
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary-600">{t('admin.detailed_access_rights')}</h3>
                         </div>
                         <ScrollArea className="flex-1 p-8 bg-white">
                             <div className="grid grid-cols-1 gap-12 pb-12">

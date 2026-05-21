@@ -3,6 +3,7 @@ export const UserRole = {
     PROJECT_MANAGER: 'PROJECT_MANAGER',
     DEVELOPER: 'DEVELOPER',
     DESIGNER: 'DESIGNER',
+    TESTER: 'TESTER',
     CLIENT: 'CLIENT',
     RH: 'RH',
     AURA_AI: 'AURA_AI',

@@ -32,7 +32,7 @@ interface RoleAssignment {
   id: string;
   user: User;
   project: Project;
-  role: 'ADMIN' | 'PROJECT_MANAGER' | 'TEAM_MEMBER' | 'CLIENT';
+  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'DESIGNER' | 'TESTER' | 'RH' | 'CLIENT';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -49,32 +49,53 @@ interface ProjectMembersResponse {
   roleCounts: {
     ADMIN: number;
     PROJECT_MANAGER: number;
-    TEAM_MEMBER: number;
+    DEVELOPER: number;
+    DESIGNER: number;
+    TESTER: number;
+    RH: number;
     CLIENT: number;
   };
 }
 
 const ROLE_CONFIG = {
   ADMIN: {
-    label: 'Admin',
+    label: 'ADMIN',
     color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Crown,
     description: 'Accès complet au projet'
   },
   PROJECT_MANAGER: {
-    label: 'Chef de Projet',
+    label: 'CHEF DE PROJET',
     color: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: Briefcase,
     description: 'Gestion du projet et équipe'
   },
-  TEAM_MEMBER: {
-    label: 'Membre',
-    color: 'bg-green-100 text-green-800 border-green-200',
+  RH: {
+    label: 'RESSOURCES HUMAINES',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: UserCheck,
-    description: 'Participation au projet'
+    description: 'Gestion RH et administration'
+  },
+  DESIGNER: {
+    label: 'DESIGNER',
+    color: 'bg-pink-100 text-pink-800 border-pink-200',
+    icon: UserCheck,
+    description: 'Design et UI/UX'
+  },
+  TESTER: {
+    label: 'TESTEUR',
+    color: 'bg-amber-100 text-amber-800 border-amber-200',
+    icon: Eye,
+    description: 'Tests et QA'
+  },
+  DEVELOPER: {
+    label: 'DÉVELOPPEUR',
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    icon: UserCheck,
+    description: 'Développement'
   },
   CLIENT: {
-    label: 'Client',
+    label: 'CLIENT',
     color: 'bg-orange-100 text-orange-800 border-orange-200',
     icon: UserX,
     description: 'Accès consultation uniquement'
@@ -340,7 +361,7 @@ const AddMemberModal: React.FC<{
 }> = ({ isOpen, onClose, onAdd }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
-  const [selectedRole, setSelectedRole] = useState('TEAM_MEMBER');
+  const [selectedRole, setSelectedRole] = useState('DEVELOPER');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -367,7 +388,7 @@ const AddMemberModal: React.FC<{
     try {
       await onAdd(selectedUser, selectedRole, notes);
       setSelectedUser('');
-      setSelectedRole('TEAM_MEMBER');
+      setSelectedRole('DEVELOPER');
       setNotes('');
     } finally {
       setLoading(false);

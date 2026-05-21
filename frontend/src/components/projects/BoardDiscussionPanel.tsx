@@ -105,7 +105,7 @@ export const BoardDiscussionPanel: React.FC<BoardDiscussionPanelProps> = ({ isOp
             editMessage(editingMessage.id, html);
             setEditingMessage(null);
         } else {
-            sendMessage(html, replyTo?.id);
+            sendMessage(html);
         }
         editor.commands.clearContent();
         setReplyTo(null);

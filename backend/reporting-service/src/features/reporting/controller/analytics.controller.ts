@@ -11,8 +11,9 @@ export class AnalyticsController {
     @ApiOperation({ summary: 'Get global analytics data from projects and tasks' })
     async getGlobalAnalytics(
         @Headers('x-user-id') userId?: string,
-        @Headers('x-user-role') role?: string
+        @Headers('x-user-role') role?: string,
+        @Headers('authorization') authHeader?: string
     ) {
-        return this.analyticsService.getGlobalAnalytics(userId, role);
+        return this.analyticsService.getGlobalAnalytics(userId, role, authHeader);
     }
 }

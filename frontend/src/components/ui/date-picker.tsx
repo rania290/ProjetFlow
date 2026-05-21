@@ -3,7 +3,7 @@ import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -21,18 +21,16 @@ export interface DatePickerProps {
 export function DatePicker({ date, setDate, placeholder = "Choisir une date", className }: DatePickerProps) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "w-full justify-start text-left font-bold h-11 rounded-xl border-slate-200 hover:bg-slate-50 transition-all",
-            !date && "text-slate-400 font-medium",
-            className
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
-          {date ? format(date, "PPP", { locale: fr }) : <span>{placeholder}</span>}
-        </Button>
+      <PopoverTrigger
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "w-full justify-start text-left font-bold h-11 rounded-xl border-slate-200 hover:bg-slate-50 transition-all px-4 bg-white text-slate-700 cursor-pointer inline-flex items-center",
+          !date && "text-slate-400 font-medium",
+          className
+        )}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+        {date ? format(date, "PPP", { locale: fr }) : <span>{placeholder}</span>}
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 border-none shadow-2xl z-50" align="start">
         <Calendar

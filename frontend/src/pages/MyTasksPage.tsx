@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
     CheckCircle2,
     Circle,
@@ -21,30 +22,60 @@ import { useStore } from '../store/projectStore';
 import type { Task, TaskStatus } from '../types/project.types';
 import { TaskTimerButton } from '../components/tasks/TaskTimerButton';
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string; dot: string }> = {
-    TODO: { label: 'À faire', icon: Circle, color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-300' },
-    IN_PROGRESS: { label: 'En cours', icon: Play, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', dot: 'bg-blue-500' },
-    IN_TEST: { label: 'En test', icon: FlaskConical, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200', dot: 'bg-violet-500' },
-    DONE: { label: 'Terminé', icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+// Configs moved inside component to use t() — see STATUS_CONFIG / PRIORITY_CONFIG / TYPE_CONFIG below
+
+const STATUS_ICONS: Record<string, React.ElementType> = {
+    TODO: Circle,
+    IN_PROGRESS: Play,
+    IN_TEST: FlaskConical,
+    DONE: CheckCircle2,
 };
 
-const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    LOW: { label: 'Bas', color: 'text-slate-500', bg: 'bg-slate-100' },
-    MEDIUM: { label: 'Moyen', color: 'text-amber-700', bg: 'bg-amber-100' },
-    HIGH: { label: 'Élevé', color: 'text-orange-700', bg: 'bg-orange-100' },
-    CRITICAL: { label: 'Critique', color: 'text-red-700', bg: 'bg-red-100' },
+const STATUS_STYLES: Record<string, { color: string; bg: string; border: string; dot: string }> = {
+    TODO: { color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-300' },
+    IN_PROGRESS: { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', dot: 'bg-blue-500' },
+    IN_TEST: { color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200', dot: 'bg-violet-500' },
+    DONE: { color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
 };
 
-const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-    STORY: { label: 'Story', color: 'text-indigo-600' },
-    BUG: { label: 'Bug', color: 'text-red-600' },
-    TASK: { label: 'Tâche', color: 'text-blue-600' },
-    IMPROVEMENT: { label: 'Amélioration', color: 'text-teal-600' },
+const PRIORITY_STYLES: Record<string, { color: string; bg: string }> = {
+    LOW: { color: 'text-slate-500', bg: 'bg-slate-100' },
+    MEDIUM: { color: 'text-amber-700', bg: 'bg-amber-100' },
+    HIGH: { color: 'text-orange-700', bg: 'bg-orange-100' },
+    CRITICAL: { color: 'text-red-700', bg: 'bg-red-100' },
+};
+
+const useTaskConfigs = () => {
+    const { t } = useTranslation();
+
+    const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string; dot: string }> = {
+        TODO: { label: t('projects.task_status.TODO'), icon: STATUS_ICONS.TODO, ...STATUS_STYLES.TODO },
+        IN_PROGRESS: { label: t('projects.task_status.IN_PROGRESS'), icon: STATUS_ICONS.IN_PROGRESS, ...STATUS_STYLES.IN_PROGRESS },
+        IN_TEST: { label: t('projects.task_status.IN_TEST'), icon: STATUS_ICONS.IN_TEST, ...STATUS_STYLES.IN_TEST },
+        DONE: { label: t('projects.task_status.DONE'), icon: STATUS_ICONS.DONE, ...STATUS_STYLES.DONE },
+    };
+
+    const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+        LOW: { label: t('projects.task_priority.LOW'), ...PRIORITY_STYLES.LOW },
+        MEDIUM: { label: t('projects.task_priority.MEDIUM'), ...PRIORITY_STYLES.MEDIUM },
+        HIGH: { label: t('projects.task_priority.HIGH'), ...PRIORITY_STYLES.HIGH },
+        CRITICAL: { label: t('projects.task_priority.CRITICAL'), ...PRIORITY_STYLES.CRITICAL },
+    };
+
+    const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
+        STORY: { label: t('projects.task_type.STORY'), color: 'text-indigo-600' },
+        BUG: { label: t('projects.task_type.BUG'), color: 'text-red-600' },
+        TASK: { label: t('projects.task_type.TASK'), color: 'text-blue-600' },
+        IMPROVEMENT: { label: t('projects.task_type.IMPROVEMENT'), color: 'text-teal-600' },
+    };
+
+    return { STATUS_CONFIG, PRIORITY_CONFIG, TYPE_CONFIG, t };
 };
 
 export const MyTasksPage: React.FC = () => {
     const { state, dispatch } = useStore();
     const navigate = useNavigate();
+    const { t, STATUS_CONFIG } = useTaskConfigs();
     const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
@@ -104,9 +135,9 @@ export const MyTasksPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight">Mes Tâches</h1>
+                            <h1 className="text-xl font-black text-slate-900 tracking-tight">{t('team_custom.tasks')}</h1>
                             <p className="text-slate-500 text-xs font-medium mt-0.5">
-                                {allTasks.length} tâche{allTasks.length !== 1 ? 's' : ''} dans {state.projects.length} projet{state.projects.length !== 1 ? 's' : ''}
+                                {allTasks.length} {allTasks.length !== 1 ? t('team_custom.tasks') : t('projects.task_status.TODO').toLowerCase()} {t('common.ongoing_projects').toLowerCase().replace('projects','').replace('projets','')} {state.projects.length}
                             </p>
                         </div>
 
@@ -118,7 +149,7 @@ export const MyTasksPage: React.FC = () => {
                                     type="text"
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
-                                    placeholder="Rechercher..."
+                                    placeholder={t('common.search')}
                                     className="pl-9 pr-3 py-1.5 w-52 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                                 />
                             </div>
@@ -138,13 +169,13 @@ export const MyTasksPage: React.FC = () => {
                         {overdueCount > 0 && (
                             <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 border border-red-200 rounded-full text-xs font-bold text-red-700">
                                 <AlertTriangle className="w-3 h-3" />
-                                {overdueCount} en retard
+                                {overdueCount} {t('team_custom.overdue')}
                             </div>
                         )}
                         {todayCount > 0 && (
                             <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs font-bold text-amber-700">
                                 <CalendarDays className="w-3 h-3" />
-                                {todayCount} aujourd'hui
+                                {todayCount} {t('common.today').toLowerCase()}
                             </div>
                         )}
                         <div className="w-px h-4 bg-slate-200 mx-1 hidden sm:block" />
@@ -154,7 +185,7 @@ export const MyTasksPage: React.FC = () => {
                                 onClick={() => setStatusFilter(s)}
                                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${statusFilter === s ? 'bg-slate-800 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}
                             >
-                                {s === 'ALL' ? 'Toutes' : STATUS_CONFIG[s].label}
+                                {s === 'ALL' ? t('team_custom.all_roles').replace('rôles', 'tâches').replace('roles', 'tasks') : STATUS_CONFIG[s].label}
                             </button>
                         ))}
                     </div>
@@ -181,13 +212,17 @@ const ListView: React.FC<{
     onToggle: (t: Task) => void;
     onGoProject: (id: string, e: React.MouseEvent) => void;
 }> = ({ tasks, projectMap, onToggle, onGoProject }) => {
+    const { t, STATUS_CONFIG } = useTaskConfigs();
+
     // Group by status
-    const groups: { status: TaskStatus; label: string; tasks: Task[] }[] = [
-        { status: 'IN_PROGRESS', label: 'En cours', tasks: tasks.filter(t => t.status === 'IN_PROGRESS') },
-        { status: 'TODO', label: 'À faire', tasks: tasks.filter(t => t.status === 'TODO') },
-        { status: 'IN_TEST', label: 'En test', tasks: tasks.filter(t => t.status === 'IN_TEST') },
-        { status: 'DONE', label: 'Terminé', tasks: tasks.filter(t => t.status === 'DONE') },
-    ].filter(g => g.tasks.length > 0);
+    const groups: { status: TaskStatus; label: string; tasks: Task[] }[] = (
+        [
+            { status: 'IN_PROGRESS', label: t('projects.task_status.IN_PROGRESS'), tasks: tasks.filter(t => t.status === 'IN_PROGRESS') },
+            { status: 'TODO', label: t('projects.task_status.TODO'), tasks: tasks.filter(t => t.status === 'TODO') },
+            { status: 'IN_TEST', label: t('projects.task_status.IN_TEST'), tasks: tasks.filter(t => t.status === 'IN_TEST') },
+            { status: 'DONE', label: t('projects.task_status.DONE'), tasks: tasks.filter(t => t.status === 'DONE') },
+        ] as { status: TaskStatus; label: string; tasks: Task[] }[]
+    ).filter(g => g.tasks.length > 0);
 
     if (tasks.length === 0) return <NoResults />;
 
@@ -227,6 +262,7 @@ const TaskRow: React.FC<{
     onToggle: (t: Task) => void;
     onGoProject: (id: string, e: React.MouseEvent) => void;
 }> = ({ task, projectName, onToggle, onGoProject }) => {
+    const { PRIORITY_CONFIG, TYPE_CONFIG } = useTaskConfigs();
     const isDone = task.status === 'DONE';
     const prConf = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.MEDIUM;
     const typeConf = TYPE_CONFIG[task.type] || TYPE_CONFIG.TASK;
@@ -301,7 +337,10 @@ const BoardView: React.FC<{
     projectMap: Record<string, string>;
     onToggle: (t: Task) => void;
     onGoProject: (id: string, e: React.MouseEvent) => void;
-}> = ({ columns, projectMap, onToggle, onGoProject }) => (
+}> = ({ columns, projectMap, onToggle, onGoProject }) => {
+    const { STATUS_CONFIG, PRIORITY_CONFIG, TYPE_CONFIG } = useTaskConfigs();
+
+    return (
     <div className="flex gap-4 overflow-x-auto pb-4 items-start">
         {columns.map(({ status, tasks }) => {
             const conf = STATUS_CONFIG[status];
@@ -386,7 +425,7 @@ const BoardView: React.FC<{
                         </AnimatePresence>
                         {tasks.length === 0 && (
                             <div className="py-6 text-center text-xs font-bold text-slate-300 border-2 border-dashed border-slate-200 rounded-xl">
-                                Aucune tâche
+                                {STATUS_CONFIG.TODO.label === 'À faire' ? 'Aucune tâche' : 'No tasks'}
                             </div>
                         )}
                     </div>
@@ -394,32 +433,39 @@ const BoardView: React.FC<{
             );
         })}
     </div>
-);
+    );
+};
 
-const NoResults = () => (
-    <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
-        <Search className="w-10 h-10 text-slate-200 mb-3" />
-        <p className="text-sm font-bold text-slate-500">Aucune tâche trouvée</p>
-        <p className="text-xs text-slate-400 mt-1">Modifiez votre recherche ou filtre.</p>
-    </div>
-);
-
-const EmptyState: React.FC<{ onGoProjects: () => void }> = ({ onGoProjects }) => (
-    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-8 h-8 text-indigo-300" />
+const NoResults = () => {
+    const { t } = useTranslation();
+    return (
+        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
+            <Search className="w-10 h-10 text-slate-200 mb-3" />
+            <p className="text-sm font-bold text-slate-500">{t('team_custom.no_results')}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('team_custom.search_hint')}</p>
         </div>
-        <h3 className="text-base font-black text-slate-700 mb-1">Aucune tâche pour le moment</h3>
-        <p className="text-sm text-slate-400 mb-5 text-center max-w-xs">
-            Les tâches apparaîtront ici une fois créées dans vos projets. Commencez par ouvrir un projet.
-        </p>
-        <button
-            onClick={onGoProjects}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
-        >
-            <FolderKanban className="w-4 h-4" />
-            Voir mes projets
-            <ChevronRight className="w-4 h-4" />
-        </button>
-    </div>
-);
+    );
+};
+
+const EmptyState: React.FC<{ onGoProjects: () => void }> = ({ onGoProjects }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8 text-indigo-300" />
+            </div>
+            <h3 className="text-base font-black text-slate-700 mb-1">{t('dashboard_custom.no_active_projects')}</h3>
+            <p className="text-sm text-slate-400 mb-5 text-center max-w-xs">
+                {t('team_custom.create_project_hint')}
+            </p>
+            <button
+                onClick={onGoProjects}
+                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm"
+            >
+                <FolderKanban className="w-4 h-4" />
+                {t('common.projects')}
+                <ChevronRight className="w-4 h-4" />
+            </button>
+        </div>
+    );
+};

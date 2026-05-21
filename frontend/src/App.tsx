@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { StoreProvider } from './store/projectStore';
 import { AuthProvider } from './store/authStore';
 import { useAuth } from './hooks/useAuth';
@@ -29,6 +29,7 @@ const SuperSimpleAccessManager = lazy(() => import('./components/admin/AccessMan
 const UserProfilePage = lazy(() => import('./pages/UserProfilePage').then(module => ({ default: module.UserProfilePage })));
 const MyTasksPageReal = lazy(() => import('./pages/MyTasksPage').then(module => ({ default: module.MyTasksPage })));
 const TeamPageReal = lazy(() => import('./pages/TeamPage').then(module => ({ default: module.TeamPage })));
+const TeamMemberDetailPageReal = lazy(() => import('./pages/TeamMemberDetailPage').then(module => ({ default: module.TeamMemberDetailPage })));
 const MessagesPageReal = lazy(() => import('./pages/MessagesPage').then(module => ({ default: module.MessagesPage })));
 
 // HR Portal Pages
@@ -54,10 +55,16 @@ const LoadingScreen = () => (
   </div>
 );
 
-// Wrapper for automatic client redirection
+// Wrapper for automatic client redirection — applies to ALL protected routes
 const ClientRedirectWrapper = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
-  if (user?.role === 'CLIENT') {
+  const location = useLocation();
+
+  // Paths accessible to CLIENT role (besides login/landing)
+  const allowedClientPaths = ['/client-portal', '/profile'];
+  const isAllowed = allowedClientPaths.some(p => location.pathname.startsWith(p));
+
+  if (user?.role === 'CLIENT' && !isAllowed) {
     return <Navigate to="/client-portal" replace />;
   }
   return <>{children}</>;
@@ -65,6 +72,7 @@ const ClientRedirectWrapper = ({ children }: { children: React.ReactNode }) => {
 
 const MyTasksPage = () => <AppLayout title="Mes tâches"><MyTasksPageReal /></AppLayout>;
 const TeamPage = () => <AppLayout title="Équipe"><TeamPageReal /></AppLayout>;
+const TeamMemberDetailPage = () => <AppLayout title="Détail Membre"><TeamMemberDetailPageReal /></AppLayout>;
 const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
 const MessagesPage = () => <MessagesPageReal />;
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
@@ -128,6 +136,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <TeamPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/team/:memberId"
+                    element={
+                      <ProtectedRoute>
+                        <TeamMemberDetailPage />
                       </ProtectedRoute>
                     }
                   />

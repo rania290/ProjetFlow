@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketEntity } from '../model/ticket.entity';
 import { ClientEntity } from '../model/client.entity';
+import { ProjectEntity } from '../model/project.entity';
 import { CreateTicketDto, TicketCommentDto } from '../dto/create-ticket.dto';
 import { UpdateTicketDto } from '../dto/create-ticket.dto';
 import { EmailService } from '../../../utils/services/email.service';
@@ -18,16 +19,43 @@ export class TicketService {
     private readonly ticketRepository: Repository<TicketEntity>,
     @InjectRepository(ClientEntity)
     private readonly clientRepository: Repository<ClientEntity>,
+    @InjectRepository(ProjectEntity)
+    private readonly projectRepository: Repository<ProjectEntity>,
     private readonly emailService: EmailService,
     private readonly notificationService: NotificationService,
   ) {}
 
   async create(createTicketDto: CreateTicketDto, user: any) {
     const userEmail = user.email || user.preferred_username || user.sub;
+    const userRole = String(user?.role || '').toUpperCase();
     
     let client: ClientEntity | null = null;
     if (userEmail) {
       client = await this.clientRepository.findOne({ where: { email: userEmail } });
+    }
+
+    if (!client && userRole === 'CLIENT' && userEmail) {
+      client = this.clientRepository.create({
+        email: userEmail,
+        companyName: user.fullName || userEmail,
+        contactPerson: user.fullName || userEmail,
+        isActive: true,
+      });
+      client = await this.clientRepository.save(client);
+    }
+
+    if (!client && createTicketDto.projectId) {
+      const project = await this.projectRepository.findOne({
+        where: { id: createTicketDto.projectId },
+        relations: ['client'],
+      });
+      if (project?.client) {
+        client = project.client;
+      }
+    }
+
+    if (!client && createTicketDto.clientId) {
+      client = await this.clientRepository.findOne({ where: { id: createTicketDto.clientId } });
     }
 
     const ticket = this.ticketRepository.create({
@@ -72,14 +100,33 @@ export class TicketService {
     status?: string;
     priority?: string;
     assignedTo?: string;
-  }) {
+  }, user?: any) {
     const { page = 1, limit = 10, clientId, projectId, status, priority, assignedTo } = params;
     const skip = (page - 1) * limit;
+    const userEmail = user?.email || user?.preferred_username || user?.sub;
+
+    const userRole = String(user?.role || '').toUpperCase();
 
     const queryBuilder = this.ticketRepository
       .createQueryBuilder('ticket')
       .leftJoinAndSelect('ticket.client', 'client')
-      .leftJoinAndSelect('ticket.project', 'project');
+      .leftJoinAndSelect('ticket.project', 'project')
+      .leftJoinAndSelect('project.client', 'projectClient');
+
+    // Les clients ne voient que leurs tickets
+    if (userRole === 'CLIENT' && userEmail) {
+      queryBuilder.andWhere(
+        `(
+          LOWER(client.email) = LOWER(:clientEmail) OR
+          LOWER(projectClient.email) = LOWER(:clientEmail) OR
+          EXISTS(
+            SELECT 1 FROM jsonb_array_elements(ticket.timeline) AS timeline_entry
+            WHERE timeline_entry->> 'user' = :clientEmail
+          )
+        )`,
+        { clientEmail: userEmail },
+      );
+    }
 
     // Filtrer par client
     if (clientId) {
@@ -130,7 +177,7 @@ export class TicketService {
   async findOne(id: string, user: any) {
     const ticket = await this.ticketRepository.findOne({
       where: { id },
-      relations: ['client', 'project'],
+      relations: ['client', 'project', 'project.client'],
     });
 
     if (!ticket) {
@@ -286,13 +333,26 @@ export class TicketService {
   }
 
   private checkTicketAccess(ticket: TicketEntity, user: any) {
+    const userEmail = user?.email || user?.preferred_username || user?.sub;
+    const userRole = String(user?.role || '').toUpperCase();
+
     // Les admins et project managers peuvent voir tous les tickets
-    if (['ADMIN', 'PROJECT_MANAGER'].includes(user.role)) {
+    if (['ADMIN', 'PROJECT_MANAGER'].includes(userRole)) {
+      return;
+    }
+
+    // Les clients peuvent voir leurs propres tickets
+    if (userRole === 'CLIENT' && (
+      ticket.client?.email === userEmail ||
+      ticket.project?.client?.email === userEmail ||
+      ticket.timeline?.some(entry => entry.user === userEmail)
+    )) {
       return;
     }
 
     // Les autres utilisateurs ne peuvent voir que leurs tickets assignés
-    if (ticket.assignedTo !== user.email && !['TEAM_MEMBER'].includes(user.role)) {
+    const normalizedRole = String(user?.role || '').toUpperCase();
+    if (ticket.assignedTo !== userEmail && normalizedRole !== 'TEAM_MEMBER') {
       throw new ForbiddenException(CLIENT_PORTAL_CONSTANTS.ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
     }
   }

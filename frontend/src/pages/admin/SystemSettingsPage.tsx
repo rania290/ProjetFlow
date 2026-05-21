@@ -9,6 +9,8 @@ import { AppLayout } from '../../components/layout/AppLayout';
 import { adminApi } from '../../api/admin.api';
 import { useUi } from '../../store/uiStore';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../hooks/useAuth';
+import { authService } from '../../api/auth.service';
 
 /* ─── Reusable components from user template ─── */
 const Field = ({ label, hint, children }: { label: string, hint?: string, children: React.ReactNode }) => (
@@ -51,89 +53,112 @@ const Toggle = ({ value, onChange }: { value: boolean, onChange: (v: boolean) =>
 
 /* ─── Sections ─── */
 const GeneralSection = ({ edited, setEdited }: any) => {
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  const { user, updateProfile: updateUserProfile } = useAuth();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-    <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.instance_identity')}</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.configure_fundamental')}</p>
-    </div>
-
-    <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Field label={t('admin.instance_name')}>
-        <input
-          value={edited.siteName ?? ''}
-          onChange={e => setEdited((f: any) => ({ ...f, siteName: e.target.value }))}
-          style={{
-            width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
-            border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
-            transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
-            boxSizing: 'border-box',
-          }}
-          onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
-          onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
-          placeholder={t('admin.site_name_placeholder')}
-        />
-      </Field>
-
-      <Field label={t('admin.software_version')} hint={t('admin.read_only')}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F9FAFB', border: '1.5px solid #F3F4F6', borderRadius: 10 }}>
-          <Activity style={{ width: 15, height: 15, color: '#9CA3AF' }} />
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>{edited.version}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: 6 }}>{t('admin.stable')}</span>
-        </div>
-      </Field>
-    </div>
-
-    <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{t('admin.quota_colleagues')}</p>
-          <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>{t('admin.max_capacity')}</p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#111827', lineHeight: 1 }}>{edited.currentUsers}</span>
-          <span style={{ fontSize: 14, color: '#9CA3AF' }}> / {edited.maxUsers}</span>
-        </div>
+      <div>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Identité de l'instance</h2>
+        <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Configurez les informations fondamentales de votre plateforme.</p>
       </div>
 
-      <div style={{ background: '#F3F4F6', borderRadius: 99, height: 6, overflow: 'hidden' }}>
-        <div style={{
-          height: '100%',
-          width: `${Math.round(((edited.currentUsers || 0) / (edited.maxUsers || 1)) * 100)}%`,
-          background: (edited.currentUsers / edited.maxUsers) > 0.85 ? '#EF4444' : '#4F46E5',
-          borderRadius: 99,
-          transition: 'width 0.5s',
-        }} />
+      <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <Field label="Nom de l'instance">
+          <input
+            value={edited.siteName ?? ''}
+            onChange={e => setEdited((f: any) => ({ ...f, siteName: e.target.value }))}
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
+              border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
+              transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
+              boxSizing: 'border-box',
+            }}
+            onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
+            onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
+            placeholder="Nom du site"
+          />
+        </Field>
+
+        <Field label="Langue par défaut de la plateforme">
+          <select
+            value={edited.defaultLanguage ?? i18n.language}
+            onChange={e => {
+              const newLang = e.target.value;
+              setEdited((f: any) => ({ ...f, defaultLanguage: newLang }));
+              void i18n.changeLanguage(newLang);
+              if (user) {
+                updateUserProfile({ preferredLanguage: newLang as 'fr' | 'en' });
+                authService.updateProfile({ preferredLanguage: newLang as 'fr' | 'en' }).catch(() => {});
+              }
+            }}
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
+              border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
+              transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
+              boxSizing: 'border-box',
+            }}
+          >
+            <option value="fr">Français</option>
+            <option value="en">English (Anglais)</option>
+          </select>
+        </Field>
+
+        <Field label="Version logicielle" hint="Lecture seule">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F9FAFB', border: '1.5px solid #F3F4F6', borderRadius: 10 }}>
+            <Activity style={{ width: 15, height: 15, color: '#9CA3AF' }} />
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#6B7280' }}>{edited.version}</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, background: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: 6 }}>Stable</span>
+          </div>
+        </Field>
       </div>
 
-      <Field label={t('admin.max_limit')}>
-        <input
-          type="number"
-          value={edited.maxUsers ?? 0}
-          onChange={e => setEdited((f: any) => ({ ...f, maxUsers: parseInt(e.target.value) || 0 }))}
-          style={{
-            width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
-            border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
-            transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
-            boxSizing: 'border-box',
-          }}
-          onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
-          onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
-        />
-      </Field>
-    </div>
+      <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Quota collaborateurs</p>
+            <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>Capacité maximale de l'instance</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: 24, fontWeight: 800, color: '#111827', lineHeight: 1 }}>{edited.currentUsers}</span>
+            <span style={{ fontSize: 14, color: '#9CA3AF' }}> / {edited.maxUsers}</span>
+          </div>
+        </div>
+
+        <div style={{ background: '#F3F4F6', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${Math.round(((edited.currentUsers || 0) / (edited.maxUsers || 1)) * 100)}%`,
+            background: (edited.currentUsers / edited.maxUsers) > 0.85 ? '#EF4444' : '#4F46E5',
+            borderRadius: 99,
+            transition: 'width 0.5s',
+          }} />
+        </div>
+
+        <Field label="Limite maximale">
+          <input
+            type="number"
+            value={edited.maxUsers ?? 0}
+            onChange={e => setEdited((f: any) => ({ ...f, maxUsers: parseInt(e.target.value) || 0 }))}
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 500,
+              border: '1.5px solid #E5E7EB', borderRadius: 10, outline: 'none',
+              transition: 'border 0.18s', background: '#FAFAFA', color: '#111827',
+              boxSizing: 'border-box',
+            }}
+            onFocus={e => e.target.style.border = '1.5px solid #4F46E5'}
+            onBlur={e => e.target.style.border = '1.5px solid #E5E7EB'}
+          />
+        </Field>
+      </div>
     </div>
   );
 };
 
-const AppearanceSection = ({ edited, setEdited }: any) => {
-  const { t } = useTranslation();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+const AppearanceSection = ({ edited, setEdited }: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.visual_experience')}</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.define_ambiance')}</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Expérience visuelle</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Définissez l'ambiance globale de travail.</p>
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -160,17 +185,14 @@ const AppearanceSection = ({ edited, setEdited }: any) => {
         </button>
       ))}
     </div>
-    </div>
-  );
-};
+  </div>
+);
 
-const SystemSection = ({ edited, setEdited }: any) => {
-  const { t } = useTranslation();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+const SystemSection = ({ edited, setEdited }: any) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
     <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.service_steering')}</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.manage_core_state')}</p>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>Pilotage du service</h2>
+      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>Gérez l'état et l'accessibilité du noyau système.</p>
     </div>
 
     <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, overflow: 'hidden' }}>
@@ -180,14 +202,14 @@ const SystemSection = ({ edited, setEdited }: any) => {
             <Zap style={{ width: 18, height: 18, color: edited.maintenance ? '#CA8A04' : '#9CA3AF' }} />
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{t('admin.maintenance_mode')}</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>Mode maintenance</p>
           </div>
         </div>
         <Toggle value={!!edited.maintenance} onChange={v => setEdited((f: any) => ({ ...f, maintenance: v }))} />
       </div>
 
       <div style={{ padding: 24 }}>
-        <Field label={t('admin.maintenance_message')}>
+        <Field label="Message d'interruption">
           <textarea
             value={edited.maintenanceMessage ?? ''}
             onChange={e => setEdited((f: any) => ({ ...f, maintenanceMessage: e.target.value }))}
@@ -203,100 +225,18 @@ const SystemSection = ({ edited, setEdited }: any) => {
       </div>
     </div>
   </div>
-  );
-};
+);
 
-const LanguageSection = ({ edited, setEdited }: any) => {
-  const { i18n, t } = useTranslation();
 
-  const handleLanguageChange = (lang: string) => {
-    setEdited((f: any) => ({ ...f, language: lang }));
-    i18n.changeLanguage(lang);
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-      <div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.i18n_config')}</h2>
-        <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.manage_i18n_prefs')}</p>
-      </div>
-
-      <div style={{ background: '#fff', border: '1px solid #F3F4F6', borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <Field label={t('admin.select_language')}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[
-              { id: 'fr', label: 'Français', flag: '🇫🇷' },
-              { id: 'en', label: 'English', flag: '🇬🇧' },
-            ].map(lang => (
-              <button
-                key={lang.id}
-                onClick={() => handleLanguageChange(lang.id)}
-                style={{
-                  padding: '16px', borderRadius: 12, textAlign: 'left', cursor: 'pointer',
-                  border: edited.language === lang.id ? '2px solid #4F46E5' : '2px solid #F3F4F6',
-                  background: edited.language === lang.id ? '#EEF2FF' : '#FAFAFA',
-                  transition: 'all 0.18s',
-                  display: 'flex', alignItems: 'center', gap: 12
-                }}
-              >
-                <span style={{ fontSize: 20 }}>{lang.flag}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: edited.language === lang.id ? '#4338CA' : '#374151' }}>{lang.label}</span>
-                {edited.language === lang.id && <Check style={{ width: 14, height: 14, marginLeft: 'auto', color: '#4F46E5' }} />}
-              </button>
-            ))}
-          </div>
-        </Field>
-      </div>
-    </div>
-  );
-};
-
-const AccessSection = ({ userCount }: any) => {
-  const { t } = useTranslation();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-    <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{t('admin.governance_access')}</h2>
-      <p style={{ fontSize: 13, color: '#9CA3AF', lineHeight: 1.6 }}>{t('admin.manage_human_capital')}</p>
-    </div>
-
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {[
-        { href: '/admin/users', icon: Users, color: '#4F46E5', bg: '#EEF2FF', label: t('admin.talent_directory'), desc: t('admin.active_colleagues', { count: userCount }) },
-        { href: '/admin/access', icon: ShieldAlert, color: '#7C3AED', bg: '#F5F3FF', label: t('admin.security_matrix'), desc: t('admin.rbac_rights') },
-      ].map(item => (
-        <a
-          key={item.href}
-          href={item.href}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px',
-            background: '#fff', border: '1px solid #F3F4F6', borderRadius: 14,
-            textDecoration: 'none',
-          }}
-        >
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <item.icon style={{ width: 20, height: 20, color: item.color }} />
-          </div>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#111827', margin: 0 }}>{item.label}</p>
-            <p style={{ fontSize: 12, color: '#9CA3AF', margin: '2px 0 0' }}>{item.desc}</p>
-          </div>
-          <ChevronRight style={{ width: 14, height: 14, marginLeft: 'auto', color: '#D1D5DB' }} />
-        </a>
-      ))}
-    </div>
-  </div>
-  );
-};
 
 /* ─── Main Page ─── */
 export const SystemSettingsPage = () => {
-  const { t } = useTranslation();
   const [edited, setEdited] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<any>(null);
   const { updateSettings: updateUiSettings, settings: uiSettings } = useUi();
+  const { t } = useTranslation();
 
   useEffect(() => {
     adminApi.getSettings().then(data => {
@@ -319,9 +259,9 @@ export const SystemSettingsPage = () => {
         maintenance: !!(updated as any).maintenance,
         theme: (updated as any).theme as any,
       });
-      setFeedback({ type: 'success', message: t('admin.sync_success') });
+      setFeedback({ type: 'success', message: 'Instance synchronisée' });
     } catch {
-      setFeedback({ type: 'error', message: t('admin.sync_error') });
+      setFeedback({ type: 'error', message: 'Erreur système' });
     }
     setSaving(false);
     setTimeout(() => setFeedback(null), 3000);
@@ -330,15 +270,13 @@ export const SystemSettingsPage = () => {
   if (!edited) return null;
 
   const NAV = [
-    { id: 'general', label: t('admin.tab_general'), icon: Settings },
-    { id: 'appearance', label: t('admin.tab_appearance'), icon: Layers },
-    { id: 'language', label: t('admin.tab_language'), icon: Globe },
-    { id: 'system', label: t('admin.tab_system'), icon: Server },
-    { id: 'access', label: t('admin.tab_access'), icon: Lock },
+    { id: 'general', label: 'Général', icon: Settings },
+    { id: 'appearance', label: 'Apparence', icon: Layers },
+    { id: 'system', label: 'Système', icon: Server },
   ];
 
   return (
-    <AppLayout title={t('admin.system_settings')} subtitle={`Instance ${edited.siteName}`}>
+    <AppLayout title={t('admin.settings.title', 'System Settings')} subtitle={t('admin.settings.subtitle', 'Instance {{siteName}}', { siteName: edited.siteName })}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <div style={{ display: 'flex', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', gap: 32, alignItems: 'flex-start' }}>
@@ -382,7 +320,7 @@ export const SystemSettingsPage = () => {
             }}
           >
             {saving ? <div style={{ width: 14, height: 14, border: '2px solid #374151', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> : <Save style={{ width: 14, height: 14 }} />}
-            {saving ? t('admin.syncing') : t('admin.sync_instance')}
+            {saving ? 'Synchronisation...' : 'Synchroniser'}
           </button>
         </aside>
 
@@ -398,9 +336,7 @@ export const SystemSettingsPage = () => {
             >
               {activeTab === 'general' && <GeneralSection edited={edited} setEdited={setEdited} />}
               {activeTab === 'appearance' && <AppearanceSection edited={edited} setEdited={setEdited} />}
-              {activeTab === 'language' && <LanguageSection edited={edited} setEdited={setEdited} />}
               {activeTab === 'system' && <SystemSection edited={edited} setEdited={setEdited} />}
-              {activeTab === 'access' && <AccessSection userCount={edited.currentUsers ?? 0} />}
             </motion.div>
           </AnimatePresence>
         </main>

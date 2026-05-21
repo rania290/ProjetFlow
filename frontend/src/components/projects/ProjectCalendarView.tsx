@@ -50,8 +50,9 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({ tasks,
     const tasksByDate = useMemo(() => {
         const map: Record<string, Task[]> = {};
         tasks.forEach(task => {
-            if (task.dueDate) {
-                const dateStr = task.dueDate.split('T')[0]; // simple YYYY-MM-DD
+            const dateVal = task.dueDate || task.createdAt;
+            if (dateVal) {
+                const dateStr = dateVal.split('T')[0]; // simple YYYY-MM-DD
                 if (!map[dateStr]) map[dateStr] = [];
                 map[dateStr].push(task);
             }
@@ -63,8 +64,9 @@ export const ProjectCalendarView: React.FC<ProjectCalendarViewProps> = ({ tasks,
         const y = currentDate.getFullYear();
         const m = currentDate.getMonth();
         const monthTasks = tasks.filter((task) => {
-            if (!task.dueDate) return false;
-            const d = new Date(task.dueDate);
+            const dateVal = task.dueDate || task.createdAt;
+            if (!dateVal) return false;
+            const d = new Date(dateVal);
             return d.getFullYear() === y && d.getMonth() === m;
         });
         return {

@@ -72,7 +72,7 @@ export const ProjectsDashboardPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="text-right mr-4 hidden md:block">
-                        <p className="text-xs font-bold text-slate-900 leading-tight">Chef de Projet</p>
+                        <p className="text-xs font-bold text-slate-900 leading-tight">CHEF DE PROJET</p>
                         <p className="text-[10px] text-slate-400 font-medium">Session Active</p>
                     </div>
                     <Button

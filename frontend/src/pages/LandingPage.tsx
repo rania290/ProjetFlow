@@ -42,7 +42,7 @@ import { AnimatedCounter } from '../components/ui/AnimatedCounter';
 export const LandingPage: React.FC = () => {
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
     const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
-    const [guideTab, setGuideTab] = useState<'basics' | 'tickets' | 'aura'>('basics');
+    const [guideTab, setGuideTab] = useState<'basics' | 'tickets' | 'aura' | 'bi'>('basics');
     const [demoStep, setDemoStep] = useState(0);
     const [scrolled, setScrolled] = useState(false);
 

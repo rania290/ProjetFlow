@@ -22,9 +22,11 @@ import {
 } from "../../components/ui/table";
 import { Badge } from '../../components/ui/badge';
 import { timeTrackingApi } from '../../features/hr/time-tracking/api/time-tracking.api';
+import { adminApi } from '../../api/admin.api';
 
 export const AdminDashboard: React.FC = () => {
   const { t } = useTranslation();
+  const [users, setUsers] = useState<any[]>([]);
   const [showCriticalPanel, setShowCriticalPanel] = useState(false);
   const [selectedReport, setSelectedReport] = useState('avancement');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -176,15 +178,21 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const [data, allTasks] = await Promise.all([
+        const [data, allTasks, allUsers] = await Promise.all([
             reportingService.getGlobalAnalytics(),
-            projectsService.getAllTasks()
+            projectsService.getAllTasks(),
+            adminApi.getAllUsers()
         ]);
+        setUsers(allUsers);
         setAnalytics(data);
         dispatch({ type: 'SET_TASKS', tasks: allTasks });
       } catch (error) {
         console.warn('[Dashboard] API unavailable, using local store fallback:', error);
         // Fallback: use local store data so charts still display correctly
+        try {
+          const allUsers = await adminApi.getAllUsers();
+          setUsers(allUsers);
+        } catch (_) {}
         setAnalytics(computeFromStore());
       } finally {
         setLoading(false);
@@ -261,10 +269,50 @@ export const AdminDashboard: React.FC = () => {
   const totalSpent = projectCosts.reduce((acc, p) => acc + p.spent, 0);
   const totalEstimatedCost = summary.totalBudget;
 
-  const realResources = resources.map(r => ({
+  const processedResources = (() => {
+    if (users && users.length > 0) {
+      return users.map(user => {
+        const userTasks = state.tasks.filter(t => t.assigneeId === user.id);
+        const tasksCount = userTasks.length;
+        
+        let assignedPoints = 0;
+        let completedPoints = 0;
+        const assignedProjects = new Set<string>();
+
+        userTasks.forEach(t => {
+          const points = t.storyPoints || t.estimatedHours || 3;
+          assignedPoints += points;
+          if (t.status === 'DONE') {
+            completedPoints += points;
+          }
+          if (t.projectId) {
+            assignedProjects.add(t.projectId);
+          }
+        });
+
+        const load = Math.min(100, Math.round((assignedPoints / 40) * 100));
+
+        return {
+          id: user.id,
+          name: user.fullName || user.username || 'Collaborateur',
+          avatar: user.avatar,
+          role: user.role || 'Collaborateur',
+          tasksCount,
+          assignedPoints,
+          completedPoints,
+          projects: assignedProjects.size,
+          load
+        };
+      });
+    }
+    return resources.filter(r => r.name !== 'Inconnu' && r.name !== 'Unknown');
+  })();
+
+  const realResources = processedResources.map(r => ({
       ...r,
       efficiency: Math.round((r.completedPoints / Math.max(r.assignedPoints, 1)) * 100),
       remainingHours: Math.max(0, Math.round((r.assignedPoints - r.completedPoints) * 8)), // Assumption: 1 point = 8h
+      assignedHours: Math.round(r.assignedPoints * 8),
       workloadStatus: r.load > 90 ? 'OVERLOADED' : r.load > 60 ? 'OPTIMAL' : 'AVAILABLE',
       activeProjectsArray: r.projects
   }));
@@ -273,9 +321,10 @@ export const AdminDashboard: React.FC = () => {
   const totalCompletedHours = Math.round(realResources.reduce((acc, r) => acc + r.completedPoints * 8, 0));
   const averageGlobalEfficiency = summary.completionRate;
   
-  // Real Avancement Data
-  const projectsNames = projects.map(p => p.name);
-  const projectsProgress = projects.map(p => p.progress);
+  // Real Avancement Data — sorted from highest to lowest progress
+  const sortedProjects = [...projects].sort((a, b) => (b.progress || 0) - (a.progress || 0));
+  const projectsNames = sortedProjects.map(p => p.name);
+  const projectsProgress = sortedProjects.map(p => p.progress);
 
   const realProjectProgressData = {
     labels: projectsNames.length ? projectsNames : ['Aucun projet'],
@@ -1146,7 +1195,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <AppLayout title="Administration Globale" subtitle="Configuration, monitoring et reporting centralisé">
+    <AppLayout title={t('admin.dashboard.title', 'Global Administration')} subtitle={t('admin.dashboard.subtitle', 'Centralized configuration, monitoring and reporting')}>
       <div className="p-6">
         {renderReports()}
       </div>

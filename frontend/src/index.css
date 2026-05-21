@@ -99,6 +99,65 @@
   --app-ring: rgba(129, 140, 248, 0.55);
 }
 
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+}
+
+/* Global Dark Mode Overrides for hardcoded Tailwind classes */
+.dark .bg-white, 
+.dark .bg-slate-50,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/80,
+.dark .bg-\[\#f8fafc\],
+.dark .bg-gray-50 {
+  background-color: var(--app-surface) !important;
+}
+
+.dark .bg-slate-100,
+.dark .bg-slate-100\/50,
+.dark .bg-gray-100 {
+  background-color: var(--app-surface-2) !important;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: var(--app-text) !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: var(--app-muted) !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: var(--app-border) !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;

@@ -19,15 +19,19 @@ export class AnalyticsService {
         this.logger.log(`Project Service URL: ${this.projectServiceUrl}`);
     }
 
-    async getGlobalAnalytics(userId?: string, role?: string) {
+    async getGlobalAnalytics(userId?: string, role?: string, authHeader?: string) {
         this.logger.log(`Fetching global analytics from ${this.projectServiceUrl} for user: ${userId}`);
 
         const headers: Record<string, string> = {};
         if (userId) headers['x-user-id'] = userId;
         if (role) headers['x-user-role'] = role;
+        if (authHeader) headers['authorization'] = authHeader;
+
+        const authServiceUrl = this.configService.get<string>('USERS_SERVICE_URL') || 'http://127.0.0.1:3001';
+        const normalizedAuthUrl = authServiceUrl.replace('localhost', '127.0.0.1');
 
         // Fetch projects securely (service will filter them based on role and userId automatically)
-        const [projects, allTasks, assignments, invoiceStats, ticketStats] = await Promise.all([
+        const [projects, allTasks, assignments, invoiceStats, ticketStats, allUsers] = await Promise.all([
             this.safeGet<any[]>(`${this.projectServiceUrl}/projects`, [], headers),
             this.safeGet<any[]>(`${this.projectServiceUrl}/tasks`, [], headers),
             this.safeGet<any[]>(`${this.projectServiceUrl}/role-assignments/all`, [], headers),
@@ -39,9 +43,18 @@ export class AnalyticsService {
                 totalTickets: 0, openTickets: 0, inProgressTickets: 0,
                 resolvedTickets: 0, closedTickets: 0,
             })),
+            this.safeGet<any[]>(`${normalizedAuthUrl}/users`, [], headers),
         ]);
 
-        this.logger.log(`Backend Data: ${projects.length} projects, ${allTasks.length} brute tasks, ${assignments.length} assignments.`);
+        this.logger.log(`Backend Data: ${projects.length} projects, ${allTasks.length} brute tasks, ${assignments.length} assignments, ${allUsers.length} users.`);
+
+        const usersMap = new Map<string, any>();
+        allUsers.forEach((u: any) => {
+            const uid = String(u.id).trim().toLowerCase();
+            usersMap.set(uid, u);
+        });
+
+        const hasRealUsers = allUsers.length > 0;
 
         // 1. Build Project ID Set for secure filtering
         const projectIds = new Set(projects.map((p: any) => String(p.id || p.projectId || p._id)));
@@ -85,13 +98,16 @@ export class AnalyticsService {
             const rawUid = a.user?.id || a.userId;
             if (!rawUid) return;
             const uid = String(rawUid).trim().toLowerCase();
+            const realUser = usersMap.get(uid);
+
+            if (hasRealUsers && !realUser) return; // filter out if we have user list and user isn't in it
 
             if (!resourceMap.has(uid)) {
                 resourceMap.set(uid, {
                     id: uid,
-                    name: a.user?.fullName || a.userFullName || 'Utilisateur',
-                    role: a.role || 'Membre',
-                    avatar: a.user?.profilePhoto || null,
+                    name: realUser?.fullName || a.user?.fullName || a.userFullName || 'Utilisateur',
+                    role: realUser?.role || a.role || 'Membre',
+                    avatar: realUser?.profilePhoto || a.user?.profilePhoto || null,
                     tasksCount: 0,
                     assignedPoints: 0,
                     completedPoints: 0,
@@ -107,13 +123,16 @@ export class AnalyticsService {
             const assigneeId = task.assigneeId || task.assignee_id || task.userId || task.assignee?.id || task.memberId;
             if (!assigneeId) return;
             const aid = String(assigneeId).trim().toLowerCase();
+            const realUser = usersMap.get(aid);
+
+            if (hasRealUsers && !realUser) return; // filter out if we have user list and user isn't in it
 
             if (!resourceMap.has(aid)) {
                 resourceMap.set(aid, {
                     id: aid,
-                    name: task.assigneeName || task.userName || task.assignee?.fullName || `Ressource (${aid.substring(0, 5)})`,
-                    role: 'Assigné (Auto)',
-                    avatar: null,
+                    name: realUser?.fullName || task.assigneeName || task.userName || task.assignee?.fullName || `Ressource (${aid.substring(0, 5)})`,
+                    role: realUser?.role || 'Assigné (Auto)',
+                    avatar: realUser?.profilePhoto || null,
                     tasksCount: 0,
                     assignedPoints: 0,
                     completedPoints: 0,

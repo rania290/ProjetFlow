@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
-import { Calendar, Download, Share2, Sparkles, X, FileText } from 'lucide-react';
+import { Calendar, Download, Share2, Sparkles, X, FileText, Copy } from 'lucide-react';
 import { Button } from '../ui/button';
 import { jsPDF } from 'jspdf';
 
@@ -74,62 +74,73 @@ export const AuraReportView: React.FC<AuraReportViewProps> = ({ report, onClose 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-full border border-slate-100"
+      initial={{ opacity: 0, scale: 0.98, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98, y: 10 }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col h-full w-full max-w-4xl mx-auto border border-slate-200"
     >
       {/* Header */}
-      <div className="p-6 bg-gradient-to-br from-slate-900 to-indigo-950 text-white relative">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-indigo-300" />
+      <div className="p-6 sm:px-8 border-b border-slate-100 bg-white relative shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center shrink-0 border border-indigo-50 shadow-inner">
+              <Sparkles className="w-6 h-6 text-indigo-600" />
             </div>
             <div>
-              <h2 className="text-lg font-black tracking-tight">Rapport Hebdomadaire</h2>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300/80 flex items-center gap-2">
-                <Calendar className="w-3 h-3" />
-                {new Date(report.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </p>
+              <h2 className="text-[18px] font-bold text-slate-900 tracking-tight">Rapport de Synthèse Aura</h2>
+              <div className="flex items-center gap-3 mt-1 text-[12px] font-medium text-slate-500">
+                <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  {new Date(report.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <span className="hidden sm:inline text-slate-300">•</span>
+                <span className="hidden sm:inline text-indigo-600">Généré automatiquement par IA</span>
+              </div>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+            className="absolute top-6 right-6 sm:static w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
-        <p className="text-xs font-medium text-slate-300 line-clamp-2 bg-white/5 p-3 rounded-2xl border border-white/10">
-          {report.summary}
-        </p>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-8 prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-indigo-600 prose-li:text-slate-600 custom-scrollbar">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {report.content}
-        </ReactMarkdown>
+      <div className="flex-1 overflow-y-auto p-6 sm:p-10 bg-[#FAFAFA] custom-scrollbar scroll-smooth">
+        <div className="max-w-3xl mx-auto">
+          {/* Summary Box */}
+          <div className="mb-10 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+            <p className="text-[15px] font-medium text-slate-800 leading-relaxed pl-2">
+              {report.summary}
+            </p>
+          </div>
+
+          <div className="prose prose-slate max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-loose prose-p:text-[15px] prose-strong:text-indigo-900 prose-strong:font-bold prose-li:text-slate-600 prose-li:text-[15px] prose-hr:border-slate-200 prose-table:border-collapse prose-th:bg-slate-50 prose-th:font-semibold prose-th:text-slate-700 prose-th:p-3 prose-td:p-3 prose-td:border-t prose-td:border-slate-100">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {report.content}
+            </ReactMarkdown>
+          </div>
+        </div>
       </div>
 
       {/* Footer / Actions */}
-      <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+      <div className="p-4 sm:px-8 bg-white border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
         <Button 
           onClick={handleShare}
           variant="outline" 
-          size="sm" 
-          className="rounded-xl font-black uppercase text-[10px] tracking-widest h-10"
+          className="rounded-xl font-medium text-[13px] h-10 border-slate-200 hover:bg-slate-50 text-slate-700 transition-all"
         >
-          <Share2 className="w-4 h-4 mr-2" /> Partager
+          <Copy className="w-4 h-4 mr-2" /> Copier
         </Button>
         <Button 
           onClick={handleDownloadPDF}
-          size="sm" 
-          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6 shadow-lg shadow-indigo-600/20"
+          className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium text-[13px] h-10 px-6 shadow-sm transition-all"
         >
-          <Download className="w-4 h-4 mr-2" /> PDF
+          <Download className="w-4 h-4 mr-2" /> Télécharger PDF
         </Button>
       </div>
     </motion.div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/api-client';
 import { authService } from '../api/auth.service';
 import { useAuth } from '../hooks/useAuth';
@@ -36,6 +37,7 @@ interface UserProfile {
 
 export const UserProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { user, updateProfile: updateUserProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,6 +73,16 @@ export const UserProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
+      const STORAGE_KEY = `user_notif_prefs_${user.id}`;
+      const savedPrefs = localStorage.getItem(STORAGE_KEY);
+      let notifPrefs = { email: true, inApp: true };
+      if (savedPrefs) {
+        try {
+          notifPrefs = JSON.parse(savedPrefs);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       setProfile({
         fullName: user.fullName || '',
         email: user.email || '',
@@ -81,7 +93,7 @@ export const UserProfilePage: React.FC = () => {
         preferredLanguage: (user.preferredLanguage as 'fr' | 'en') || 'fr',
         profilePhoto: user.profilePhoto || '',
         createdAt: new Date().toISOString(),
-        notifications: { email: true, inApp: true }
+        notifications: notifPrefs
       });
       setPhotoPreview(user.profilePhoto || null);
       setLoading(false);
@@ -140,9 +152,13 @@ export const UserProfilePage: React.FC = () => {
 
       const updatedUser = await authService.updateProfile(profileData as any);
       updateUserProfile(updatedUser as any);
-      setSuccess('Profil mis à jour avec succès!');
+      // Apply language change immediately
+      if (profile.preferredLanguage) {
+        void i18n.changeLanguage(profile.preferredLanguage);
+      }
+      setSuccess(t('profile_custom.save') + ' ✓');
     } catch (err: any) {
-      setErrors({ submit: err.response?.data?.message || 'Erreur lors de la mise à jour du profil' });
+      setErrors({ submit: err.response?.data?.message || 'Error updating profile' });
     } finally {
       setSaving(false);
     }
@@ -151,6 +167,10 @@ export const UserProfilePage: React.FC = () => {
   const updateNotifications = async () => {
     setSaving(true);
     try {
+      if (user) {
+        const STORAGE_KEY = `user_notif_prefs_${user.id}`;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(profile.notifications));
+      }
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSuccess('Préférences de notification mises à jour');
     } catch (err: any) {
@@ -195,13 +215,7 @@ export const UserProfilePage: React.FC = () => {
   };
 
   const getRoleLabel = (role: string) => {
-    const roleMap: Record<string, string> = {
-      'ADMIN': 'Administrateur',
-      'PROJECT_MANAGER': 'Gestionnaire',
-      'TEAM_MEMBER': 'Membre',
-      'OBSERVER': 'Observateur'
-    };
-    return roleMap[role] || role;
+    return t(`admin.roles.${role}`, { defaultValue: role });
   };
 
   if (loading) {
@@ -222,14 +236,14 @@ export const UserProfilePage: React.FC = () => {
               <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
                 <Settings className="w-5 h-5" />
               </div>
-              <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Paramètres du Compte</h1>
+              <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">{t('common.settings')}</h1>
             </div>
             <Button
               variant="ghost"
               onClick={() => navigate('/dashboard')}
               className="text-slate-500 hover:bg-slate-100"
             >
-              Quitter
+              {t('common.exit_portal')}
               <XIcon className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -241,9 +255,9 @@ export const UserProfilePage: React.FC = () => {
         <AnimatePresence>
           {successMessage && (
             <motion.div
-              initial={{ opacity: 0, height: 0, mb: 0 }}
-              animate={{ opacity: 1, height: 'auto', mb: 24 }}
-              exit={{ opacity: 0, height: 0, mb: 0 }}
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 text-green-700 shadow-sm"
             >
               <CheckCircle className="w-5 h-5" />
@@ -253,9 +267,9 @@ export const UserProfilePage: React.FC = () => {
 
           {errors.submit && (
             <motion.div
-              initial={{ opacity: 0, height: 0, mb: 0 }}
-              animate={{ opacity: 1, height: 'auto', mb: 24 }}
-              exit={{ opacity: 0, height: 0, mb: 0 }}
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 shadow-sm"
             >
               <AlertCircle className="w-5 h-5" />
@@ -313,19 +327,19 @@ export const UserProfilePage: React.FC = () => {
                   value="profile"
                   className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
                 >
-                  Informations
+                  {t('profile_custom.personal_details')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="security"
                   className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
                 >
-                  Sécurité
+                  {t('profile_custom.security')}
                 </TabsTrigger>
                 <TabsTrigger
                   value="notifications"
                   className="rounded-none bg-transparent h-full data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 pt-0 pb-0 px-1 text-sm font-bold uppercase tracking-wider text-slate-500 data-[state=active]:text-blue-600"
                 >
-                  Préférences
+                  {t('profile_custom.preferences')}
                 </TabsTrigger>
               </TabsList>
 
@@ -333,13 +347,13 @@ export const UserProfilePage: React.FC = () => {
               <TabsContent value="profile" className="mt-8 outline-none">
                 <Card className="border-slate-200 shadow-sm rounded-2xl">
                   <CardHeader>
-                    <CardTitle className="text-base font-black uppercase tracking-tight text-slate-800">Détails Personnels</CardTitle>
-                    <CardDescription>Mettez à jour vos informations publiques.</CardDescription>
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-slate-800">{t('profile_custom.personal_details')}</CardTitle>
+                    <CardDescription>{t('profile_custom.personal_details_desc')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="fullName" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nom complet</Label>
+                        <Label htmlFor="fullName" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('profile_custom.full_name')}</Label>
                         <Input
                           id="fullName"
                           value={profile.fullName}
@@ -349,7 +363,7 @@ export const UserProfilePage: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Adresse e-mail</Label>
+                        <Label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('profile_custom.email')}</Label>
                         <div className="relative">
                           <Input
                             id="email"
@@ -363,28 +377,45 @@ export const UserProfilePage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Téléphone (facultatif)</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={profile.phoneNumber || ''}
-                        onChange={(e) => setProfile({ ...profile, phoneNumber: e.target.value })}
-                        placeholder="+216 -- --- ---"
-                        className="h-11 bg-slate-50/50"
-                      />
+                    <div className="grid grid-cols-1 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('profile_custom.phone')}</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={profile.phoneNumber || ''}
+                          onChange={(e) => setProfile({ ...profile, phoneNumber: e.target.value })}
+                          placeholder="+216 -- --- ---"
+                          className="h-11 bg-slate-50/50"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bio" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bio / Position</Label>
+                      <Label htmlFor="bio" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('profile_custom.bio')}</Label>
                       <Textarea
                         id="bio"
                         value={profile.bio || ''}
                         onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                         rows={3}
                         className="resize-none bg-slate-50/50"
-                        placeholder="Parlez-nous de votre rôle..."
+                        placeholder={t('profile_custom.bio_placeholder')}
                       />
+                    </div>
+
+                    {/* Language Selector */}
+                    <div className="space-y-2">
+                      <Label htmlFor="preferredLanguage" className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('profile_custom.preferred_language')}</Label>
+                      <p className="text-[11px] text-slate-400">{t('profile_custom.preferred_language_desc')}</p>
+                      <select
+                        id="preferredLanguage"
+                        value={profile.preferredLanguage}
+                        onChange={(e) => setProfile({ ...profile, preferredLanguage: e.target.value as 'fr' | 'en' })}
+                        className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      >
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="en">🇬🇧 English</option>
+                      </select>
                     </div>
                   </CardContent>
                   <CardFooter className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end">
@@ -398,7 +429,7 @@ export const UserProfilePage: React.FC = () => {
                       ) : (
                         <Save className="w-4 h-4 mr-2" />
                       )}
-                      {saving ? 'Enregistrement...' : 'Enregistrer'}
+                      {saving ? t('profile_custom.saving') : t('profile_custom.save')}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -411,16 +442,16 @@ export const UserProfilePage: React.FC = () => {
                     <div className="flex gap-3 items-start p-4 bg-amber-50/50 border border-amber-100 rounded-xl mb-4">
                       <Shield className="w-5 h-5 text-amber-500 mt-0.5" />
                       <div>
-                        <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider">Sécurité du compte</h3>
+                        <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider">{t('profile_custom.security')}</h3>
                         <p className="text-xs text-amber-700/80 mt-1 leading-relaxed">
-                          Renforcez votre sécurité en utilisant un mot de passe complexe et unique.
+                          {t('common.password')}
                         </p>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-5">
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mot de passe actuel</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.password')}</Label>
                       <div className="relative">
                         <Input
                           type={showPasswords.current ? 'text' : 'password'}
@@ -442,7 +473,7 @@ export const UserProfilePage: React.FC = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nouveau mot de passe</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.password')} (New)</Label>
                       <div className="relative">
                         <Input
                           type={showPasswords.new ? 'text' : 'password'}
@@ -464,7 +495,7 @@ export const UserProfilePage: React.FC = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmer le nouveau mot de passe</Label>
+                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('common.password')} (Confirm)</Label>
                       <div className="relative">
                         <Input
                           type={showPasswords.confirm ? 'text' : 'password'}
@@ -496,7 +527,7 @@ export const UserProfilePage: React.FC = () => {
                       ) : (
                         <Lock className="w-4 h-4 mr-2" />
                       )}
-                      {saving ? 'Changement...' : 'Mettre à jour'}
+                      {saving ? t('profile_custom.saving') : t('profile_custom.save')}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -506,23 +537,23 @@ export const UserProfilePage: React.FC = () => {
               <TabsContent value="notifications" className="mt-8 outline-none">
                 <Card className="border-slate-200 shadow-sm rounded-2xl">
                   <CardHeader>
-                    <CardTitle className="text-base font-black uppercase tracking-tight text-slate-800">Préférences de Contact</CardTitle>
-                    <CardDescription>Gérez comment et quand nous pouvons vous contacter.</CardDescription>
+                    <CardTitle className="text-base font-black uppercase tracking-tight text-slate-800">{t('profile_custom.preferences')}</CardTitle>
+                    <CardDescription>{t('messages.preferences')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {[
                       {
                         id: 'email',
                         icon: Mail,
-                        title: 'Notifications par email',
-                        desc: 'Recevez les rapports et alertes par e-mail',
+                        title: t('messages.alert_sounds'),
+                        desc: t('messages.preferences'),
                         value: profile.notifications.email
                       },
                       {
                         id: 'inApp',
                         icon: Bell,
-                        title: 'Notifications système',
-                        desc: 'Alertes en temps réel dans l\'interface',
+                        title: t('messages.push_notifications'),
+                        desc: t('messages.preferences'),
                         value: profile.notifications.inApp
                       }
                     ].map((item) => (
@@ -560,7 +591,7 @@ export const UserProfilePage: React.FC = () => {
                       ) : (
                         <Bell className="w-4 h-4 mr-2" />
                       )}
-                      {saving ? 'Enregistrement...' : 'Sauvegarder'}
+                      {saving ? t('profile_custom.saving') : t('profile_custom.save')}
                     </Button>
                   </CardFooter>
                 </Card>

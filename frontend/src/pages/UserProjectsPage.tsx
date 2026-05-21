@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useStore } from '../store/projectStore';
 import { useAuth } from '../hooks/useAuth';
@@ -26,7 +27,7 @@ import { FadeInView } from '../components/ui/FadeInView';
 interface Project {
   id: string;
   name: string;
-  role: 'ADMIN' | 'PROJECT_MANAGER' | 'TEAM_MEMBER' | 'CLIENT';
+  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'DESIGNER' | 'TESTER' | 'RH' | 'CLIENT';
   isActive: boolean;
   assignedAt: string;
   expiresAt?: string;
@@ -35,25 +36,43 @@ interface Project {
 
 const ROLE_CONFIG = {
   ADMIN: {
-    label: 'Admin',
+    label: 'ADMIN',
     color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Crown,
     description: 'Accès complet au projet'
   },
   PROJECT_MANAGER: {
-    label: 'Chef de Projet',
+    label: 'CHEF DE PROJET',
     color: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: Briefcase,
     description: 'Gestion du projet et équipe'
   },
-  TEAM_MEMBER: {
-    label: 'Membre',
-    color: 'bg-green-100 text-green-800 border-green-200',
+  RH: {
+    label: 'RESSOURCES HUMAINES',
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: UserCheck,
-    description: 'Participation au projet'
+    description: 'Gestion RH et administratrice'
+  },
+  DEVELOPER: {
+    label: 'DÉVELOPPEUR',
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    icon: UserCheck,
+    description: 'Développement et code'
+  },
+  DESIGNER: {
+    label: 'DESIGNER',
+    color: 'bg-pink-100 text-pink-800 border-pink-200',
+    icon: UserCheck,
+    description: 'Design et UX/UI'
+  },
+  TESTER: {
+    label: 'TESTEUR',
+    color: 'bg-amber-100 text-amber-800 border-amber-200',
+    icon: Eye,
+    description: 'Tests et QA'
   },
   CLIENT: {
-    label: 'Client',
+    label: 'CLIENT',
     color: 'bg-orange-100 text-orange-800 border-orange-200',
     icon: UserX,
     description: 'Accès consultation uniquement'
@@ -71,6 +90,31 @@ export const UserProjectsPage: React.FC = () => {
   const { state, dispatch } = useStore();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const ROLE_CONFIG = {
+    ADMIN: { label: t('admin.roles.ADMIN'), color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Crown, description: t('admin.role_descriptions.ADMIN') },
+    PROJECT_MANAGER: { label: t('admin.roles.PROJECT_MANAGER'), color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Briefcase, description: t('admin.role_descriptions.PROJECT_MANAGER') },
+    RH: { label: t('admin.roles.RH'), color: 'bg-purple-100 text-purple-800 border-purple-200', icon: UserCheck, description: t('admin.role_descriptions.RH') },
+    DEVELOPER: { label: t('admin.roles.DEVELOPER'), color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: UserCheck, description: t('admin.role_descriptions.DEVELOPER') },
+    DESIGNER: { label: t('admin.roles.DESIGNER'), color: 'bg-pink-100 text-pink-800 border-pink-200', icon: UserCheck, description: t('admin.role_descriptions.DESIGNER') },
+    TESTER: { label: t('admin.roles.TESTER'), color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Eye, description: t('admin.role_descriptions.TESTER') },
+    CLIENT: { label: t('admin.roles.CLIENT'), color: 'bg-orange-100 text-orange-800 border-orange-200', icon: UserX, description: t('admin.role_descriptions.CLIENT') }
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    PLANNED: t('projects.status.PLANNED', { defaultValue: 'PLANIFIÉ' }),
+    IN_PROGRESS: t('projects.status.IN_PROGRESS', { defaultValue: 'EN COURS' }),
+    DELIVERED: t('projects.status.DELIVERED', { defaultValue: 'LIV RÉ' }),
+    SUSPENDED: t('projects.status.SUSPENDED', { defaultValue: 'SUSPENDU' }),
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    PLANNED: 'bg-slate-100 text-slate-600 border-slate-200',
+    IN_PROGRESS: 'bg-blue-100 text-blue-700 border-blue-200',
+    DELIVERED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    SUSPENDED: 'bg-amber-100 text-amber-800 border-amber-200',
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -86,7 +130,7 @@ export const UserProjectsPage: React.FC = () => {
         return isAdmin || isMember || isManager || isClient;
       })
       .map((p): Project => {
-        let role: Project['role'] = 'TEAM_MEMBER';
+        let role: Project['role'] = 'DEVELOPER';
         if (p.managerId === user?.id) role = 'PROJECT_MANAGER';
         if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') role = 'ADMIN';
 
@@ -117,7 +161,6 @@ export const UserProjectsPage: React.FC = () => {
 
   const filteredProjects = userProjects?.projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase());
-
     return matchesSearch;
   }) || [];
 
@@ -127,7 +170,7 @@ export const UserProjectsPage: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    return new Date(dateString).toLocaleDateString(t('common.locale', { defaultValue: 'fr-FR' }), {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -151,7 +194,7 @@ export const UserProjectsPage: React.FC = () => {
 
 
   return (
-    <AppLayout title="Mes Projets" subtitle="Accès et rôles administratifs">
+    <AppLayout title={t('projects.my_projects', 'My Projects')} subtitle={t('projects.administrative_access', 'Administrative access and roles')}>
       <FadeInView className="p-4 md:p-6 space-y-6">
         {/* Glass Header & Actions */}
         <Card className="p-6 shadow-sm border-slate-100">
@@ -160,10 +203,10 @@ export const UserProjectsPage: React.FC = () => {
 
                 <div>
                   <h1 className="text-2xl font-black text-transparent bg-clip-text gradient-text font-display flex items-center gap-2 uppercase tracking-wide">
-                    Mes Projets
+                    {t('projects.my_projects', 'My Projects')}
                   </h1>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                    {userProjects?.userFullName} • GESTION DES ACCÈS
+                    {userProjects?.userFullName} • {t('projects.access_management', 'ACCESS MANAGEMENT')}
                   </p>
                 </div>
             </div>
@@ -173,7 +216,7 @@ export const UserProjectsPage: React.FC = () => {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-500 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Rechercher un projet..."
+                  placeholder={t('projects.search_placeholder', 'Search a project...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-sm transition-all placeholder:text-slate-400/70"
@@ -202,11 +245,11 @@ export const UserProjectsPage: React.FC = () => {
         {filteredProjects.length === 0 ? (
           <Card className="p-12 text-center shadow-sm border-slate-100">
             <Briefcase className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <h3 className="text-lg font-black text-slate-800 font-display uppercase tracking-tight">Aucun projet trouvé</h3>
+            <h3 className="text-lg font-black text-slate-800 font-display uppercase tracking-tight">{t('projects.no_projects_found', 'No projects found')}</h3>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 font-black">
               {searchTerm
-                ? 'Essayez de modifier vos filtres'
-                : 'Vous n\'êtes assigné à aucun projet pour le moment'}
+                ? t('projects.adjust_filters', 'Adjust your filters or create a new roadmap to start managing.')
+                : t('projects.empty_list', 'Empty list')}
             </p>
           </Card>
         ) : (
@@ -259,13 +302,13 @@ export const UserProjectsPage: React.FC = () => {
                           ? 'bg-red-50 text-red-600 border-red-100'
                           : ROLE_CONFIG[project.role].color
                           }`}>
-                          {expired ? 'ACCÈS EXPIRÉ' : ROLE_CONFIG[project.role].label}
+                          {expired ? t('common.expired', 'EXPIRED ACCESS') : ROLE_CONFIG[project.role].label}
                         </span>
 
                         {project.isActive && !expired && (
                           <div className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-tight">
                             <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                            ACTIF
+                            {t('common.active', 'ACTIVE')}
                           </div>
                         )}
 
@@ -277,7 +320,7 @@ export const UserProjectsPage: React.FC = () => {
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 text-[11px] font-bold text-slate-400">
                           <Calendar className="w-4 h-4 text-slate-300" />
-                          <span>Assigné le {formatDate(project.assignedAt)}</span>
+                          <span>{t('projects.assigned_on', 'Assigned on')} {formatDate(project.assignedAt)}</span>
                         </div>
 
                         {project.expiresAt && (
@@ -285,10 +328,10 @@ export const UserProjectsPage: React.FC = () => {
                             <Clock className="w-4 h-4 opacity-70" />
                             <span>
                               {expired
-                                ? `Expiré le ${formatDate(project.expiresAt)}`
+                                ? `${t('projects.expired_on', 'Expired on')} ${formatDate(project.expiresAt)}`
                                 : daysUntilExpiry !== null && daysUntilExpiry <= 7
-                                  ? `Expire dans ${daysUntilExpiry} jour(s)`
-                                  : `Echéance : ${formatDate(project.expiresAt)}`
+                                  ? `${t('projects.expires_in', 'Expires in')} ${daysUntilExpiry} ${t('projects.days', 'day(s)')}`
+                                  : `${t('projects.deadline', 'Deadline :')} ${formatDate(project.expiresAt)}`
                               }
                             </span>
                           </div>
@@ -305,12 +348,12 @@ export const UserProjectsPage: React.FC = () => {
                         className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest border border-slate-100 hover:border-indigo-100 shadow-sm"
                       >
                         <Eye className="w-4 h-4" />
-                        Aperçu
+                        {t('projects.preview', 'Preview')}
                       </button>
                       <button 
                         onClick={() => setSelectedProjectForSettings(project._source)}
                         className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-800 rounded-xl transition-all border border-slate-100 shadow-sm"
-                        title="Paramètres"
+                        title={t('common.settings', 'Settings')}
                       >
                         <Settings className="w-4 h-4" />
                       </button>

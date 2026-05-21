@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Plus, Edit2, Trash2, Shield, Users, Mail, Calendar, Filter, MoreVertical, AlertCircle,
     UserPlus, X, Check, UserCheck, ShieldCheck, UserX, ChevronDown, Camera, User as UserIcon,
     Pencil, PlusCircle, AlertTriangle, Settings, Lock, Crown, Key,
-    Briefcase, RotateCcw, Save
+    Briefcase, RotateCcw, Save, Eye
 } from 'lucide-react';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { AppLayout } from '../../components/layout/AppLayout';
@@ -98,7 +99,7 @@ const PERMISSIONS_BY_CATEGORY = Object.entries(PERMISSIONS_CONFIG).reduce((acc, 
 // Configuration des rôles avec permissions par défaut
 const ROLE_PERMISSIONS_CONFIG = {
     ADMIN: {
-        label: 'Admin',
+        label: 'ADMIN',
         color: '#ef4444',
         bgColor: '#fef2f2',
         borderColor: '#fca5a5',
@@ -109,7 +110,7 @@ const ROLE_PERMISSIONS_CONFIG = {
         defaultPermissions: Object.keys(PERMISSIONS_CONFIG)
     },
     PROJECT_MANAGER: {
-        label: 'Chef de Projet',
+        label: 'CHEF DE PROJET',
         color: '#3b82f6',
         bgColor: '#eff6ff',
         borderColor: '#93c5fd',
@@ -128,7 +129,7 @@ const ROLE_PERMISSIONS_CONFIG = {
         ]
     },
     DEVELOPER: {
-        label: 'Développeur',
+        label: 'DÉVELOPPEUR',
         color: '#6366f1',
         bgColor: '#eef2ff',
         borderColor: '#a5b4fc',
@@ -146,7 +147,7 @@ const ROLE_PERMISSIONS_CONFIG = {
         ]
     },
     DESIGNER: {
-        label: 'Designer',
+        label: 'DESIGNER',
         color: '#ec4899',
         bgColor: '#fdf2f8',
         borderColor: '#f9a8d4',
@@ -163,8 +164,26 @@ const ROLE_PERMISSIONS_CONFIG = {
             'VIEW_REPORTS'
         ]
     },
+    TESTER: {
+        label: 'TESTEUR',
+        color: '#f59e0b',
+        bgColor: '#fffbeb',
+        borderColor: '#fcd34d',
+        icon: Eye,
+        description: 'Tests et QA',
+        gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%)',
+        shadow: '0 4px 20px rgba(245, 158, 11, 0.3)',
+        defaultPermissions: [
+            'READ_USER',
+            'READ_PROJECT',
+            'CREATE_TASK', 'READ_TASK', 'UPDATE_TASK',
+            'CREATE_TICKET', 'READ_TICKET', 'UPDATE_TICKET',
+            'SEND_MESSAGE', 'READ_MESSAGE',
+            'VIEW_REPORTS'
+        ]
+    },
     CLIENT: {
-        label: 'Client',
+        label: 'CLIENT',
         color: '#06b6d4',
         bgColor: '#ecfeff',
         borderColor: '#67e8f9',
@@ -180,7 +199,7 @@ const ROLE_PERMISSIONS_CONFIG = {
         ]
     },
     RH: {
-        label: 'Ressources Humaines',
+        label: 'RESSOURCES HUMAINES',
         color: '#9333ea',
         bgColor: '#faf5ff',
         borderColor: '#d8b4fe',
@@ -198,11 +217,13 @@ const ROLE_PERMISSIONS_CONFIG = {
 };
 
 const roleConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
-    ADMIN: { label: 'Admin', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
-    PROJECT_MANAGER: { label: 'Chef de Projet', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
-    DEVELOPER: { label: 'Développeur', color: 'text-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-    CLIENT: { label: 'Client', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-    RH: { label: 'Ressources Humaines', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-200' },
+    ADMIN: { label: 'ADMIN', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' },
+    PROJECT_MANAGER: { label: 'CHEF DE PROJET', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
+    DEVELOPER: { label: 'DÉVELOPPEUR', color: 'text-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+    DESIGNER: { label: 'DESIGNER', color: 'text-pink-700', bg: 'bg-pink-50', border: 'border-pink-200' },
+    TESTER: { label: 'TESTEUR', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
+    RH: { label: 'RESSOURCES HUMAINES', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-200' },
+    CLIENT: { label: 'CLIENT', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-200' },
 };
 
 
@@ -216,6 +237,7 @@ const avatarColor = (role: string) => {
         DESIGNER: 'from-pink-500 to-pink-700',
         CLIENT: 'from-cyan-500 to-cyan-700',
         RH: 'from-purple-500 to-purple-700',
+        TESTER: 'from-amber-500 to-amber-700',
         AURA_AI: 'from-amber-400 to-orange-600',
     };
     return map[role] ?? 'from-slate-500 to-slate-700';
@@ -225,6 +247,7 @@ const avatarColor = (role: string) => {
 
 /* ───────────────────────── component ───────────────────────── */
 export const UsersManagementPage: React.FC = () => {
+    const { t } = useTranslation();
     type UserWithPermissions = User & { permissions?: string[] };
     type RoleKey = keyof typeof ROLE_PERMISSIONS_CONFIG;
     const isRoleKey = (role: string): role is RoleKey => role in ROLE_PERMISSIONS_CONFIG;
@@ -493,7 +516,7 @@ export const UsersManagementPage: React.FC = () => {
         );
 
     return (
-        <AppLayout title="Gestion des Utilisateurs" subtitle="CRUD complet et gestion des rôles (RBAC)">
+        <AppLayout title={t('admin.users_title')} subtitle={t('admin.crud_subtitle')}>
             <FadeInView className="p-4 md:p-6 space-y-6">
                 {/* ── Toast notifications ── */}
                 <div className="fixed top-5 right-5 z-50 space-y-2 pointer-events-none">
@@ -521,14 +544,14 @@ export const UsersManagementPage: React.FC = () => {
                                 <div>
                                     <div className="flex items-center gap-3">
                                         <h1 className="text-xl font-black text-slate-900 font-display flex items-center gap-2 uppercase tracking-tight">
-                                            Utilisateurs
+                                            {t('admin.users_title')}
                                             <span className="px-2 py-0.5 rounded-lg bg-slate-50 text-slate-400 text-[10px] font-black border border-slate-100">
                                                 {stats.total}
                                             </span>
                                         </h1>
                                     </div>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                                        SYSTÈME DE PERMISSIONS RBAC • GLOBAL
+                                        {t('admin.rbac_system_desc')}
                                     </p>
                                 </div>
                             </div>
@@ -538,9 +561,10 @@ export const UsersManagementPage: React.FC = () => {
                                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-indigo-500 transition-colors" />
                                     <input
                                         type="text"
-                                        placeholder="Rechercher par nom, email ou fonction..."
+                                        placeholder={t('admin.search_name_email_role')}
                                         value={search}
                                         onChange={e => setSearch(e.target.value)}
+                                        autoComplete="off"
                                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-sm transition-all placeholder:text-slate-400/70"
                                     />
                                 </div>
@@ -552,7 +576,7 @@ export const UsersManagementPage: React.FC = () => {
                                     className="flex items-center justify-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl hover:bg-slate-800 active:scale-95 transition-all shadow-lg font-black text-[10px] uppercase tracking-widest group"
                                 >
                                     <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                    Ajouter un Profil
+                                    {t('admin.add_profile')}
                                 </button>
                             </div>
                         </div>
@@ -563,19 +587,19 @@ export const UsersManagementPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-xl text-[10px] font-black text-emerald-700 border border-emerald-100 shadow-sm uppercase tracking-tighter transition-transform hover:-translate-y-0.5 cursor-default">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span>Actifs : {stats.active}</span>
+                                <span>{t('admin.active_count', { count: stats.active })}</span>
                             </div>
 
                             {stats.inactive > 0 && (
                                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-xl text-[10px] font-black text-slate-500 border border-slate-200 shadow-sm uppercase tracking-tighter transition-transform hover:-translate-y-0.5 cursor-default">
                                     <X className="w-3.5 h-3.5 opacity-60" />
-                                    <span>Inactifs : {stats.inactive}</span>
+                                    <span>{t('admin.inactive_count', { count: stats.inactive })}</span>
                                 </div>
                             )}
 
                             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 rounded-xl text-[10px] font-black text-indigo-700 border border-indigo-100 shadow-sm uppercase tracking-tighter transition-transform hover:-translate-y-0.5 cursor-default">
                                 <ShieldCheck className="w-3.5 h-3.5 opacity-80" />
-                                <span>Admins : {stats.admins}</span>
+                                <span>{t('admin.admins_count', { count: stats.admins })}</span>
                             </div>
                         </div>
 
@@ -583,11 +607,11 @@ export const UsersManagementPage: React.FC = () => {
                             <select
                                 value={roleFilter}
                                 onChange={e => setRoleFilter(e.target.value)}
-                                className="py-1.5 pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-tight text-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                                className="py-1.5 pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-[11px] font-medium uppercase tracking-tight text-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                             >
-                                <option value="ALL" className="text-slate-800 bg-white font-black">Tous les rôles</option>
+                                <option value="ALL" className="text-slate-800 bg-white font-medium">Tous les rôles</option>
                                 {Object.entries(roleConfig).map(([k, v]) => (
-                                    <option key={k} value={k} className="text-slate-800 bg-white font-black">{v.label}</option>
+                                    <option key={k} value={k} className="text-slate-800 bg-white font-medium">{v.label}</option>
                                 ))}
                             </select>
                         </div>
@@ -657,7 +681,7 @@ export const UsersManagementPage: React.FC = () => {
 
                                                 {/* Badges Section */}
                                                 <div className="flex items-center gap-2 flex-wrap mb-6">
-                                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${cfg?.color || 'text-slate-500'}`}>
+                                                    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-medium uppercase tracking-widest border shadow-sm transition-all ${cfg?.color || 'text-slate-500'}`}>
                                                         <Shield className="w-3 h-3" />
                                                         {cfg?.label || user.role}
                                                     </div>
@@ -794,10 +818,10 @@ export const UsersManagementPage: React.FC = () => {
                                                 <p className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.3em]">
                                                     {form.role || 'Profil à définir'}
                                                 </p>
-                                                <p className="text-sm font-medium text-slate-400 lowercase flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                <span className="text-sm font-medium text-slate-400 lowercase flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-200 inline-block" />
                                                     {form.email || 'email@vaerdia.tech'}
-                                                </p>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -838,7 +862,7 @@ export const UsersManagementPage: React.FC = () => {
                                                 <select
                                                     value={form.role ?? ''}
                                                     onChange={e => setForm(f => ({ ...f, role: e.target.value as any }))}
-                                                    className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-slate-900 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
+                                                    className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-[11px] font-medium uppercase tracking-widest text-slate-900 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
                                                 >
                                                     <option value="" disabled>Choisir un profil</option>
                                                     {Object.entries(ROLE_PERMISSIONS_CONFIG).map(([k, cfg]) => (

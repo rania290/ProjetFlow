@@ -22,7 +22,7 @@ export const AccountSetup: React.FC = () => {
     const [isConfiguring, setIsConfiguring] = useState(false);
 
     // Data
-    const [role, setRole] = useState<'PROJECT_MANAGER' | 'TEAM_MEMBER' | null>(null);
+    const [role, setRole] = useState<'PROJECT_MANAGER' | 'DEVELOPER' | null>(null);
     const [workspaceName, setWorkspaceName] = useState('');
     const [domain, setDomain] = useState('');
     const [institution, setInstitution] = useState('');
@@ -111,20 +111,20 @@ export const AccountSetup: React.FC = () => {
                                             <Briefcase className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <span className="block font-semibold text-slate-900 text-sm mb-1">Responsable Projet</span>
+                                            <span className="block font-semibold text-slate-900 text-sm mb-1">CHEF DE PROJET</span>
                                             <span className="text-xs text-slate-500 leading-relaxed">Je gère des équipes et des objectifs globaux.</span>
                                         </div>
                                     </button>
 
                                     <button
-                                        onClick={() => setRole('TEAM_MEMBER')}
-                                        className={`p-6 rounded-xl border-2 transition-all text-left flex flex-col gap-4 group ${role === 'TEAM_MEMBER' ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-100 hover:border-slate-200 bg-white'}`}
+                                        onClick={() => setRole('DEVELOPER')}
+                                        className={`p-6 rounded-xl border-2 transition-all text-left flex flex-col gap-4 group ${role === 'DEVELOPER' ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-100 hover:border-slate-200 bg-white'}`}
                                     >
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${role === 'TEAM_MEMBER' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${role === 'DEVELOPER' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                                             <User className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <span className="block font-semibold text-slate-900 text-sm mb-1">Collaborateur</span>
+                                            <span className="block font-semibold text-slate-900 text-sm mb-1">DÉVELOPPEUR</span>
                                             <span className="text-xs text-slate-500 leading-relaxed">Je travaille sur des tâches et des sprints.</span>
                                         </div>
                                     </button>

@@ -148,14 +148,19 @@ export interface TicketMessage {
 
 export interface Ticket {
   id: string;
-  projectId: string;
+  projectId?: string;
   projectName?: string;
   title: string;
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
+  clientId?: string;
+  clientEmail?: string;
   requesterName: string;
-  requesterEmail: string;
+  requesterEmail?: string;
+  createdBy?: string;
+  reporterEmail?: string;
+  authorEmail?: string;
   assigneeId?: string;
   assigneeName?: string;
   assigneeAvatar?: string;

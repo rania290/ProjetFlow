@@ -17,6 +17,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { DatePicker } from '../ui/date-picker';
 
 const PROJECT_TYPES: { id: ProjectType; label: string; desc: string; icon: React.ReactNode; color: string; gradient: string }[] = [
     {
@@ -243,19 +244,17 @@ export const ProjectSettingsModal: React.FC<Props> = ({ project, onClose }) => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-indigo-500 pl-2">Lancement</Label>
-                                            <Input
-                                                type="date"
-                                                value={form.startDate}
-                                                onChange={e => set('startDate', e.target.value)}
+                                            <DatePicker
+                                                date={form.startDate ? new Date(form.startDate) : undefined}
+                                                setDate={(d) => set('startDate', d ? d.toISOString().split('T')[0] : '')}
                                                 className="h-12 rounded-xl font-black text-xs border-slate-100 bg-slate-50/30"
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-xs font-black text-slate-400 uppercase tracking-widest border-l-2 border-slate-100 pl-2">Livraison</Label>
-                                            <Input
-                                                type="date"
-                                                value={form.endDate}
-                                                onChange={e => set('endDate', e.target.value)}
+                                            <DatePicker
+                                                date={form.endDate ? new Date(form.endDate) : undefined}
+                                                setDate={(d) => set('endDate', d ? d.toISOString().split('T')[0] : '')}
                                                 className="h-12 rounded-xl font-black text-xs border-slate-100 bg-slate-50/30"
                                             />
                                         </div>
@@ -281,23 +280,14 @@ export const ProjectSettingsModal: React.FC<Props> = ({ project, onClose }) => {
                         )}
                     </Button>
 
-                    <Button 
-                        variant="ghost" 
-                        onClick={onClose} 
-                        className="rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 px-8 h-11"
-                    >
-                        Fermer
-                    </Button>
-
                     {user?.role === 'ADMIN' && (
                         <Button 
                             variant="ghost" 
-                            size="icon"
                             onClick={() => setIsDeleteDialogOpen(true)}
-                            className="ml-auto rounded-2xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-all h-11 w-11"
+                            className="ml-auto rounded-2xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-all h-11 px-6 font-black text-[10px] uppercase tracking-widest"
                             title="Supprimer le Projet"
                         >
-                            <Trash2 className="w-5 h-5" />
+                            Supprimer
                         </Button>
                     )}
                 </DialogFooter>

@@ -713,7 +713,7 @@ export const ProjectDetailPage: React.FC = () => {
                                             const task = state.tasks.find(t => t.id === taskId);
                                             if (task) {
                                                 try {
-                                                    const { id, createdAt, updatedAt, ...newTaskData } = task;
+                                                    const { id, createdAt, updatedAt, ...newTaskData } = task as any;
                                                     const duplicatedTask = await projectsService.createTask({
                                                         ...newTaskData,
                                                         title: `${task.title} ${t('projects.copy_suffix')}`

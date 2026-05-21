@@ -54,8 +54,8 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+        e?.preventDefault();
         if (!title.trim() || !description.trim()) return;
 
         setIsSubmitting(true);
@@ -91,6 +91,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
             setAttachedFile(null);
         } catch (error) {
             console.error('Failed to create ticket:', error);
+            toast.error("Erreur lors de la création du ticket. Veuillez réessayer.");
             setIsSubmitting(false);
         }
     };

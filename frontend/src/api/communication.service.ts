@@ -10,6 +10,8 @@ export interface ChatMessage {
     mentions?: string[];
     likes?: string[];
     isPinned?: boolean;
+    isDeleted?: boolean;
+    isEdited?: boolean;
     replyTo?: {
         id: string;
         authorName: string;

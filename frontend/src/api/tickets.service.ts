@@ -6,9 +6,16 @@ export interface Ticket {
     description: string;
     status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_ON_CLIENT' | 'RESOLVED' | 'CLOSED';
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-    clientId: string;
+    clientId?: string;
+    clientEmail?: string;
     requesterName: string;
+    requesterEmail?: string;
+    createdBy?: string;
+    reporterEmail?: string;
+    authorEmail?: string;
+    projectId?: string;
     projectName?: string;
+    assigneeId?: string;
     assigneeName?: string;
     createdAt: string;
     updatedAt: string;
@@ -53,8 +60,22 @@ export const ticketsService = {
     },
 
     mapTicket(ticket: any, currentUserEmail?: string): Ticket {
+        const timelineEmails = (ticket.timeline || []).map((entry: any) => entry.user).filter(Boolean);
+        const clientEmail = ticket.client?.email || ticket.project?.client?.email || ticket.requesterEmail || ticket.clientEmail ||
+            (currentUserEmail && timelineEmails.includes(currentUserEmail) ? currentUserEmail : undefined);
+        const projectName = ticket.project?.name || ticket.projectName;
+        const projectId = ticket.project?.id || ticket.projectId;
+
         return {
             ...ticket,
+            clientEmail,
+            requesterEmail: ticket.requesterEmail || clientEmail,
+            createdBy: ticket.createdBy || clientEmail,
+            reporterEmail: ticket.reporterEmail || clientEmail,
+            projectId,
+            projectName,
+            assigneeId: ticket.assignedTo || ticket.assigneeId,
+            assigneeName: ticket.assigneeName,
             messages: (ticket.timeline || [])
                 .filter((item: any) => item.action === 'comment' || item.action === 'created' || item.action === 'internal_comment')
                 .map((item: any, index: number) => ({

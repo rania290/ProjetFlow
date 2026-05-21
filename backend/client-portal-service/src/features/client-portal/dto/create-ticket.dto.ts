@@ -24,6 +24,10 @@ export class CreateTicketDto {
   projectId?: string;
 
   @IsOptional()
+  @IsUUID()
+  clientId?: string;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   assignedTo?: string;

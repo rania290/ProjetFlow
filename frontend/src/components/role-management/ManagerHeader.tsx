@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface ManagerHeaderProps {
   totalActive: number;
@@ -29,6 +30,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
   onViewModeChange,
   onRefresh
 }) => {
+  const { t } = useTranslation();
   return (
     <Card className="p-6 border-none shadow-sm bg-white rounded-[32px] overflow-hidden relative group">
       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
@@ -43,15 +45,15 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-black text-slate-900 font-display flex items-center gap-3 uppercase tracking-tight">
-                Autorisations
+                {t('roles.authorizations', 'Authorizations')}
                 <Badge variant="outline" className="px-2.5 py-0.5 rounded-lg bg-indigo-50/50 text-indigo-600 text-[10px] font-black border-indigo-100 uppercase tracking-widest">
-                  {totalActive} actives
+                  {t('roles.active_count', '{{count}} actives', { count: totalActive })}
                 </Badge>
               </h1>
             </div>
             <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
               <span className="w-8 h-px bg-slate-200" />
-              Système d'accès multi-projets
+              {t('roles.multi_project_access', 'Multi-project access system')}
             </p>
           </div>
         </div>
@@ -66,6 +68,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
               placeholder="Chercher accès, utilisateur..."
               value={searchTerm}
               onChange={e => onSearchChange(e.target.value)}
+              autoComplete="off"
               className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-slate-200/60 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-sm font-medium transition-all placeholder:text-slate-400/70 shadow-inner"
             />
           </div>

@@ -26,3 +26,22 @@ class AuraReport(Base):
     summary = Column(String(500))
     metrics = Column(Text)  # JSON string of metrics
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class AuraConversation(Base):
+    __tablename__ = 'aura_conversations'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), index=True)
+    user_id = Column(String(50), index=True)
+    title = Column(String(200), default="Nouvelle conversation")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AuraMessage(Base):
+    __tablename__ = 'aura_messages'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = Column(UUID(as_uuid=True), index=True)
+    role = Column(String(20)) # 'user' | 'aura'
+    content = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)

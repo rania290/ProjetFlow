@@ -18,9 +18,13 @@ async def get_project_context(project_id: str) -> dict:
     try:
         with SessionLocal() as db:
             tasks_result = db.execute(text("""
-                SELECT t.id, t.title, t.status, t."dueDate", t."assignee_id", t."storyPoints", ra.user_full_name as assignee_name
+                SELECT t.id, t.title, t.status, t."dueDate", t."storyPoints", 
+                       COALESCE(ra.user_full_name, 'Non assigné') as assignee_name
                 FROM tasks t
-                LEFT JOIN role_assignments ra ON t.assignee_id::text = ra.user_id::text AND ra.project_id::text = :pid
+                LEFT JOIN (
+                    SELECT DISTINCT ON (user_id) user_id, user_full_name 
+                    FROM role_assignments
+                ) ra ON t.assignee_id::text = ra.user_id::text
                 WHERE t.project_id = :pid
             """), {"pid": project_id}).mappings().all()
             
@@ -130,8 +134,41 @@ async def analyze_project_progress(project_id: str) -> dict:
         "at_risk_sprints": at_risk_sprints
     }
 
-async def chat(user_message: str, project_id: str, user_id: str = "system") -> str:
+async def chat(user_message: str, project_id: str, user_id: str = "system", conversation_id: str = None) -> dict:
     try:
+        db = SessionLocal()
+        
+        # 1. Manage Conversation
+        from .models import AuraConversation, AuraMessage
+        if not conversation_id:
+            # Create new conversation
+            conv = AuraConversation(
+                project_id=project_id,
+                user_id=user_id,
+                title=user_message[:50] + ("..." if len(user_message) > 50 else "")
+            )
+            db.add(conv)
+            db.commit()
+            db.refresh(conv)
+            conversation_id = str(conv.id)
+        else:
+            from .models import AuraMessage
+        
+        # 2. Save User Message
+        user_msg_entity = AuraMessage(
+            conversation_id=conversation_id,
+            role='user',
+            content=user_message
+        )
+        db.add(user_msg_entity)
+        db.commit()
+
+        # 3. Fetch History (last 10 messages for context)
+        history = db.query(AuraMessage).filter(
+            AuraMessage.conversation_id == conversation_id
+        ).order_by(AuraMessage.created_at.asc()).all()
+
+        # 4. Prepare AI Context
         context = await get_project_context(project_id)
         late_tasks = await detect_late_tasks(project_id)
         analysis = await analyze_project_progress(project_id)
@@ -159,27 +196,54 @@ Règles de comportement strictes :
 5. Si on te demande une action technique (créer, modifier en base de données), dis que tu ne peux que conseiller et que l'utilisateur doit le faire via l'interface.
 6. Si l'utilisateur demande des suggestions de tâches, des idées de décomposition ou des étapes techniques pour une User Story, propose une liste structurée et pertinente de 3 à 6 tâches concrètes en utilisant ton expertise Agile.
 7. ANALYSE DE CHARGE ET RECOMMANDATION : Si l'utilisateur te demande qui est disponible, qui devrait faire une tâche, ou quelle est la charge de l'équipe, utilise les données de "team_workload" dans le contexte. Recommande le membre le plus pertinent (celui avec le moins de story points ou de tâches, tout en respectant son rôle) et justifie clairement ton choix par des chiffres.
-8. RÈGLE CRUCIALE : Ne montre JAMAIS d'identifiants techniques (IDs, UUIDs) à l'utilisateur dans tes réponses. Utilise TOUJOURS les noms (ex: "Jean Dupont") pour désigner les membres de l'équipe ou les titres pour les tâches.
-9. RAPPORTS HEBDOMADAIRES : Si l'utilisateur demande "où est le rapport", "génère un rapport" ou "montre moi le suivi hebdomadaire", explique-lui que les rapports détaillés générés par l'IA sont disponibles dans l'onglet "RAPPORTS" juste au-dessus de cette fenêtre de chat. Ne confonds pas cela avec les tâches de développement du projet qui pourraient avoir "Rapport" dans leur titre.
+8. RÈGLE CRUCIALE : Ne montre JAMAIS d'identifiants techniques (IDs, UUIDs) à l'utilisateur dans tes réponses. Utilise TOUJOURS les noms EXACTS fournis dans le contexte (par exemple 'feery' ou 'ajmi'). Ne cherche PAS à inventer des prénoms ou noms de famille (comme Jean Dupont) si le contexte contient des pseudos ou des noms courts. Si une tâche n'est pas assignée ou si le nom est absent, dis "Non assigné".
+9. RAPPORTS ET SYNTHÈSES : Si l'utilisateur te demande de générer un rapport ou une synthèse pour le client, rédige directement dans le chat un résumé clair et structuré (état d'avancement, tâches terminées, risques/retards) basé sur les données du contexte fourni. Tu peux ajouter à la fin : "💡 *Pour un historique complet, consultez l'onglet 'Rapports' en haut de cette fenêtre.*"
 """
         
         messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_message)
+            SystemMessage(content=system_prompt)
         ]
+
+        from langchain_core.messages import AIMessage
+        messages = [SystemMessage(content=system_prompt)]
+        
+        # Add history to messages (limit to last 10 for context window)
+        recent_history = history[:-1][-10:] if len(history) > 1 else []
+        for h in recent_history:
+            if h.role == 'user':
+                messages.append(HumanMessage(content=h.content))
+            else:
+                messages.append(AIMessage(content=h.content))
+        
+        messages.append(HumanMessage(content=user_message))
         
         try:
             response = await llm.ainvoke(messages)
-            return response.content
+            ai_content = response.content
+
+            # 5. Save AI Response
+            ai_msg_entity = AuraMessage(
+                conversation_id=conversation_id,
+                role='aura',
+                content=ai_content
+            )
+            db.add(ai_msg_entity)
+            db.commit()
+
+            return {
+                "response": ai_content,
+                "conversation_id": conversation_id
+            }
         except Exception as ai_err:
             logger.error(f"OpenAI Error: {ai_err}")
-            return f"Désolé, je rencontre des difficultés techniques avec OpenAI : {str(ai_err)}"
-            
+            return {"response": f"Désolé, je rencontre des difficultés techniques avec OpenAI : {str(ai_err)}", "conversation_id": conversation_id}
+        finally:
+            db.close()
     except Exception as e:
         logger.error(f"GENERAL ERROR in chat function: {e}")
         import traceback
         traceback.print_exc()
-        return "Désolé, une erreur interne empêche Aura de vous répondre."
+        return {"response": "Désolé, une erreur interne empêche Aura de vous répondre.", "conversation_id": conversation_id}
 
 async def get_weekly_stats(project_id: str) -> dict:
     try:
@@ -187,7 +251,7 @@ async def get_weekly_stats(project_id: str) -> dict:
         with SessionLocal() as db:
             # Tasks completed this week
             completed_this_week = db.execute(text("""
-                SELECT t.id, t.title, t."completedAt", ra.user_full_name as assignee_name
+                SELECT t.title, t."completedAt", ra.user_full_name as assignee_name
                 FROM tasks t
                 LEFT JOIN role_assignments ra ON t.assignee_id = ra.user_id AND ra.project_id = :pid
                 WHERE t.project_id = :pid AND t.status = 'DONE' AND t."completedAt" >= :since
@@ -195,16 +259,17 @@ async def get_weekly_stats(project_id: str) -> dict:
 
             # Tasks created this week
             created_this_week = db.execute(text("""
-                SELECT id, title, created_at
+                SELECT title, created_at
                 FROM tasks 
                 WHERE project_id = :pid AND created_at >= :since
             """), {"pid": project_id, "since": seven_days_ago}).mappings().all()
 
             # New blockers (tasks late since last week)
             new_late = db.execute(text("""
-                SELECT id, title, "dueDate"
-                FROM tasks 
-                WHERE project_id = :pid AND status != 'DONE' AND "dueDate" BETWEEN :since AND NOW()
+                SELECT t.title, t."dueDate", ra.user_full_name as assignee_name
+                FROM tasks t
+                LEFT JOIN role_assignments ra ON t.assignee_id = ra.user_id AND ra.project_id = :pid
+                WHERE t.project_id = :pid AND t.status != 'DONE' AND t."dueDate" BETWEEN :since AND NOW()
             """), {"pid": project_id, "since": seven_days_ago}).mappings().all()
 
         return {
@@ -226,10 +291,13 @@ async def generate_weekly_report(project_id: str) -> dict:
         
         project_name = context.get("project", {}).get("name", "Projet")
         
+        # Strip IDs from context before generating report
+        sprints_clean = [{"name": s.get("name"), "startDate": s.get("startDate"), "endDate": s.get("endDate"), "status": s.get("status")} for s in context.get("sprints", [])]
+        
         report_data = {
             "overall_progress": analysis,
             "weekly_stats": weekly_stats,
-            "sprints": context.get("sprints", [])
+            "sprints": sprints_clean
         }
 
         # Conversion sécurisée en JSON (UTF-8)
@@ -242,13 +310,15 @@ async def generate_weekly_report(project_id: str) -> dict:
         system_prompt = f"""Tu es Aura AI, expert en management de projet. 
 Ta mission est de générer un rapport hebdomadaire professionnel, encourageant et factuel pour le projet "{project_name}".
 
+RÈGLE CRITIQUE ABSOLUE : Ne mentionne JAMAIS d'identifiants techniques (IDs, UUIDs) dans ton rapport. Utilise uniquement les titres des tâches et les noms des responsables.
+
 Données de la semaine :
 {report_data_json}
 
 Le rapport doit être au format Markdown et contenir les sections suivantes :
 1. 📈 **État Global** : Résumé rapide de l'avancement.
-2. ✅ **Réalisations de la Semaine** : Ce qui a été terminé (basé sur completed_items).
-3. ⚠️ **Points d'Attention & Risques** : Tâches en retard ou sprints à risque.
+2. ✅ **Réalisations de la Semaine** : Ce qui a été terminé (basé sur completed_items, cite les titres et les noms).
+3. ⚠️ **Points d'Attention & Risques** : Tâches en retard ou sprints à risque (cite les responsables).
 4. 💡 **Recommandations d'Aura** : Conseils concrets pour la semaine prochaine.
 
 Sois précis, utilise un ton professionnel mais dynamique. Réponds en Français."""

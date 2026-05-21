@@ -1,52 +1,30 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { AuthContextMiddleware } from './middleware/auth-context.middleware';
+import { NotificationGateway } from './notification/notification.gateway';
+import { WsJwtGuard } from './guards/ws-jwt.guard';
 
 @Module({
   imports: [
     // Register JwtModule to provide JwtService for AuthContextMiddleware
     JwtModule.register({}),
+    // ConfigModule needed by NotificationGateway & WsJwtGuard to read env vars (JWT_SECRET, REDIS_HOST/PORT)
+    ConfigModule.forRoot({ isGlobal: true }),
   ],
   controllers: [],
-  providers: [],
+  // Register NotificationGateway so NestJS boots the Socket.IO server on port 3000
+  providers: [NotificationGateway, WsJwtGuard],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // 1. Logger & Auth Context
     consumer.apply(LoggerMiddleware, AuthContextMiddleware).forRoutes('*');
 
-    // 2. Socket.io Proxy
-    consumer
-      .apply(
-        createProxyMiddleware({
-          target: 'http://127.0.0.1:3006',
-          changeOrigin: true,
-          ws: true, // Enable WebSockets
-          on: {
-            proxyReq: (proxyReq, req: any) => {
-              console.log(`[Socket Proxy] ${req.method} ${req.url} -> http://127.0.0.1:3006`);
-            },
-            proxyRes: (proxyRes, req: any, res: any) => {
-                // Remove downstream CORS headers to prevent conflicts
-                delete proxyRes.headers['access-control-allow-origin'];
-                delete proxyRes.headers['access-control-allow-credentials'];
-                
-                // Allow the specific origin from the request
-                const origin = req.headers.origin;
-                if (origin) {
-                    res.setHeader('Access-Control-Allow-Origin', origin);
-                    res.setHeader('Access-Control-Allow-Credentials', 'true');
-                }
-            },
-            error: (err, req, res: any) => {
-              console.error('[Socket Proxy ERROR]:', err.message);
-            }
-          }
-        }),
-      )
-      .forRoutes('/socket.io/*path');
+    // 2. Socket.io Proxy removed because frontend connects directly to 3006 for chat
+    // and proxying all /socket.io paths breaks the local NotificationGateway on port 3000.
 
     // 3. Gateway API Proxy Middleware
     consumer

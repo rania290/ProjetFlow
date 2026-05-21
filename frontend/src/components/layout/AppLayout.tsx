@@ -5,9 +5,11 @@ import {
     MessageSquare, BarChart3, Calendar, ChevronDown,
     ChevronRight, Layers, Bell, Search, LogOut, Menu, X, Settings,
     Ticket, TrendingUp, Download, ShieldCheck, Sparkles, Circle,
-    ArrowLeftRight, Briefcase, UserCog, HeartPulse, ClipboardList, Network, Clock, Plus
+    ArrowLeftRight, Briefcase, UserCog, HeartPulse, ClipboardList, Network, Clock, Plus,
+    Globe
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { authService } from '../../api/auth.service';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 import { useStore } from '../../store/projectStore';
 import { useAuraStore } from '../../store/auraStore';
@@ -35,9 +37,17 @@ interface AppLayoutProps {
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle }) => {
-    const { t } = useTranslation();
-    const { logout, user } = useAuth();
+    const { t, i18n } = useTranslation();
+    const { logout, user, updateProfile: updateUserProfile } = useAuth();
     const { state, dispatch } = useStore();
+
+    React.useEffect(() => {
+        if (user?.preferredLanguage) {
+            void i18n.changeLanguage(user.preferredLanguage);
+        } else {
+            void i18n.changeLanguage('fr');
+        }
+    }, [user?.preferredLanguage, i18n]);
 
     const NAV_ITEMS = [
         { id: 'dashboard', label: t('common.dashboard'), icon: <LayoutDashboard className="w-4 h-4" />, path: '/dashboard' },
@@ -46,7 +56,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         { id: 'team', label: t('common.team'), icon: <Users className="w-4 h-4" />, path: '/team' },
         { id: 'documents', label: t('common.documents'), icon: <FileText className="w-4 h-4" />, path: '/documents' },
         { id: 'messages', label: t('common.messages'), icon: <MessageSquare className="w-4 h-4" />, path: '/messages' },
-        { id: 'analytics', label: t('common.reporting'), icon: <TrendingUp className="w-4 h-4" />, path: '/analytics' },
+        { id: 'analytics', label: t('common.reporting'), icon: <TrendingUp className="w-4 h-4" />, path: '/analytics', roles: ['PROJECT_MANAGER', 'ADMIN', 'SUPER_ADMIN', 'RH', 'HR_ADMIN'] },
         { id: 'client-portal', label: t('common.client_portal'), icon: <Circle className="w-4 h-4 text-emerald-500" />, path: '/client-portal', roles: ['ADMIN', 'SUPER_ADMIN', 'PROJECT_MANAGER', 'CLIENT'] },
         { id: 'hr', label: t('common.hr'), icon: <HeartPulse className="w-4 h-4" />, path: '/hr' },
         { id: 'calendar', label: t('common.calendar'), icon: <Calendar className="w-4 h-4" />, path: '/calendar' },
@@ -61,7 +71,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         { id: 'admin-settings', label: t('common.configuration'), icon: <Settings className="w-4 h-4" />, path: '/admin/settings' },
     ];
 
-    const CLIENT_NAV_ITEMS = [
+    // Pure CLIENT role: only show Tickets in the sidebar
+    // Admins/PMs who visit client portal see the full navigation
+    const isClient = user?.role === 'CLIENT';
+    const CLIENT_NAV_ITEMS = isClient ? [
+        { id: 'client-tickets', label: t('client.tickets_title'), icon: <Ticket className="w-4 h-4" />, path: '/client-portal/tickets' },
+    ] : [
         { id: 'client-dash', label: t('common.dashboard'), icon: <LayoutDashboard className="w-4 h-4" />, path: '/client-portal' },
         { id: 'client-projects', label: t('common.my_projects'), icon: <FolderKanban className="w-4 h-4" />, path: '/client-portal/projects' },
         { id: 'client-tickets', label: t('client.tickets_title'), icon: <Ticket className="w-4 h-4" />, path: '/client-portal/tickets' },
@@ -87,7 +102,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
     const notificationTriggered = useRef(false);
 
     const isAdminUser = user?.role === 'ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'SUPER_ADMIN';
-    const isClient = user?.role === 'CLIENT';
     const isAdmin = location.pathname.startsWith('/admin');
     const isClientPortal = location.pathname.startsWith('/client-portal');
     const isHRPortal = location.pathname.startsWith('/hr');
@@ -202,7 +216,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
     const displayedProjects = showAllProjects || searchQuery || projectSearchQuery ? filteredRecentProjects : filteredRecentProjects.slice(0, 5);
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-200 font-sans print:overflow-visible print:h-auto print:bg-white print:text-slate-900">
+        <div className="flex h-screen overflow-hidden bg-white dark:bg-background text-slate-900 dark:text-foreground font-sans print:overflow-visible print:h-auto print:bg-white print:text-slate-900">
             {/* Sidebar */}
             <AnimatePresence>
                 {state.sidebarOpen && (
@@ -423,8 +437,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
             </AnimatePresence>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden relative bg-slate-50 print:overflow-visible print:w-full print:bg-white">
-                <header className="flex items-center justify-between px-6 py-3 border-b bg-white z-10 shadow-sm print:hidden">
+            <div className="flex-1 flex flex-col overflow-hidden relative bg-slate-50 dark:bg-background print:overflow-visible print:w-full print:bg-white">
+                <header className="flex items-center justify-between px-6 py-3 border-b bg-white dark:bg-card z-10 shadow-sm print:hidden">
                     <div className="flex items-center gap-4">
                         <button onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })} className="p-2 text-slate-400 hover:text-slate-600">
                             {state.sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
@@ -437,11 +451,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                         )}
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <Link to="/analytics">
-                            <button className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-                                <TrendingUp className="w-4 h-4" />
-                            </button>
-                        </Link>
+                        {!isClient && (
+                            <Link to="/analytics">
+                                <button className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                                    <TrendingUp className="w-4 h-4" />
+                                </button>
+                            </Link>
+                        )}
 
                         {isAdminUser && (
                             <Link to="/admin/settings">
@@ -452,6 +468,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                         )}
 
                         <NotificationCenter token={jwtToken || ''} />
+
                         <div className="h-8 w-[1px] bg-slate-200 mx-2" />
                         <Avatar className="h-8 w-8 cursor-pointer" onClick={() => navigate('/profile')}>
                             <AvatarImage src={user?.profilePhoto} />
@@ -462,8 +479,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                 <main className="flex-1 overflow-y-auto p-0">
                     {children}
                 </main>
+                <AuraChatPanel />
             </div>
-            <AuraChatPanel />
             <Toaster position="bottom-right" />
         </div>
     );

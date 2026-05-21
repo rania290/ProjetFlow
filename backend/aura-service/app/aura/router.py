@@ -10,14 +10,37 @@ class ChatRequest(BaseModel):
     message: str
     project_id: str
     user_id: str = "system"
+    conversation_id: str = None
 
 @router.post("/aura/chat")
 async def chat_endpoint(req: ChatRequest):
     try:
-        response = await engine.chat(req.message, req.project_id, req.user_id)
-        return {"response": response}
+        result = await engine.chat(req.message, req.project_id, req.user_id, req.conversation_id)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/aura/conversations/{project_id}")
+async def get_conversations(project_id: str, user_id: str = "system", db: Session = Depends(get_db)):
+    convs = db.query(models.AuraConversation).filter(
+        models.AuraConversation.project_id == project_id,
+        models.AuraConversation.user_id == user_id
+    ).order_by(models.AuraConversation.updated_at.desc()).all()
+    return convs
+
+@router.get("/aura/conversations/{conversation_id}/messages")
+async def get_conversation_messages(conversation_id: str, db: Session = Depends(get_db)):
+    msgs = db.query(models.AuraMessage).filter(
+        models.AuraMessage.conversation_id == conversation_id
+    ).order_by(models.AuraMessage.created_at.asc()).all()
+    return msgs
+
+@router.delete("/aura/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, db: Session = Depends(get_db)):
+    db.query(models.AuraMessage).filter(models.AuraMessage.conversation_id == conversation_id).delete()
+    db.query(models.AuraConversation).filter(models.AuraConversation.id == conversation_id).delete()
+    db.commit()
+    return {"status": "success"}
 
 @router.get("/aura/insights/{project_id}")
 async def get_insights(project_id: str):

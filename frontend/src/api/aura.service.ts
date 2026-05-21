@@ -10,10 +10,12 @@ const auraDirectApi = axios.create({
 export interface AuraChatRequest {
   message: string;
   project_id: string;
+  conversation_id?: string;
 }
 
 export interface AuraChatResponse {
   response: string;
+  conversation_id: string;
 }
 
 export interface AuraAlert {
@@ -32,6 +34,20 @@ export const auraService = {
   chat: async (data: AuraChatRequest): Promise<AuraChatResponse> => {
     const response = await auraDirectApi.post<AuraChatResponse>('/aura/chat', { ...data, user_id: 'system' });
     return response.data;
+  },
+
+  getConversations: async (projectId: string): Promise<any[]> => {
+    const response = await auraDirectApi.get<any[]>(`/aura/conversations/${projectId}`);
+    return response.data;
+  },
+
+  getConversationMessages: async (conversationId: string): Promise<any[]> => {
+    const response = await auraDirectApi.get<any[]>(`/aura/conversations/${conversationId}/messages`);
+    return response.data;
+  },
+
+  deleteConversation: async (conversationId: string): Promise<void> => {
+    await auraDirectApi.delete(`/aura/conversations/${conversationId}`);
   },
 
   getAlerts: async (projectId: string): Promise<AuraAlert[]> => {

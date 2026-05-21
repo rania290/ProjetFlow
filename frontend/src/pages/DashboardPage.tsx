@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -19,12 +18,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { projectsService } from '../api/projects.service';
 
-const STATUS_LABELS: (t: any) => Record<string, { label: string; color: string; bg: string }> = (t) => ({
-    PLANNED: { label: t('common.planned'), color: 'text-slate-500', bg: 'bg-slate-100' },
-    IN_PROGRESS: { label: t('common.in_progress'), color: 'text-blue-600', bg: 'bg-blue-50' },
-    DELIVERED: { label: t('projects.status_labels.DELIVERED'), color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    SUSPENDED: { label: t('projects.status_labels.SUSPENDED'), color: 'text-red-500', bg: 'bg-red-50' },
-});
+const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+    PLANNED: { label: 'Planifié', color: 'text-slate-500', bg: 'bg-slate-100' },
+    IN_PROGRESS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50' },
+    DELIVERED: { label: 'Livré', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    SUSPENDED: { label: 'Suspendu', color: 'text-red-500', bg: 'bg-red-50' },
+};
 
 
 const PRIORITY_BADGES = {
@@ -35,7 +34,6 @@ const PRIORITY_BADGES = {
 };
 
 export const DashboardPage: React.FC = () => {
-    const { t } = useTranslation();
     const { state, dashboardStats, dispatch } = useStore();
     const { insights, fetchInsights, toggleOpen } = useAuraStore();
     const { user } = useAuth();
@@ -47,29 +45,29 @@ export const DashboardPage: React.FC = () => {
 
     useEffect(() => {
         // Fetch Aura insights if there's a selected project or at least one project
-        const projectId = state.currentProjectId || state.projects[0]?.id;
+        const projectId = state.selectedProjectId || state.projects[0]?.id;
         if (projectId) {
             fetchInsights(projectId);
         }
-    }, [state.currentProjectId, state.projects.length, fetchInsights]);
+    }, [state.selectedProjectId, state.projects.length, fetchInsights]);
 
 
     // Use current updated state instead of stale state
     const criticalTasks = state.tasks.filter(t => t.priority === 'CRITICAL' || (t.priority === 'HIGH' && t.status !== 'DONE'));
 
     return (
-        <AppLayout title={t('common.dashboard')} subtitle={`${t('common.welcome')} ${state.workspaceName}`}>
+        <AppLayout title="Dashboard" subtitle={`Bienvenue dans votre espace ${state.workspaceName}`}>
             <div className="p-6 space-y-6">
 
                 {/* ===== KPI CARDS ===== */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                     {[
-                        { label: t('dashboard.total_projects'), value: dashboardStats.totalProjects, icon: <FolderKanban />, color: 'text-indigo-600' },
-                        { label: t('common.ongoing_projects'), value: dashboardStats.activeProjects, icon: <Activity />, color: 'text-blue-600' },
-                        { label: t('common.tasks'), value: dashboardStats.totalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
-                        { label: t('dashboard.completed'), value: dashboardStats.completedTasks, icon: <Target />, color: 'text-emerald-600' },
-                        { label: t('common.team'), value: dashboardStats.teamMembers, icon: <Users />, color: 'text-violet-600' },
-                        { label: t('dashboard.upcoming_deadlines'), value: dashboardStats.upcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
+                        { label: 'Projets total', value: dashboardStats.totalProjects, icon: <FolderKanban />, color: 'text-indigo-600' },
+                        { label: 'En cours', value: dashboardStats.activeProjects, icon: <Activity />, color: 'text-blue-600' },
+                        { label: 'Tâches', value: dashboardStats.totalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
+                        { label: 'Terminées', value: dashboardStats.completedTasks, icon: <Target />, color: 'text-emerald-600' },
+                        { label: 'Membres', value: dashboardStats.teamMembers, icon: <Users />, color: 'text-violet-600' },
+                        { label: 'Échéances', value: dashboardStats.upcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
                     ].map((kpi, i) => (
                         <motion.div
                             key={kpi.label}
@@ -99,13 +97,13 @@ export const DashboardPage: React.FC = () => {
                     {/* ===== PROJETS ===== */}
                     <div className="lg:col-span-2 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-base font-bold text-slate-800">{t('dashboard.my_projects')}</h2>
+                            <h2 className="text-base font-bold text-slate-800">Mes projets</h2>
                         </div>
 
                         <div className="space-y-3">
                             {state.projects
                                 .filter(p => {
-                                    const isMember = (p.members || []).some(m => m.id === user?.id || m.email === user?.email);
+                                    const isMember = (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
                                     const isManager = p.managerId === user?.id;
                                     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
                                     const isClient = user?.role === 'CLIENT' && p.clientName === user?.fullName;
@@ -113,7 +111,7 @@ export const DashboardPage: React.FC = () => {
                                 })
 
                                 .map((p, i) => (
-                                <ProjectRow key={p.id} project={p} index={i} t={t} onOpen={() => {
+                                <ProjectRow key={p.id} project={p} index={i} onOpen={() => {
                                     dispatch({ type: 'SELECT_PROJECT', id: p.id });
                                     navigate(`/projects/${p.id}`);
                                 }} />
@@ -131,9 +129,9 @@ export const DashboardPage: React.FC = () => {
                                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
                                        <Bot className="w-4 h-4 text-indigo-400" />
                                    </div>
-                                   <CardTitle className="text-sm">{t('common.aura_ai')}</CardTitle>
+                                   <CardTitle className="text-sm">Aura IA</CardTitle>
                                 </div>
-                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20">{t('dashboard.aura_online')}</Badge>
+                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20">En ligne</Badge>
                             </CardHeader>
                             <CardContent className="pt-4 space-y-2">
                                 {insights.length > 0 ? (
@@ -144,7 +142,7 @@ export const DashboardPage: React.FC = () => {
                                     ))
                                 ) : (
                                     <div className="text-xs text-slate-400 italic px-3 py-2">
-                                        {t('dashboard.aura_analyzing')}
+                                        Analyse en cours...
                                     </div>
                                 )}
                                 <Button 
@@ -153,7 +151,7 @@ export const DashboardPage: React.FC = () => {
                                     size="sm"
                                     onClick={toggleOpen}
                                 >
-                                    {t('dashboard.open_aura')} &rarr;
+                                    Ouvrir Aura &rarr;
                                 </Button>
                             </CardContent>
                         </Card>
@@ -166,11 +164,11 @@ export const DashboardPage: React.FC = () => {
                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
                                         <Sparkles className="w-4 h-4" />
                                     </div>
-                                    <span className="font-bold text-sm text-slate-800">{t('common.client_portal')}</span>
+                                    <span className="font-bold text-sm text-slate-800">Portail Client</span>
                                     <ArrowUpRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                                 </div>
                                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                                    {t('dashboard.client_portal_desc')}
+                                    Accédez à l'interface dédiée pour vos clients. Validez les livrables et gérez le support.
                                 </p>
                             </div>
                         )}
@@ -181,7 +179,7 @@ export const DashboardPage: React.FC = () => {
                             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
                                 <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4 text-amber-500" />
-                                    {t('dashboard.urgent_tasks')}
+                                    Tâches urgentes
                                 </span>
                                 <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{criticalTasks.length}</span>
                             </div>
@@ -197,7 +195,7 @@ export const DashboardPage: React.FC = () => {
                                                 {task.dueDate && (
                                                     <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                                                         <CalendarDays className="w-2.5 h-2.5" />
-                                                        {new Date(task.dueDate).toLocaleDateString()}
+                                                        {new Date(task.dueDate).toLocaleDateString('fr-FR')}
                                                     </p>
                                                 )}
                                             </div>
@@ -214,7 +212,7 @@ export const DashboardPage: React.FC = () => {
             {/* Create Project Modal */}
             <AnimatePresence>
                 {showCreateModal && (
-                    <CreateProjectModal onClose={() => setShowCreateModal(false)} />
+                    <CreateProjectModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
                 )}
             </AnimatePresence>
         </AppLayout>
@@ -222,8 +220,8 @@ export const DashboardPage: React.FC = () => {
 };
 
 // ===== PROJECT ROW CARD =====
-const ProjectRow: React.FC<{ project: Project; index: number; t: any; onOpen: () => void }> = ({ project, index, t, onOpen }) => {
-    const { label, color, bg } = STATUS_LABELS(t)[project.status];
+const ProjectRow: React.FC<{ project: Project; index: number; onOpen: () => void }> = ({ project, index, onOpen }) => {
+    const { label, color, bg } = STATUS_LABELS[project.status];
     const isBoardView = project.viewMode === 'BOARD';
 
     return (
@@ -244,7 +242,7 @@ const ProjectRow: React.FC<{ project: Project; index: number; t: any; onOpen: ()
                                 {project.name}
                             </h3>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isBoardView ? 'bg-indigo-50 text-indigo-700' : 'bg-violet-50 text-violet-700'}`}>
-                                {t('dashboard.view_mode', { mode: project.viewMode })}
+                                Vue {project.viewMode}
                             </span>
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-slate-600`}>
                                 {project.type}
@@ -258,7 +256,7 @@ const ProjectRow: React.FC<{ project: Project; index: number; t: any; onOpen: ()
                         {/* Progress bar */}
                         <div className="space-y-1">
                             <div className="flex justify-between text-[10px] text-slate-400">
-                                <span>{t('common.progress')}</span>
+                                <span>Avancement</span>
                                 <span className="font-semibold text-slate-600">{project.progress}%</span>
                             </div>
                             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -280,11 +278,13 @@ const ProjectRow: React.FC<{ project: Project; index: number; t: any; onOpen: ()
                                     {m.avatar}
                                 </div>
                             ))}
-                                <span className="text-[10px] text-slate-400">{project.members?.length ? t('dashboard.member_count_plural', { count: project.members.length }) : t('dashboard.member_count')}</span>
+                            {(!project.members || project.members.length === 0) && (
+                                <span className="text-[10px] text-slate-400">0 membre</span>
+                            )}
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] text-slate-400">{t('common.budget')}</p>
-                            <p className="text-xs font-bold text-slate-700">{project.budget.toLocaleString()} {t('common.currency_dt') || 'DT'}</p>
+                            <p className="text-[10px] text-slate-400">Budget</p>
+                            <p className="text-xs font-bold text-slate-700">{project.budget.toLocaleString()} DT</p>
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                     </div>

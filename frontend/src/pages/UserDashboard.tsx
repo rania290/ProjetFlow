@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api/api-client';
 import { projectsService } from '../api/projects.service';
 import { useAuth } from '../hooks/useAuth';
@@ -32,8 +33,8 @@ interface Task {
   description: string;
   projectName: string;
   projectId: string;
-  priority: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  priority: 'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL';
+  status: 'TODO' | 'IN_PROGRESS' | 'IN_TEST' | 'DONE';
   dueDate: string;
   assigneeName: string;
   storyPoints?: number;
@@ -70,20 +71,51 @@ interface UserStats {
 }
 
 const PRIORITY_CONFIG = {
-  HIGH: { label: 'Haute', color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle },
-  MEDIUM: { label: 'Moyenne', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-  LOW: { label: 'Basse', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle }
+  CRITICAL: {
+    label: 'Critique',
+    color: 'bg-rose-100 text-rose-800 border-rose-200',
+    icon: AlertCircle
+  },
+  HIGH: {
+    label: 'Haute',
+    color: 'bg-red-100 text-red-800 border-red-200',
+    icon: AlertCircle
+  },
+  MEDIUM: {
+    label: 'Moyenne',
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    icon: Clock
+  },
+  LOW: {
+    label: 'Basse',
+    color: 'bg-green-100 text-green-800 border-green-200',
+    icon: CheckCircle
+  }
 };
 
 const STATUS_CONFIG = {
-  TODO: { label: 'À faire', color: 'bg-slate-100 text-slate-800 border-slate-200' },
-  IN_PROGRESS: { label: 'En cours', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  DONE: { label: 'Terminé', color: 'bg-green-100 text-green-800 border-green-200' }
+  TODO: {
+    label: 'À faire',
+    color: 'bg-slate-100 text-slate-800 border-slate-200'
+  },
+  IN_PROGRESS: {
+    label: 'En cours',
+    color: 'bg-blue-100 text-blue-800 border-blue-200'
+  },
+  IN_TEST: {
+    label: 'En test',
+    color: 'bg-purple-100 text-purple-800 border-purple-200'
+  },
+  DONE: {
+    label: 'Terminé',
+    color: 'bg-green-100 text-green-800 border-green-200'
+  }
 };
 
 export const UserDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth(); // Utiliser le user du authStore au lieu de useState
+  const { t } = useTranslation();
+  const { user } = useAuth();
 
   // Debug: Vérifier ce que contient le user
   console.log('Dashboard - User du authStore:', user);
@@ -131,8 +163,16 @@ export const UserDashboard: React.FC = () => {
       const fetchedProjectsRaw = projectsData || [];
       const projectIds = new Set(fetchedProjectsRaw.map((p: any) => p.id));
       
-      // Filtrer les tâches pour ne garder que celles qui appartiennent aux projets de l'utilisateur
-      const fetchedTasks: Task[] = (tasksData || []).filter((t: any) => projectIds.has(t.projectId));
+      // Filtrer les tâches pour ne garder que celles qui appartiennent aux projets de l'utilisateur et enrichir de projectName
+      const fetchedTasks: Task[] = (tasksData || [])
+        .filter((t: any) => projectIds.has(t.projectId))
+        .map((t: any) => {
+          const proj = fetchedProjectsRaw.find((p: any) => p.id === t.projectId);
+          return {
+            ...t,
+            projectName: proj ? proj.name : 'Projet',
+          };
+        });
 
       // Calculer l'avancement DYNAMIQUE pour chaque projet
       const fetchedProjects = fetchedProjectsRaw.map((p: any) => {
@@ -255,14 +295,9 @@ export const UserDashboard: React.FC = () => {
     return days;
   };
 
-  const getRoleLabel = (role: string) => {
-    const roleMap: Record<string, string> = {
-      'ADMIN': 'Administrateur',
-      'PROJECT_MANAGER': 'Gestionnaire',
-      'TEAM_MEMBER': 'Membre',
-      'OBSERVER': 'Observateur'
-    };
-    return roleMap[role] || role;
+  const getRoleLabel = (role?: string) => {
+    if (!role) return '';
+    return t(`admin.roles.${role}`, { defaultValue: role });
   };
 
   if (loading) {
@@ -292,7 +327,7 @@ export const UserDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-slate-900">
-                    Bonjour, {user?.fullName?.split(' ')[0]} ! 👋
+                    {t('dashboard_custom.greeting', { name: user?.fullName?.split(' ')[0] })}
                   </h1>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-600">{getRoleLabel(user?.role)}</span>
@@ -328,13 +363,13 @@ export const UserDashboard: React.FC = () => {
                       className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-slate-200 max-h-96 overflow-hidden"
                     >
                       <div className="p-4 border-b border-slate-200">
-                        <h3 className="font-semibold text-slate-900">Notifications</h3>
+                        <h3 className="font-semibold text-slate-900">{t('dashboard_custom.notifications')}</h3>
                       </div>
                       <div className="max-h-80 overflow-y-auto">
                         {notifications.length === 0 ? (
                           <div className="p-4 text-center text-slate-500">
                             <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                            <p>Aucune notification</p>
+                            <p>{t('dashboard_custom.no_notifications')}</p>
                           </div>
                         ) : (
                           notifications.map((notif) => (
@@ -374,11 +409,11 @@ export const UserDashboard: React.FC = () => {
                     className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                   >
                     <User className="w-4 h-4" />
-                    Mon Profil
+                    {t('dashboard_custom.my_profile')}
                   </button>
                   <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
                     <LogOut className="w-4 h-4" />
-                    Déconnexion
+                    {t('dashboard_custom.logout')}
                   </button>
                 </div>
               </div>
@@ -398,7 +433,7 @@ export const UserDashboard: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">Tâches terminées</p>
+                <p className="text-sm text-slate-600">{t('dashboard_custom.completed_tasks')}</p>
                 <p className="text-2xl font-bold text-slate-900">{stats.tasksCompleted}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -415,7 +450,7 @@ export const UserDashboard: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">Tâches en attente</p>
+                <p className="text-sm text-slate-600">{t('dashboard_custom.pending_tasks')}</p>
                 <p className="text-2xl font-bold text-slate-900">{stats.tasksPending}</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -432,7 +467,7 @@ export const UserDashboard: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">Projets actifs</p>
+                <p className="text-sm text-slate-600">{t('dashboard_custom.active_projects')}</p>
                 <p className="text-2xl font-bold text-slate-900">{stats.projectsActive}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">

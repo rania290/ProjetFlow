@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -36,6 +37,7 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
   onBulkAssignRoles, 
   onRemoveRole 
 }) => {
+  const { t } = useTranslation();
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [userSearch, setUserSearch] = useState('');
 
@@ -237,9 +239,9 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
             <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[32px] flex items-center justify-center mb-8 relative z-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
                 <Users className="w-10 h-10 text-slate-200" />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10 uppercase tracking-tight font-display">SÉLECTIONNEZ UN PROFIL</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10 uppercase tracking-tight font-display">{t('roles.select_profile', 'SELECT A PROFILE')}</h3>
             <p className="text-slate-400 text-sm max-w-xs relative z-10 font-medium leading-relaxed">
-              Choisissez un collaborateur dans l'annuaire pour gérer ses habilitations et rôles transverses.
+              {t('roles.choose_collaborator', 'Choose a collaborator in the directory to manage their clearances and cross-functional roles.')}
             </p>
           </Card>
         )}

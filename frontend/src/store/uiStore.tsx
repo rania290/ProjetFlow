@@ -38,6 +38,12 @@ function applyTheme(theme: ThemeMode) {
   const root = document.documentElement;
   root.dataset.theme = theme;
   root.style.colorScheme = theme;
+  
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
 }
 
 type UiContextValue = {

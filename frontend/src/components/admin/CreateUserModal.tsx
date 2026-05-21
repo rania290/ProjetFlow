@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/api-client';
 import {
@@ -34,38 +35,58 @@ interface CreateUserModalProps {
   onSuccess: () => void;
 }
 
-const ROLE_CONFIG = {
+const getRoleConfig = (t: any) => ({
   ADMIN: {
-    label: 'Administrateur',
+    label: t('admin.roles.ADMIN'),
     color: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Crown,
-    description: 'Accès complet au système'
+    description: t('admin.role_desc_admin')
   },
   PROJECT_MANAGER: {
-    label: 'Gestionnaire',
+    label: t('admin.roles.PROJECT_MANAGER'),
     color: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: Briefcase,
-    description: 'Gestion des projets et équipes'
+    description: t('admin.role_desc_pm')
   },
-  TEAM_MEMBER: {
-    label: 'Membre',
-    color: 'bg-green-100 text-green-800 border-green-200',
+  DEVELOPER: {
+    label: t('admin.roles.DEVELOPER'),
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     icon: UserCheck,
-    description: 'Participation aux projets'
+    description: t('admin.role_desc_dev')
   },
-  OBSERVER: {
-    label: 'Observateur',
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
+  DESIGNER: {
+    label: t('admin.roles.DESIGNER'),
+    color: 'bg-pink-100 text-pink-800 border-pink-200',
+    icon: UserCheck,
+    description: t('admin.role_desc_designer')
+  },
+  TESTER: {
+    label: t('admin.roles.TESTER'),
+    color: 'bg-amber-100 text-amber-800 border-amber-200',
     icon: Eye,
-    description: 'Accès consultation uniquement'
+    description: t('admin.role_desc_tester')
+  },
+  RH: {
+    label: t('admin.roles.RH'),
+    color: 'bg-purple-100 text-purple-800 border-purple-200',
+    icon: UserCheck,
+    description: t('admin.role_desc_rh')
+  },
+  CLIENT: {
+    label: t('admin.roles.CLIENT'),
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    icon: UserCheck,
+    description: t('admin.role_desc_client')
   }
-};
+});
 
 export const CreateUserModal: React.FC<CreateUserModalProps> = ({
   isOpen,
   onClose,
   onSuccess
 }) => {
+  const { t } = useTranslation();
+  const ROLE_CONFIG = getRoleConfig(t);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -77,7 +98,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     fullName: '',
     email: '',
     department: '',
-    role: 'TEAM_MEMBER',
+    role: 'DEVELOPER',
     assignedProjects: [] as string[],
     assignedTasks: [] as string[]
   });
@@ -106,7 +127,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       const response = await api.get('/projects');
       setProjects(response.data);
     } catch (err) {
-      console.error('Erreur lors du chargement des projets:', err);
+      console.error('Error loading projects:', err);
     }
   };
 
@@ -115,23 +136,23 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       const response = await api.get('/tasks');
       setTasks(response.data);
     } catch (err) {
-      console.error('Erreur lors du chargement des tâches:', err);
+      console.error('Error loading tasks:', err);
     }
   };
 
   const validateStep1 = () => {
     const e: Record<string, string> = {};
-    if (!form.fullName.trim()) e.fullName = 'Le nom complet est requis.';
-    if (!form.email.trim()) e.email = 'L\'email est requis.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Email invalide.';
-    if (!form.department.trim()) e.department = 'Le département est requis.';
+    if (!form.fullName.trim()) e.fullName = t('admin.fullname_required_err');
+    if (!form.email.trim()) e.email = t('admin.email_required_err');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t('admin.email_invalid_err');
+    if (!form.department.trim()) e.department = t('admin.department_required_err');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const validateStep2 = () => {
     const e: Record<string, string> = {};
-    if (form.assignedProjects.length === 0) e.assignedProjects = 'Au moins un projet doit être assigné.';
+    if (form.assignedProjects.length === 0) e.assignedProjects = t('admin.project_required_err');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -156,12 +177,11 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
         temporaryPassword: generatedPassword,
         assignedProjects: form.assignedProjects,
         assignedTasks: form.assignedTasks,
-        status: 'PENDING' // En attente de première connexion
+        status: 'PENDING'
       };
 
       await api.post('/admin/users', userData);
       
-      // Envoyer l'email de bienvenue
       await api.post('/admin/send-welcome-email', {
         email: form.email,
         fullName: form.fullName,
@@ -173,7 +193,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       resetForm();
     } catch (err: any) {
       setErrors({ 
-        submit: err.response?.data?.message || 'Erreur lors de la création de l\'utilisateur' 
+        submit: err.response?.data?.message || t('admin.error_creating_user')
       });
     } finally {
       setLoading(false);
@@ -185,7 +205,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
       fullName: '',
       email: '',
       department: '',
-      role: 'TEAM_MEMBER',
+      role: 'DEVELOPER',
       assignedProjects: [],
       assignedTasks: []
     });
@@ -225,11 +245,11 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   <UserPlus className="w-6 h-6 text-primary-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Créer un utilisateur</h2>
+                  <h2 className="text-xl font-bold text-slate-900">{t('admin.create_user_title')}</h2>
                   <p className="text-sm text-slate-600">
-                    {step === 1 && 'Informations de base'}
-                    {step === 2 && 'Assignations'}
-                    {step === 3 && 'Confirmation'}
+                    {step === 1 && t('admin.step_basic_info')}
+                    {step === 2 && t('admin.step_assignments')}
+                    {step === 3 && t('admin.step_confirmation')}
                   </p>
                 </div>
               </div>
@@ -280,7 +300,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Nom complet *
+                      {t('admin.full_name_required')}
                     </label>
                     <input
                       type="text"
@@ -296,12 +316,13 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Email *
+                      {t('admin.email_required_label')}
                     </label>
                     <input
                       type="email"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      autoComplete="off"
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="m.benali@entreprise.com"
                     />
@@ -313,14 +334,13 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Département/Équipe *
+                    {t('admin.department_team')}
                   </label>
                   <input
                     type="text"
                     value={form.department}
                     onChange={(e) => setForm({ ...form, department: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Développement"
                   />
                   {errors.department && (
                     <p className="mt-1 text-xs text-red-600">{errors.department}</p>
@@ -329,7 +349,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Rôle *
+                    {t('admin.role_required_label')}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {Object.entries(ROLE_CONFIG).map(([role, config]) => {
@@ -360,7 +380,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-amber-800">Mot de passe temporaire</p>
+                      <p className="text-sm font-medium text-amber-800">{t('admin.temp_password')}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <code className="text-xs bg-amber-100 px-2 py-1 rounded font-mono">
                           {showPassword ? generatedPassword : '••••••••••••'}
@@ -377,7 +397,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                           onClick={generatePassword}
                           className="text-xs text-amber-700 hover:text-amber-800 underline"
                         >
-                          Régénérer
+                          {t('admin.regenerate')}
                         </button>
                       </div>
                     </div>
@@ -390,7 +410,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Projets assignés *
+                    {t('admin.assigned_projects_label')}
                   </label>
                   <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
                     {projects.map((project) => (
@@ -427,7 +447,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Tâches assignées (optionnel)
+                    {t('admin.assigned_tasks_optional')}
                   </label>
                   <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
                     {tasks
@@ -472,34 +492,34 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Prêt à créer l'utilisateur</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">{t('admin.ready_to_create')}</h3>
                   <p className="text-sm text-slate-600">
-                    Vérifiez les informations avant de confirmer
+                    {t('admin.verify_info')}
                   </p>
                 </div>
 
                 <div className="bg-slate-50 rounded-lg p-4 space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <span className="text-xs text-slate-500">Nom</span>
+                      <span className="text-xs text-slate-500">{t('admin.name_summary')}</span>
                       <p className="font-medium">{form.fullName}</p>
                     </div>
                     <div>
-                      <span className="text-xs text-slate-500">Email</span>
+                      <span className="text-xs text-slate-500">{t('common.email')}</span>
                       <p className="font-medium">{form.email}</p>
                     </div>
                     <div>
-                      <span className="text-xs text-slate-500">Département</span>
+                      <span className="text-xs text-slate-500">{t('admin.department_summary')}</span>
                       <p className="font-medium">{form.department}</p>
                     </div>
                     <div>
-                      <span className="text-xs text-slate-500">Rôle</span>
+                      <span className="text-xs text-slate-500">{t('admin.role_summary')}</span>
                       <p className="font-medium">{ROLE_CONFIG[form.role as keyof typeof ROLE_CONFIG]?.label}</p>
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-xs text-slate-500">Projets assignés</span>
+                    <span className="text-xs text-slate-500">{t('admin.assigned_projects_summary')}</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {form.assignedProjects.map(projectId => {
                         const project = projects.find(p => p.id === projectId);
@@ -514,16 +534,15 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
                   {form.assignedTasks.length > 0 && (
                     <div>
-                      <span className="text-xs text-slate-500">Tâches assignées</span>
-                      <p className="text-sm font-medium">{form.assignedTasks.length} tâche(s)</p>
+                      <span className="text-xs text-slate-500">{t('admin.assigned_tasks_optional')}</span>
+                      <p className="text-sm font-medium">{t('admin.assigned_tasks_count', { count: form.assignedTasks.length })}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    <strong>Action automatique :</strong> Un email de bienvenue sera envoyé à {form.email} 
-                    avec les identifiants de connexion.
+                    <strong>{t('admin.auto_action')}</strong> {t('admin.welcome_email_msg', { email: form.email })}
                   </p>
                 </div>
               </div>
@@ -538,7 +557,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   onClick={handlePrev}
                   className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                 >
-                  Précédent
+                  {t('admin.previous_btn')}
                 </button>
             )}
             </div>
@@ -548,7 +567,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 onClick={handleClose}
                 className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
               >
-                Annuler
+                {t('admin.cancel_btn')}
               </button>
 
               {step < 3 ? (
@@ -556,7 +575,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   onClick={handleNext}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                 >
-                  Suivant
+                  {t('admin.next_btn')}
                 </button>
               ) : (
                 <button
@@ -567,10 +586,10 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Création...
+                      {t('admin.creation_loading')}
                     </>
                   ) : (
-                    'Créer l\'utilisateur'
+                    t('admin.create_user_btn')
                   )}
                 </button>
               )}

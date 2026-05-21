@@ -68,7 +68,7 @@ export type RoleConfigType = Record<string, RoleConfigItem>;
 
 export const ROLE_CONFIG: RoleConfigType = {
   ADMIN: {
-    label: 'Admin',
+    label: 'ADMIN',
     color: 'bg-purple-50 text-purple-700 border-purple-200/50',
     iconColor: 'text-purple-600',
     iconBg: 'bg-purple-100',
@@ -77,7 +77,7 @@ export const ROLE_CONFIG: RoleConfigType = {
     level: 100
   },
   PROJECT_MANAGER: {
-    label: 'Chef de Projet',
+    label: 'CHEF DE PROJET',
     color: 'bg-blue-50 text-blue-700 border-blue-200/50',
     iconColor: 'text-blue-600',
     iconBg: 'bg-blue-100',
@@ -86,7 +86,7 @@ export const ROLE_CONFIG: RoleConfigType = {
     level: 80
   },
   DEVELOPER: {
-    label: 'Développeur',
+    label: 'DÉVELOPPEUR',
     color: 'bg-indigo-50 text-indigo-700 border-indigo-200/50',
     iconColor: 'text-indigo-600',
     iconBg: 'bg-indigo-100',
@@ -95,7 +95,7 @@ export const ROLE_CONFIG: RoleConfigType = {
     level: 60
   },
   DESIGNER: {
-    label: 'Designer',
+    label: 'DESIGNER',
     color: 'bg-amber-50 text-amber-800 border-amber-200/50',
     iconColor: 'text-amber-800',
     iconBg: 'bg-amber-100',
@@ -104,7 +104,7 @@ export const ROLE_CONFIG: RoleConfigType = {
     level: 60
   },
   TESTER: {
-    label: 'Testeur',
+    label: 'TESTEUR',
     color: 'bg-amber-50 text-amber-700 border-amber-200/50',
     iconColor: 'text-amber-600',
     iconBg: 'bg-amber-100',
@@ -112,17 +112,17 @@ export const ROLE_CONFIG: RoleConfigType = {
     description: 'Tests et QA',
     level: 50
   },
-  TEAM_MEMBER: {
-    label: 'Membre',
-    color: 'bg-emerald-50 text-emerald-700 border-emerald-200/50',
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-100',
+  RH: {
+    label: 'RESSOURCES HUMAINES',
+    color: 'bg-purple-50 text-purple-700 border-purple-200/50',
+    iconColor: 'text-purple-600',
+    iconBg: 'bg-purple-100',
     icon: UserCheck,
-    description: 'Participation au projet',
-    level: 40
+    description: 'Gestion RH et administratrice',
+    level: 70
   },
   CLIENT: {
-    label: 'Client',
+    label: 'CLIENT',
     color: 'bg-orange-50 text-orange-700 border-orange-200/50',
     iconColor: 'text-orange-600',
     iconBg: 'bg-orange-100',

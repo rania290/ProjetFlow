@@ -69,6 +69,8 @@ export class ProjectsService {
               members: projectMembers.map(m => ({
                   id: m.user.id,
                   fullName: m.user.fullName,
+                  role: m.role,
+                  tjm: 0,
                   avatar: m.user.fullName ? m.user.fullName.charAt(0).toUpperCase() : 'U'
               }))
           };
@@ -98,6 +100,8 @@ export class ProjectsService {
             members: projectMembers.map(m => ({
                 id: m.user.id,
                 fullName: m.user.fullName,
+                role: m.role,
+                tjm: 0,
                 avatar: m.user.fullName ? m.user.fullName.charAt(0).toUpperCase() : 'U'
             }))
         };

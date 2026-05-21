@@ -91,7 +91,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
                             key={p.id}
                             onClick={() => {
                                 if (isAssigned) setAssignments(assignments.filter(a => a.projectId !== p.id));
-                                else setAssignments([...assignments, { projectId: p.id, role: 'TEAM_MEMBER', tjm: 450}]);
+                                else setAssignments([...assignments, { projectId: p.id, role: 'DEVELOPER', tjm: 450}]);
                             }}
                             className={`p-4 rounded-[24px] border-2 text-left transition-all relative overflow-hidden group/item ${
                                 isAssigned 
@@ -197,7 +197,7 @@ interface AddMemberModalProps {
 
 export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, project, users, existingUserIds = [], onAssignRole }) => {
   const [selectedUser, setSelectedUser] = useState('');
-  const [selectedRole, setSelectedRole] = useState('TEAM_MEMBER');
+  const [selectedRole, setSelectedRole] = useState('DEVELOPER');
   const [tjm, setTjm] = useState(450);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -210,7 +210,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
         try {
           await onAssignRole(selectedUser, project.id, selectedRole, tjm);
           setSelectedUser('');
-          setSelectedRole('TEAM_MEMBER');
+          setSelectedRole('DEVELOPER');
           setTjm(450);
           onClose();
         } finally {

@@ -34,6 +34,7 @@ export class TicketController {
     @Query('status') status?: string,
     @Query('priority') priority?: string,
     @Query('assignedTo') assignedTo?: string,
+    @Request() req?: any,
   ) {
     return this.ticketService.findAll({ 
       page, 
@@ -43,7 +44,7 @@ export class TicketController {
       status, 
       priority, 
       assignedTo 
-    });
+    }, req?.user);
   }
 
   @Get(':id')

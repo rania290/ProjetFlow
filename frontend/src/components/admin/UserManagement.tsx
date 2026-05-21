@@ -67,7 +67,7 @@ interface User {
   id: string;
   email: string;
   fullName: string;
-  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'DESIGNER' | 'TESTER' | 'TEAM_MEMBER' | 'CLIENT';
+  role: 'ADMIN' | 'PROJECT_MANAGER' | 'DEVELOPER' | 'DESIGNER' | 'TESTER' | 'RH' | 'CLIENT';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -123,12 +123,12 @@ const getRoleConfig = (t: any): Record<string, any> => ({
     description: t('admin.role_descriptions.TESTER'),
     gradient: 'from-amber-500 to-orange-600'
   },
-  TEAM_MEMBER: {
-    label: t('admin.roles.TEAM_MEMBER'),
-    color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    icon: UserCheck,
-    description: t('admin.role_descriptions.TEAM_MEMBER'),
-    gradient: 'from-emerald-500 to-teal-600'
+  RH: {
+    label: t('admin.roles.RH'),
+    color: 'bg-purple-100 text-purple-700 border-purple-200',
+    icon: Users,
+    description: t('admin.role_descriptions.RH'),
+    gradient: 'from-purple-500 to-indigo-600'
   },
   CLIENT: {
     label: t('admin.roles.CLIENT'),
@@ -261,6 +261,7 @@ export const UserManagement: React.FC = () => {
                   className="pl-10 h-10 rounded-xl border-slate-100 bg-slate-50/50"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  autoComplete="off"
                 />
               </div>
                <Button 
@@ -324,7 +325,7 @@ export const UserManagement: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="px-6 py-5">
-                        <Badge className={`rounded-lg px-2.5 py-1 text-[10px] uppercase font-black tracking-widest border-none ${ROLE_CONFIG[user.role]?.color}`}>
+                        <Badge className={`rounded-lg px-2.5 py-1 text-[10px] uppercase font-medium tracking-widest border-none ${ROLE_CONFIG[user.role]?.color}`}>
                           {ROLE_CONFIG[user.role]?.label || user.role}
                         </Badge>
                       </TableCell>
@@ -455,12 +456,12 @@ const CreateUserModal: React.FC<{
                 value={formData.role} 
                 onValueChange={(val) => setFormData({...formData, role: val})}
               >
-                <SelectTrigger className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-bold uppercase tracking-widest text-[10px]">
+                <SelectTrigger className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-medium uppercase tracking-widest text-[10px]">
                   <SelectValue placeholder={t('admin.choose_role')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white rounded-xl border-slate-200 z-[100] shadow-xl p-1">
                   {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key} className="text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-slate-100 py-2">
+                    <SelectItem key={key} value={key} className="text-xs font-medium uppercase tracking-widest cursor-pointer hover:bg-slate-100 py-2">
                       {cfg.label}
                     </SelectItem>
                   ))}
@@ -525,12 +526,12 @@ const EditUserModal: React.FC<{
                 value={formData.role} 
                 onValueChange={(val: any) => setFormData({...formData, role: val})}
               >
-                <SelectTrigger className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-bold uppercase tracking-widest text-[10px]">
+                <SelectTrigger className="h-12 rounded-2xl border-slate-300 bg-white !text-black font-medium uppercase tracking-widest text-[10px]">
                   <SelectValue placeholder={t('admin.choose_role')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white rounded-xl border-slate-200 z-[100] shadow-xl p-1">
                   {Object.entries(ROLE_CONFIG).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key} className="text-xs font-bold uppercase tracking-widest cursor-pointer hover:bg-slate-100 py-2">
+                    <SelectItem key={key} value={key} className="text-xs font-medium uppercase tracking-widest cursor-pointer hover:bg-slate-100 py-2">
                       {cfg.label}
                     </SelectItem>
                   ))}

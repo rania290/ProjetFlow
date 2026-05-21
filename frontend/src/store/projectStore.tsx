@@ -197,9 +197,12 @@ function reducer(state: StoreState, action: Action): StoreState {
             };
         }
         case 'SET_PROJECTS': {
-            const localProjects = safeProjects;
+            // API is the authoritative source of truth.
+            // We only preserve UI-local fields (viewMode) from localStorage,
+            // but we do NOT add back projects that the API did not return.
+            // This prevents deleted projects from reappearing after a refresh.
             const mergedProjects = action.projects.map(apiProject => {
-                const local = localProjects.find(p => p.id === apiProject.id);
+                const local = safeProjects.find(p => p.id === apiProject.id);
                 if (local) {
                     return {
                         ...apiProject,
@@ -207,16 +210,13 @@ function reducer(state: StoreState, action: Action): StoreState {
                         type: local.type ?? apiProject.type,
                         clientName: local.clientName ?? apiProject.clientName,
                         budget: local.budget ?? apiProject.budget,
-                        members: local.members?.length ? local.members : (apiProject.members || []),
-                        tags: local.tags?.length ? local.tags : (apiProject.tags || []),
+                        members: apiProject.members?.length ? apiProject.members : (local.members || []),
+                        tags: apiProject.tags?.length ? apiProject.tags : (local.tags || []),
                     };
                 }
                 return apiProject;
             });
-            const apiIds = new Set(action.projects.map(p => p.id));
-            const localOnlyProjects = localProjects.filter(p => !apiIds.has(p.id));
-            const finalProjects = [...mergedProjects, ...localOnlyProjects];
-            return { ...state, projects: recalculateProgress(finalProjects, safeTasks) };
+            return { ...state, projects: recalculateProgress(mergedProjects, safeTasks) };
         }
 
         case 'SET_TASKS': {
@@ -352,27 +352,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         fetchAll();
     }, []);
 
-    // BACKGROUND SYNC TO BACKEND (Debounced)
-    useEffect(() => {
-        const syncTimer = setTimeout(async () => {
-            try {
-                // Sync projects
-                for (const project of state.projects) {
-                    try { await projectsService.update(project.id, project); } 
-                    catch { try { await projectsService.create(project); } catch {} }
-                }
-                // Sync tasks
-                for (const task of state.tasks) {
-                    try { await projectsService.updateTask(task.id, task); } 
-                    catch { try { await projectsService.createTask(task); } catch {} }
-                }
-            } catch (err) {
-                console.warn("Background sync failed (probably offline):", err);
-            }
-        }, 3000); // Sync 3 seconds after last change
-
-        return () => clearTimeout(syncTimer);
-    }, [state.projects, state.tasks]);
+    // NOTE: Background sync has been intentionally removed.
+    // Auto-creating projects on update failure was causing deleted projects
+    // to be silently re-created in the backend after any network hiccup.
+    // All mutations (create/update/delete) are now handled explicitly
+    // in the component handlers with proper API calls + store dispatch.
 
     const safeProjects = state.projects || [];
     const safeTasks = state.tasks || [];
@@ -400,7 +384,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const dashboardStats: DashboardStats = {
         totalProjects: safeProjects.length,
-        activeProjects: safeProjects.filter(p => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE').length,
+        activeProjects: safeProjects.filter(p => p.status === 'IN_PROGRESS' || p.status === 'PLANNED').length,
         totalTasks: safeTasks.length,
         completedTasks: safeTasks.filter(t => t.status === 'DONE').length,
         teamMembers: new Set(safeProjects.flatMap(p => (p.members || []).map(m => m.id))).size || 0,

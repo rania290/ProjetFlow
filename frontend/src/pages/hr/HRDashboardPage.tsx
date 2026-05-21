@@ -34,7 +34,7 @@ export const HRDashboardPage = () => {
   );
 
   const pending = leaves.filter(l => l.status === 'PENDING').length;
-  const approved = leaves.filter(l => l.status === 'APPROVED').length;
+  const approved = leaves.filter(l => l.status === 'FULLY_APPROVED').length;
   const rejected = leaves.filter(l => l.status === 'REJECTED').length;
   const total = leaves.length;
 
@@ -102,11 +102,11 @@ export const HRDashboardPage = () => {
                 <div className="space-y-4 relative z-10">
                   {recent.map(l => (
                     <div key={l.id} className="flex items-center gap-5 rounded-[1.5rem] border border-slate-100 bg-slate-50/30 p-5 hover:bg-white hover:border-amber-100 hover:shadow-xl hover:shadow-amber-50/20 transition-all duration-300">
-                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-lg ${l.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100'
+                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center shadow-lg ${l.status === 'FULLY_APPROVED' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-100'
                           : l.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 shadow-rose-100'
                             : 'bg-amber-50 text-amber-600 shadow-amber-100'
                         }`}>
-                        {l.status === 'APPROVED' ? <CheckCircle className="w-6 h-6" /> : l.status === 'REJECTED' ? <XCircle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                        {l.status === 'FULLY_APPROVED' ? <CheckCircle className="w-6 h-6" /> : l.status === 'REJECTED' ? <XCircle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                       </div>
                       <div className="flex-1">
                         <span className="block text-sm font-black text-slate-800 tracking-tight">{l.employeeName}</span>
@@ -114,11 +114,11 @@ export const HRDashboardPage = () => {
                           {new Date(l.createdAt).toLocaleDateString()} • {t('hr.days_count', { count: l.durationDays })}
                         </span>
                       </div>
-                      <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${l.status === 'APPROVED' ? 'bg-emerald-500 text-white'
+                      <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${l.status === 'FULLY_APPROVED' ? 'bg-emerald-500 text-white'
                           : l.status === 'REJECTED' ? 'bg-rose-500 text-white'
                             : 'bg-amber-500 text-white'
                         }`}>
-                        {l.status === 'APPROVED' ? t('hr.approved') : l.status === 'REJECTED' ? t('hr.rejected') : t('hr.pending')}
+                        {l.status === 'FULLY_APPROVED' ? t('hr.approved') : l.status === 'REJECTED' ? t('hr.rejected') : t('hr.pending')}
                       </div>
                     </div>
                   ))}

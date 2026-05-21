@@ -63,7 +63,7 @@ export const RoleBasedNavigation: React.FC = () => {
       requiredPermission: 'READ_MESSAGE'
     },
     {
-      name: 'Analytics',
+      name: 'Reporting & Analytics',
       href: '/analytics',
       icon: BarChart3,
       requiredPermission: 'READ_ANALYTICS'
@@ -266,9 +266,24 @@ export const UserRoleBadge: React.FC<{ role: string; className?: string }> = ({
       color: 'bg-blue-100 text-blue-800 border-blue-200',
       icon: Briefcase
     },
-    TEAM_MEMBER: {
-      label: 'Membre',
-      color: 'bg-green-100 text-green-800 border-green-200',
+    DEVELOPER: {
+      label: 'Développeur',
+      color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      icon: Users
+    },
+    DESIGNER: {
+      label: 'Designer',
+      color: 'bg-pink-100 text-pink-800 border-pink-200',
+      icon: Users
+    },
+    TESTER: {
+      label: 'Testeur',
+      color: 'bg-amber-100 text-amber-800 border-amber-200',
+      icon: Users
+    },
+    RH: {
+      label: 'RESSOURCES HUMAINES',
+      color: 'bg-purple-100 text-purple-800 border-purple-200',
       icon: Users
     },
     CLIENT: {
@@ -298,7 +313,7 @@ export const UserRoleBadge: React.FC<{ role: string; className?: string }> = ({
     }
   };
 
-  const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.TEAM_MEMBER;
+  const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.DEVELOPER;
   const Icon = config.icon;
 
   return (

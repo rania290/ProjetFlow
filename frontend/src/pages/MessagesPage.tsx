@@ -48,7 +48,37 @@ export const MessagesPage: React.FC = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(state.projects[0]?.id || null);
     const [searchQuery, setSearchQuery] = useState('');
     const [mutedProjects, setMutedProjects] = useState<Set<string>>(new Set());
-    const [chatSettings, setChatSettings] = useState({ sound: true, push: true });
+    const [chatSettings, setChatSettings] = useState<{ sound: boolean; push: boolean }>(() => {
+        const saved = localStorage.getItem(`chat_settings_${user?.id || 'default'}`);
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        return { sound: true, push: true };
+    });
+
+    useEffect(() => {
+        if (user) {
+            const saved = localStorage.getItem(`chat_settings_${user.id}`);
+            if (saved) {
+                try {
+                    setChatSettings(JSON.parse(saved));
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem(`chat_settings_${user.id}`, JSON.stringify(chatSettings));
+        }
+    }, [chatSettings, user]);
+
     const [activityHistory, setActivityHistory] = useState<ActivityLog[]>([]);
     const [viewMode, setViewMode] = useState<'chat' | 'activity'>('chat');
     const [unreadCount, setUnreadCount] = useState(0);
@@ -80,7 +110,6 @@ export const MessagesPage: React.FC = () => {
             Color,
             FontFamily,
             Placeholder.configure({ placeholder: t('messages.say_hello') }),
-            Underline,
             Highlight,
             TaskList,
             TaskItem.configure({ nested: true }),
@@ -199,7 +228,7 @@ export const MessagesPage: React.FC = () => {
             editMessage(editingMessage.id, html);
             setEditingMessage(null);
         } else {
-            sendMessage(html, replyTo?.id);
+            sendMessage(html);
         }
         editor.commands.clearContent();
         setReplyTo(null);
@@ -760,11 +789,9 @@ export const MessagesPage: React.FC = () => {
                                                         </Button>
                                                         <Separator orientation="vertical" className="shrink-0 h-4 mx-1 bg-slate-200" />
                                                         <Popover>
-                                                            <PopoverTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200">
-                                                                    <Palette className="w-3.5 h-3.5" />
-                                                                </Button>
-                                                            </PopoverTrigger>
+                                                            <PopoverTrigger className="shrink-0 w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 inline-flex items-center justify-center bg-transparent border-none cursor-pointer transition-colors">
+                                                            <Palette className="w-3.5 h-3.5" />
+                                                        </PopoverTrigger>
                                                             <PopoverContent className="w-[150px] p-2 rounded-2xl border-slate-100 shadow-xl" align="start">
                                                                 <div className="grid grid-cols-5 gap-1.5 place-items-center">
                                                                     {['#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#64748b'].map((color) => (
@@ -785,11 +812,9 @@ export const MessagesPage: React.FC = () => {
                                                             </PopoverContent>
                                                         </Popover>
                                                         <Popover>
-                                                            <PopoverTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="shrink-0 w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200">
-                                                                    <Type className="w-3.5 h-3.5" />
-                                                                </Button>
-                                                            </PopoverTrigger>
+                                                            <PopoverTrigger className="shrink-0 w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 inline-flex items-center justify-center bg-transparent border-none cursor-pointer transition-colors">
+                                                            <Type className="w-3.5 h-3.5" />
+                                                        </PopoverTrigger>
                                                             <PopoverContent className="w-32 p-1.5 rounded-2xl border-slate-100 shadow-xl" align="start">
                                                                 <div className="flex flex-col gap-1">
                                                                     {[
@@ -1002,7 +1027,7 @@ export const MessagesPage: React.FC = () => {
                                                                 <div className="grid grid-cols-2 gap-4 mt-6">
                                                                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                                                                         <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('common.budget')}</p>
-                                                                        <p className="text-xs font-black text-slate-900">{selectedProject.budget.toLocaleString()}€</p>
+                                                                        <p className="text-xs font-black text-slate-900">{selectedProject.budget.toLocaleString()} DT</p>
                                                                     </div>
                                                                     <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                                                                         <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{t('common.team_members')}</p>

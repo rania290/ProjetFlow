@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Navigate } from 'react-router-dom';
 import {
     TrendingUp, BarChart3, Users,
     CheckCircle2, Target, Printer,
     AlertCircle, Loader2, AlertTriangle, Clock,
-    ArrowDownRight
+    ArrowDownRight, Lock
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { useStore } from '../store/projectStore';
 import { reportingService, type GlobalAnalytics } from '../api/reporting.service';
 import { ChartComponent } from '../components/charts/ChartComponent';
+import { useAuth } from '../hooks/useAuth';
 import {
     Select,
     SelectContent,
@@ -35,10 +37,26 @@ export interface ProjectAnalytics {
 export const AnalyticsPage: React.FC = () => {
     const { t } = useTranslation();
     const { state } = useStore();
+    const { user } = useAuth();
 
     const [analytics, setAnalytics] = useState<GlobalAnalytics | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedSprintId, setSelectedSprintId] = useState<string>('');
+
+    // Check authorization - only PROJECT_MANAGER, RH, and ADMIN can access analytics
+    const isAuthorized = user?.role === 'PROJECT_MANAGER' || user?.role === 'RH' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
+
+    if (!isAuthorized) {
+        return (
+            <AppLayout title={t('analytics.reporting_analytics')}>
+                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                    <Lock className="w-16 h-16 text-red-400" />
+                    <h2 className="text-2xl font-bold text-slate-900">{t('common.access_denied', { defaultValue: 'Accès refusé' })}</h2>
+                    <p className="text-slate-500">{t('analytics.requires_permission', { defaultValue: 'Vous devez être Chef de Projet, RH ou Admin pour accéder à cette page.' })}</p>
+                </div>
+            </AppLayout>
+        );
+    }
 
     useEffect(() => {
         const fetchAnalytics = async () => {
@@ -79,11 +97,11 @@ export const AnalyticsPage: React.FC = () => {
     const DEFAULT_TJM = 450;
     
     // Calculate real consumed budget from project data
-    const globalConsumedBudget = summary.invoices?.totalAmount || projects.reduce((acc, p) => acc + (p.spentAmount || 0), 0);
+    const globalConsumedBudget = (summary as any).invoices?.totalAmount || projects.reduce((acc, p) => acc + ((p as any).spentAmount || 0), 0);
     
     // Calculate estimated cost based on actual task completion and TJM (if hours/points available)
     // Fallback to 80% only if we have NO project data at all
-    const globalEstimatedCost = summary.invoices?.paidAmount || (globalConsumedBudget > 0 ? globalConsumedBudget * 0.85 : (totalBudget > 0 ? totalBudget * 0.8 : 0));
+    const globalEstimatedCost = (summary as any).invoices?.paidAmount || (globalConsumedBudget > 0 ? globalConsumedBudget * 0.85 : (totalBudget > 0 ? totalBudget * 0.8 : 0));
 
     // Compute Real Burndown Data from Store
     let realBurndownData = [];
@@ -222,7 +240,10 @@ export const AnalyticsPage: React.FC = () => {
     };
 
     return (
-        <AppLayout title={t('analytics.reporting_analytics')} subtitle={t('analytics.global_metrics')}>
+        <AppLayout 
+            title={t('analytics.reporting_analytics', { defaultValue: 'Reporting & Analytics' })} 
+            subtitle={t('analytics.global_metrics', { defaultValue: 'Vue globale des performances et métriques' })}
+        >
             <div className="p-6 space-y-6">
 
                 {/* Period selector */}
@@ -231,10 +252,17 @@ export const AnalyticsPage: React.FC = () => {
                         {state.sprints.length > 0 && (
                             <Select 
                                 value={selectedSprintId || (activeSprint?.id || '')} 
-                                onValueChange={(v) => setSelectedSprintId(v)}
+                                onValueChange={(v) => setSelectedSprintId(v || '')}
                             >
                                 <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200 text-xs font-bold rounded-xl">
-                                    <SelectValue placeholder="Choisir un sprint" />
+                                    <SelectValue placeholder="Choisir un sprint">
+                                        {(() => {
+                                            const id = selectedSprintId || (activeSprint?.id || '');
+                                            const sprint = state.sprints.find((s) => s.id === id);
+                                            if (!sprint) return 'Choisir un sprint';
+                                            return `${sprint.name}${sprint.status === 'ACTIVE' ? ` (${t('common.active')})` : ''}`;
+                                        })()}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-slate-200">
                                     {state.sprints.map(s => (

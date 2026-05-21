@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, Search, FolderKanban, ArrowUpRight,
@@ -13,20 +13,21 @@ import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { Card } from '@/components/ui/card';
 import { FadeInView } from '../components/ui/FadeInView';
 import { projectsService } from '../api/projects.service';
+import { useAuth } from '../hooks/useAuth';
 
 
 // Re-export CreateProjectModal inline for this page
-const getStatusLabels = (t: any): Record<string, { label: string; color: string; bg: string; dot: string }> => ({
-    PLANNED: { label: t('projects.status_labels.PLANNED'), color: 'text-slate-600', bg: 'bg-slate-100', dot: 'bg-slate-400' },
-    IN_PROGRESS: { label: t('projects.status_labels.IN_PROGRESS'), color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
-    DELIVERED: { label: t('projects.status_labels.DELIVERED'), color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
-    SUSPENDED: { label: t('projects.status_labels.SUSPENDED'), color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-400' },
-});
+const STATUS_LABELS: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+    PLANNED: { label: 'Planifié', color: 'text-slate-600', bg: 'bg-slate-100', dot: 'bg-slate-400' },
+    IN_PROGRESS: { label: 'En cours', color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
+    DELIVERED: { label: 'Livré', color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+    SUSPENDED: { label: 'Suspendu', color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-400' },
+};
 
 export const ProjectsListPage: React.FC = () => {
     const { t } = useTranslation();
-    const STATUS_LABELS = getStatusLabels(t);
     const { state, dispatch } = useStore();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<ProjectStatus | 'ALL'>('ALL');
@@ -56,7 +57,7 @@ export const ProjectsListPage: React.FC = () => {
     });
 
     return (
-        <AppLayout title={t('common.projects')} subtitle={t('projects.total_projects', { count: state.projects.length })}>
+        <AppLayout title={t('common.projects', 'Projects')} subtitle={t('projects.total_projects', '{{count}} projects in total', { count: state.projects.length })}>
             <FadeInView className="p-4 md:p-6 space-y-6">
 
                 {/* Premium Toolbar */}
@@ -68,7 +69,7 @@ export const ProjectsListPage: React.FC = () => {
                             <input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                placeholder={t('projects.search_placeholder')}
+                                placeholder={t('projects.search_placeholder', 'Search project, client, tags...')}
                                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/50 border border-slate-200/60 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 text-slate-700 placeholder:text-slate-400 transition-all"
                             />
                         </div>
@@ -80,18 +81,18 @@ export const ProjectsListPage: React.FC = () => {
                                     <button key={s}
                                         onClick={() => setFilterStatus(s)}
                                         className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterStatus === s ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                                        {s === 'ALL' ? t('common.all') : STATUS_LABELS[s]?.label}
+                                        {s === 'ALL' ? t('common.all', 'All') : t(`projects.status_labels.${s}`, STATUS_LABELS[s]?.label)}
                                     </button>
                                 ))}
                             </div>
 
                             {/* Filter Category */}
                             <div className="flex gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
-                                {(['ALL', 'WEB_APPLICATION', 'MOBILE_APP', 'API_INTEGRATION'] as const).map(t_item => (
-                                    <button key={t_item}
-                                        onClick={() => setFilterCategory(t_item)}
-                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterCategory === t_item ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                                        {t_item === 'ALL' ? t('projects.categories') : t_item === 'WEB_APPLICATION' ? t('projects.web') : t_item === 'MOBILE_APP' ? t('projects.mobile') : t('projects.api')}
+                                {(['ALL', 'WEB_APPLICATION', 'MOBILE_APP', 'API_INTEGRATION'] as const).map(cat => (
+                                    <button key={cat}
+                                        onClick={() => setFilterCategory(cat)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${filterCategory === cat ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                                        {cat === 'ALL' ? t('projects.categories', 'Categories') : cat === 'WEB_APPLICATION' ? t('projects.web', 'Web') : cat === 'MOBILE_APP' ? t('projects.mobile', 'Mobile') : t('projects.api', 'API')}
                                     </button>
                                 ))}
                             </div>
@@ -100,21 +101,23 @@ export const ProjectsListPage: React.FC = () => {
                             <div className="flex bg-slate-50/80 p-1 rounded-xl border border-slate-200/50">
                                 <button onClick={() => setViewMode('grid')}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title={t('projects.grid_view')}>
+                                    title={t('projects.grid_view', 'Grid View')}>
                                     <LayoutGrid className="w-4 h-4" />
                                 </button>
                                 <button onClick={() => setViewMode('list')}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                    title={t('projects.list_view')}>
+                                    title={t('projects.list_view', 'List View')}>
                                     <List className="w-4 h-4" />
                                 </button>
                             </div>
 
                             {/* Create */}
-                            <button onClick={() => setShowCreate(true)}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
-                                <Plus className="w-4 h-4" /> {t('common.new')}
-                            </button>
+                            {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'PROJECT_MANAGER') && (
+                                <button onClick={() => setShowCreate(true)}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
+                                    <Plus className="w-4 h-4" /> {t('common.new', 'New')}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </Card>
@@ -124,13 +127,15 @@ export const ProjectsListPage: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
                         <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">
-                            {filtered.length > 1 ? t('projects.projects_found_plural', { count: filtered.length }) : t('projects.projects_found', { count: filtered.length })}
+                            {filtered.length === 1 
+                                ? t('projects.projects_found', '{{count}} project found', { count: 1 }) 
+                                : t('projects.projects_found_plural', '{{count}} projects found', { count: filtered.length })}
                         </span>
                     </div>
                     {(search || filterStatus !== 'ALL' || filterCategory !== 'ALL') && (
                         <button onClick={() => { setSearch(''); setFilterStatus('ALL'); setFilterCategory('ALL'); }}
                             className="text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-widest transition-colors flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
-                            {t('common.clear_filters')}
+                            {t('common.clear_filters', 'Clear Filters')}
                         </button>
                     )}
                 </div>
@@ -150,14 +155,16 @@ export const ProjectsListPage: React.FC = () => {
                                 <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100">
                                     <FolderKanban className="w-10 h-10 text-slate-200" />
                                 </div>
-                                <h3 className="text-xl font-black text-slate-800 font-display uppercase tracking-tight">{t('projects.no_projects_found')}</h3>
+                                <h3 className="text-xl font-black text-slate-800 font-display uppercase tracking-tight">{t('projects.no_projects_found', 'No projects found')}</h3>
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2 max-w-xs mx-auto">
-                                    {t('projects.adjust_filters')}
+                                    {t('projects.adjust_filters', 'Adjust your filters or create a new roadmap to start managing.')}
                                 </p>
-                                <button onClick={() => setShowCreate(true)}
-                                    className="mt-8 px-6 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-indigo-600 hover:bg-slate-50 transition-all shadow-sm">
-                                    + {t('projects.create_project')}
-                                </button>
+                                {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'PROJECT_MANAGER') && (
+                                    <button onClick={() => setShowCreate(true)}
+                                        className="mt-8 px-6 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-indigo-600 hover:bg-slate-50 transition-all shadow-sm">
+                                        + {t('projects.create_project', 'Create Project')}
+                                    </button>
+                                )}
                             </Card>
                         )}
                     </div>
@@ -167,12 +174,12 @@ export const ProjectsListPage: React.FC = () => {
                 {viewMode === 'list' && (
                     <Card className="overflow-hidden shadow-sm border-slate-100">
                         <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            <div className="col-span-4">{t('projects.project_info')}</div>
-                            <div className="col-span-2">{t('projects.configuration')}</div>
-                            <div className="col-span-2">{t('common.status')}</div>
-                            <div className="col-span-2">{t('common.progress')}</div>
-                            <div className="col-span-1">{t('common.team_members')}</div>
-                            <div className="col-span-1 text-right">{t('common.budget')}</div>
+                            <div className="col-span-4">{t('projects.project_info', 'Project Info')}</div>
+                            <div className="col-span-2">{t('projects.configuration', 'Configuration')}</div>
+                            <div className="col-span-2">{t('common.status', 'Status')}</div>
+                            <div className="col-span-2">{t('common.progress', 'Progress')}</div>
+                            <div className="col-span-1">{t('common.team_members', 'Team')}</div>
+                            <div className="col-span-1 text-right">{t('common.budget', 'Budget')}</div>
                         </div>
                         <div className="divide-y divide-slate-50">
                             {filtered.map((p, i) => (
@@ -184,7 +191,7 @@ export const ProjectsListPage: React.FC = () => {
                         </div>
                         {filtered.length === 0 && (
                             <div className="py-20 text-center">
-                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{t('projects.empty_list')}</p>
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{t('projects.empty_list', 'Empty list')}</p>
                             </div>
                         )}
                     </Card>
@@ -203,52 +210,51 @@ export const ProjectsListPage: React.FC = () => {
 // ===== GRID CARD =====
 const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () => void }> = ({ project, index, onOpen }) => {
     const { t } = useTranslation();
-    const STATUS_LABELS = getStatusLabels(t);
     const st = STATUS_LABELS[project.status];
 
     return (
         <Card
             onClick={onOpen}
-            className="p-6 shadow-sm border-slate-100 hover:shadow-2xl hover:border-indigo-200/50 transition-all duration-500 cursor-pointer group relative overflow-hidden"
+            className="p-4 sm:p-5 shadow-sm border-slate-100 hover:shadow-2xl hover:border-indigo-200/50 transition-all duration-500 cursor-pointer group relative overflow-hidden"
         >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+            <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700" />
             
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 mb-5 relative">
+            <div className="flex items-start justify-between gap-3 mb-3.5 relative">
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-black text-slate-800 font-display truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
+                    <h3 className="text-base font-black text-slate-800 font-display truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">
                         {project.name}
                     </h3>
                     {project.clientName && (
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">
-                            {t('projects.client')}: <span className="text-slate-600">{project.clientName}</span>
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">
+                            {t('projects.client', 'Client')}: <span className="text-slate-600">{project.clientName}</span>
                         </p>
                     )}
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-all shadow-sm border border-slate-100">
-                    <ArrowUpRight className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-all shadow-sm border border-slate-100">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                 </div>
             </div>
 
             {/* Badges */}
-            <div className="flex items-center gap-2 mb-6 flex-wrap relative">
-                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-tight shadow-sm`}>{t('projects.view')} {project.viewMode}</span>
-                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tight shadow-sm`}>{project.type === 'WEB_APPLICATION' ? t('projects.web') : project.type === 'MOBILE_APP' ? t('projects.mobile') : t('projects.api')}</span>
-                <span className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
-                    <div className={`w-1 h-1 rounded-full ${st.dot} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} />{st.label}
+            <div className="flex items-center gap-1.5 mb-3.5 flex-wrap relative">
+                <span className={`text-[8px] font-black px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-tight shadow-sm`}>{t('projects.view', 'View')} {project.viewMode}</span>
+                <span className={`text-[8px] font-black px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tight shadow-sm`}>{project.type === 'WEB_APPLICATION' ? t('projects.web', 'Web') : project.type === 'MOBILE_APP' ? t('projects.mobile', 'Mobile') : t('projects.api', 'API')}</span>
+                <span className={`flex items-center gap-1 text-[8px] font-black px-2 py-0.5 rounded-md border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
+                    <div className={`w-1 h-1 rounded-full ${st.dot} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} />{t(`projects.status_labels.${project.status}`, st.label)}
                 </span>
             </div>
 
             {/* Description */}
-            <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-2 font-medium opacity-80 group-hover:opacity-100 transition-opacity">{project.description}</p>
+            <p className="text-[11px] text-slate-450 leading-relaxed mb-3.5 line-clamp-2 font-medium opacity-85 group-hover:opacity-100 transition-opacity">{project.description}</p>
 
             {/* Progress */}
-            <div className="mb-6 bg-slate-50/50 p-3 rounded-2xl border border-slate-100/50">
-                <div className="flex justify-between text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">
-                    <span>{t('projects.global_progress')}</span>
+            <div className="mb-3.5 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100/50">
+                <div className="flex justify-between text-[9px] font-black text-slate-400 mb-1.5 uppercase tracking-widest">
+                    <span>{t('common.progress', 'Progress')}</span>
                     <span className="text-slate-900">{project.progress}%</span>
                 </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
+                <div className="h-1 bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${project.progress}%` }}
@@ -259,33 +265,33 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100/50">
-                <div className="flex items-center gap-3">
-                    <div className="flex -space-x-2">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100/50">
+                <div className="flex items-center gap-2">
+                    <div className="flex -space-x-1.5">
                         {(project.members || []).slice(0, 3).map((m, idx) => (
                             <div key={m.id} title={m.fullName}
-                                className="w-7 h-7 rounded-full bg-white p-0.5 shadow-sm ring-1 ring-slate-100 group-hover:ring-indigo-100 transition-all"
+                                className="w-6.5 h-6.5 rounded-full bg-white p-0.5 shadow-sm ring-1 ring-slate-100 group-hover:ring-indigo-100 transition-all"
                                 style={{ zIndex: 3 - idx }}>
-                                <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-[9px] font-black border border-white">
+                                <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 text-[8px] font-black border border-white">
                                     {m.avatar || m.fullName[0].toUpperCase()}
                                 </div>
                             </div>
                         ))}
                     </div>
                     {(!project.members || project.members.length === 0) ? (
-                        <span className="text-[10px] text-slate-300 font-black uppercase tracking-tight">{t('projects.no_members')}</span>
+                        <span className="text-[9px] text-slate-350 font-black uppercase tracking-tight">{t('projects.no_members', 'No members')}</span>
                     ) : project.members.length > 3 && (
-                        <span className="text-[10px] text-slate-400 font-black">+{project.members.length - 3}</span>
+                        <span className="text-[9px] text-slate-400 font-black">+{project.members.length - 3}</span>
                     )}
                 </div>
                 
-                <div className="flex items-center gap-4 text-[10px] font-black text-slate-600 uppercase tracking-tight">
-                    <span className="flex items-center gap-1.5 text-slate-400">
-                        <CalendarDays className="w-3.5 h-3.5" />
-                        {new Date(project.endDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                <div className="flex items-center gap-3 text-[9px] font-black text-slate-600 uppercase tracking-tight">
+                    <span className="flex items-center gap-1 text-slate-400">
+                        <CalendarDays className="w-3 h-3" />
+                        {new Date(project.endDate).toLocaleDateString(t('common.locale', 'fr-FR'), { day: '2-digit', month: 'short' })}
                     </span>
-                    <div className="w-1 h-1 rounded-full bg-slate-200" />
-                    <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100 shadow-sm">{project.budget.toLocaleString()} {t('common.currency_dt') || 'DT'}</span>
+                    <div className="w-0.5 h-0.5 rounded-full bg-slate-200" />
+                    <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-md border border-indigo-100 shadow-sm">{project.budget.toLocaleString()} DT</span>
                 </div>
             </div>
         </Card>
@@ -295,7 +301,6 @@ const ProjectGridCard: React.FC<{ project: Project; index: number; onOpen: () =>
 // ===== LIST ROW =====
 const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => void }> = ({ project, index, onOpen }) => {
     const { t } = useTranslation();
-    const STATUS_LABELS = getStatusLabels(t);
     const st = STATUS_LABELS[project.status];
 
     return (
@@ -312,16 +317,16 @@ const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => 
                 </div>
                 <div className="min-w-0">
                     <p className="text-sm font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{project.name}</p>
-                    {project.clientName && <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{t('projects.client')}: {project.clientName}</p>}
+                    {project.clientName && <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{project.clientName}</p>}
                 </div>
             </div>
             <div className="col-span-2 flex flex-wrap gap-1.5">
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100/50 uppercase tracking-tighter`}>{project.viewMode}</span>
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tighter`}>{project.type === 'WEB_APPLICATION' ? t('projects.web') : project.type === 'MOBILE_APP' ? t('projects.mobile') : t('projects.api')}</span>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 uppercase tracking-tighter`}>{project.type === 'WEB_APPLICATION' ? t('projects.web', 'Web') : project.type === 'MOBILE_APP' ? t('projects.mobile', 'Mobile') : t('projects.api', 'API')}</span>
             </div>
             <div className="col-span-2">
                 <span className={`flex items-center gap-1.5 text-[9px] font-black px-2.5 py-1 rounded-lg w-fit border shadow-sm uppercase tracking-tight ${st.bg} ${st.color} ${st.dot.replace('bg-', 'border-')}`}>
-                    <div className={`w-1 h-1 rounded-full ${st.dot}`} />{st.label}
+                    <div className={`w-1 h-1 rounded-full ${st.dot}`} />{t(`projects.status_labels.${project.status}`, st.label)}
                 </span>
             </div>
             <div className="col-span-2">
@@ -347,7 +352,7 @@ const ProjectListRow: React.FC<{ project: Project; index: number; onOpen: () => 
                 </div>
             </div>
             <div className="col-span-1 text-right pr-2">
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm uppercase">{(project.budget / 1000).toFixed(0)}k {t('common.currency_dt') || 'DT'}</span>
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm uppercase">{(project.budget / 1000).toFixed(0)}k DT</span>
             </div>
         </motion.div>
     );
