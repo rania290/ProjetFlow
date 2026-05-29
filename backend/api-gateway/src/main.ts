@@ -71,9 +71,11 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000, '127.0.0.1');
+  const port = process.env.PORT ?? 3000;
+  const host = process.env.HOST ?? '0.0.0.0';
+  await app.listen(port, host);
   console.log(
-    `🚀 API Gateway running on: http://localhost:${process.env.PORT ?? 3000}`,
+    `🚀 API Gateway running on: http://localhost:${port}`,
   );
 }
 bootstrap();

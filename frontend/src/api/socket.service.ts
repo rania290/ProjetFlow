@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
 
 // The WebSocket chat gateway runs on the communication-service directly (port 3006)
 // It cannot be proxied through the API Gateway's HTTP proxy layer

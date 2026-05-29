@@ -275,7 +275,7 @@ function App() {
                   <Route
                     path="/admin/my-projects"
                     element={
-                      <ProtectedRoute requiredRole={['ADMIN']}>
+                      <ProtectedRoute requiredRole={['ADMIN', 'SUPER_ADMIN']}>
                         <UserProjectsPage />
                       </ProtectedRoute>
                     }

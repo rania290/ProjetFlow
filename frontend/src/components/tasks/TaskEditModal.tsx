@@ -161,7 +161,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
     const getFileUrl = (url: string) => {
         if (!url) return '';
         if (url.startsWith('http')) return url;
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000/api';
         // If url starts with /api, remove it to avoid double /api
         const cleanPath = url.startsWith('/api') ? url.substring(4) : url;
         return `${baseUrl}${cleanPath}`;

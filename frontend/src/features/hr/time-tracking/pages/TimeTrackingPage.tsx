@@ -277,7 +277,7 @@ export const TimeTrackingPage: React.FC = () => {
 
                   <Card className="p-6 border-none shadow-lg bg-white rounded-3xl">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Coût Projets</p>
-                      <p className="text-2xl font-black text-amber-600">{totalCost.toLocaleString('fr-FR')}€</p>
+                      <p className="text-2xl font-black text-amber-600">{totalCost.toLocaleString('fr-FR')} DT</p>
                   </Card>
 
                   <Card className="p-6 border-none shadow-lg bg-rose-50 rounded-3xl border border-rose-100">
@@ -339,7 +339,7 @@ export const TimeTrackingPage: React.FC = () => {
                                     <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border-none mb-1">
                                         <Briefcase className="w-3 h-3 mr-1" /> {session.projectName}
                                     </Badge>
-                                    <p className="text-[10px] font-bold text-slate-400">Coût: <span className="text-slate-700">{calculateCost(session)} €</span></p>
+                                    <p className="text-[10px] font-bold text-slate-400">Coût: <span className="text-slate-700">{calculateCost(session)} DT</span></p>
                                   </div>
                               ) : (
                                   <span className="text-[10px] text-slate-300 italic">Interne</span>

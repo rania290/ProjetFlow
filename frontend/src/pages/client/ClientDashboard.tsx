@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store/projectStore';
 import { useAuth } from '../../hooks/useAuth';
+import { useAuraStore } from '../../store/auraStore';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { jsPDF } from 'jspdf';
@@ -26,6 +27,7 @@ const ClientWelcomePortal: React.FC = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
     const { state, dispatch } = useStore();
+    const { toggleOpen } = useAuraStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     React.useEffect(() => {
@@ -51,6 +53,9 @@ const ClientWelcomePortal: React.FC = () => {
           )
         : state.tickets;
     const openTicketsCount = ownTickets.filter(tk => tk.status !== 'CLOSED' && tk.status !== 'RESOLVED').length;
+    const urgentTicketsCount = ownTickets.filter(tk => tk.priority === 'URGENT').length;
+    const inProgressTicketsCount = ownTickets.filter(tk => tk.status === 'IN_PROGRESS').length;
+    const resolvedTicketsCount = ownTickets.filter(tk => tk.status === 'RESOLVED').length;
 
     return (
         <AppLayout title={t('client.client_space')} subtitle={t('client.interactive_dashboard')}>
@@ -58,7 +63,7 @@ const ClientWelcomePortal: React.FC = () => {
 
                 {/* Hero Welcome Section */}
                 <div className="flex-1 flex items-center justify-center px-6 py-12">
-                    <div className="max-w-2xl w-full">
+                    <div className="max-w-4xl w-full">
                         {/* Animated greeting card */}
                         <motion.div
                             initial={{ opacity: 0, y: 24 }}
@@ -81,34 +86,101 @@ const ClientWelcomePortal: React.FC = () => {
                                 <span className="text-emerald-600">{user?.fullName || 'Client'}</span> 👋
                             </h1>
                             <p className="text-base text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
-                                {t('client.welcome_subtitle', 'Bienvenue dans votre espace client. Vous pouvez soumettre un ticket pour toute demande ou problème.')}
+                                {t('client.welcome_subtitle')}
                             </p>
+                        </motion.div>
+
+                        {/* Professional KPI Overview */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.25, duration: 0.45 }}
+                            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"
+                        >
+                            {[
+                                { id: 'open', label: t('client.kpi_open_tickets'), value: openTicketsCount, tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+                                { id: 'progress', label: t('client.kpi_in_progress'), value: inProgressTicketsCount, tone: 'text-amber-700 bg-amber-50 border-amber-100' },
+                                { id: 'urgent', label: t('client.kpi_urgent'), value: urgentTicketsCount, tone: 'text-rose-700 bg-rose-50 border-rose-100' },
+                                { id: 'resolved', label: t('client.kpi_resolved'), value: resolvedTicketsCount, tone: 'text-slate-700 bg-slate-50 border-slate-200' },
+                            ].map((item) => (
+                                <div key={item.id} className={`rounded-2xl border p-4 ${item.tone}`}>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider opacity-80">{item.label}</p>
+                                    <p className="text-2xl font-extrabold mt-1">{item.value}</p>
+                                </div>
+                            ))}
                         </motion.div>
 
                         {/* Main CTA Card */}
                         <motion.div
                             initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.25, duration: 0.45 }}
+                            transition={{ delay: 0.3, duration: 0.45 }}
                             className="bg-white rounded-3xl border border-slate-100 shadow-lg shadow-slate-900/5 p-8 mb-6"
                         >
-                            <div className="flex items-start gap-5">
+                            <div className="flex flex-col md:flex-row md:items-center gap-5">
                                 <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0">
                                     <Ticket className="w-7 h-7 text-emerald-600" />
                                 </div>
                                 <div className="flex-1">
                                     <h2 className="text-lg font-bold text-slate-900 mb-1">
-                                        {t('client.create_ticket_title', 'Créer un ticket de support')}
+                                        {t('client.create_ticket_title')}
                                     </h2>
                                     <p className="text-sm text-slate-500 mb-5 leading-relaxed">
-                                        {t('client.create_ticket_desc', 'Décrivez votre demande, signalez un problème ou posez une question. Notre équipe vous répondra rapidement.')}
+                                        {t('client.create_ticket_desc')}
                                     </p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-2">
                                     <Button
                                         onClick={() => setIsModalOpen(true)}
                                         className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-500/25 transition-all flex items-center gap-2.5"
                                     >
                                         <Plus className="w-4 h-4" />
                                         {t('client.new_ticket')}
+                                    </Button>
+                                    <Link to="/client-portal/tickets">
+                                        <Button variant="outline" className="h-11 px-6 rounded-xl font-bold text-sm">
+                                            {t('client.my_tickets')}
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Aura IA Assistant Card */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.35, duration: 0.45 }}
+                            className="bg-slate-900 rounded-3xl border border-slate-800 shadow-lg shadow-slate-900/30 p-6 mb-6 text-white"
+                        >
+                            <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center flex-shrink-0">
+                                    <Sparkles className="w-6 h-6 text-indigo-300" />
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                    <h2 className="text-base font-bold tracking-tight">
+                                        {t('client.aura_client_title')}
+                                    </h2>
+                                    <p className="text-sm text-slate-200 leading-relaxed">
+                                        {t('client.aura_client_desc')}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 text-[11px] text-slate-300">
+                                        <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                            {t('client.aura_tag_ticket_summary')}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                            {t('client.aura_tag_simple_explanations')}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                            {t('client.aura_tag_available_247')}
+                                        </span>
+                                    </div>
+                                    <Button
+                                        onClick={toggleOpen}
+                                        className="mt-3 h-10 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-500/30 flex items-center gap-2"
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        {t('client.open_aura_ia')}
                                     </Button>
                                 </div>
                             </div>
@@ -124,7 +196,7 @@ const ClientWelcomePortal: React.FC = () => {
                                 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                                     <div className="flex items-center justify-between mb-4">
                                         <h3 className="text-sm font-bold text-slate-800">
-                                            {t('client.recent_tickets')} ({openTicketsCount} {t('client.open', 'ouverts')})
+                                            {t('client.recent_tickets')} ({openTicketsCount} {t('client.open')})
                                         </h3>
                                         <Link to="/client-portal/tickets">
                                             <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
@@ -156,7 +228,7 @@ const ClientWelcomePortal: React.FC = () => {
                                 <div className="bg-slate-50 rounded-3xl border border-dashed border-slate-200 p-8 text-center">
                                     <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                        {t('client.no_tickets_yet', 'Aucun ticket pour le moment')}
+                                        {t('client.no_tickets_yet')}
                                     </p>
                                 </div>
                             )}

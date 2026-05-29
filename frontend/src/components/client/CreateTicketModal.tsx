@@ -56,28 +56,31 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
 
     const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
         e?.preventDefault();
-        if (!title.trim() || !description.trim()) return;
+        const trimmedTitle = title.trim();
+        const trimmedDescription = description.trim();
+        if (!trimmedTitle || trimmedDescription.length < 10) {
+            toast.error('La description doit contenir au moins 10 caractères.');
+            return;
+        }
 
         setIsSubmitting(true);
         try {
-            let attachments = [];
+            const ticketData: Record<string, unknown> = {
+                title: trimmedTitle,
+                description: trimmedDescription,
+                priority,
+                type: 'SUPPORT',
+            };
+
             if (attachedFile) {
                 const uploadResult = await storageService.uploadFile(attachedFile);
-                attachments.push({
+                ticketData.attachments = [{
                     name: attachedFile.name,
                     url: uploadResult.url,
                     size: attachedFile.size,
-                    type: attachedFile.type
-                });
+                    type: attachedFile.type || 'application/octet-stream',
+                }];
             }
-
-            const ticketData = {
-                title,
-                description,
-                priority,
-                type: 'SUPPORT',
-                attachments
-            };
             
             const createdTicket = await ticketsService.create(ticketData, user?.email);
             dispatch({ type: 'ADD_TICKET', ticket: createdTicket as any });
@@ -89,9 +92,15 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
             setDescription('');
             setPriority('MEDIUM');
             setAttachedFile(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create ticket:', error);
-            toast.error("Erreur lors de la création du ticket. Veuillez réessayer.");
+            const apiMessage = error?.response?.data?.message;
+            const msg =
+                (Array.isArray(apiMessage) ? apiMessage.join(', ') : apiMessage)
+                || error?.response?.data?.error
+                || (error?.response?.status === 502 ? 'Service portail client indisponible. Démarrez client-portal-service.' : null)
+                || "Erreur lors de la création du ticket. Veuillez réessayer.";
+            toast.error(typeof msg === 'string' ? msg : "Erreur lors de la création du ticket.");
             setIsSubmitting(false);
         }
     };
@@ -149,12 +158,18 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
                     <div className="space-y-2">
                         <Label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Description détaillée du problème</Label>
                         <Textarea
-                            placeholder="Expliquez-nous le problème rencontré ou votre réclamation..."
+                            placeholder="Expliquez-nous le problème rencontré ou votre réclamation... (min. 10 caractères)"
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             className="min-h-[120px] border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm text-slate-900 resize-none"
                             required
+                            minLength={10}
                         />
+                        {description.trim().length > 0 && description.trim().length < 10 && (
+                            <p className="text-[10px] font-bold text-amber-600 pl-1">
+                                {10 - description.trim().length} caractère(s) restant(s) (minimum 10)
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
@@ -188,8 +203,8 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
                     </Button>
                     <Button
                         onClick={handleSubmit}
-                        disabled={isSubmitting || !title.trim() || !description.trim()}
-                        className={`h-10 px-6 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all ${isSubmitting || !title.trim() || !description.trim()
+                        disabled={isSubmitting || !title.trim() || description.trim().length < 10}
+                        className={`h-10 px-6 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all ${isSubmitting || !title.trim() || description.trim().length < 10
                             ? 'bg-slate-200 text-slate-400'
                             : 'bg-emerald-600 text-white hover:bg-black shadow-emerald-100'
                         }`}

@@ -191,7 +191,13 @@ export const ProjectDetailPage: React.FC = () => {
 
     const project = state.projects.find(p => p.id === projectId);
     
-    const isManagerOrAdmin = user?.role === 'ADMIN' || (project && user?.id === project.managerId);
+    const userRole = (user?.role || '').toUpperCase();
+    const isManagerOrAdmin =
+        userRole === 'ADMIN' ||
+        userRole === 'SUPER_ADMIN' ||
+        userRole === 'PROJECT_MANAGER' ||
+        userRole === 'MANAGER' ||
+        (project && user?.id === project.managerId);
 
 
     const sprints = state.sprints.filter(s => s.projectId === projectId);
@@ -459,26 +465,26 @@ export const ProjectDetailPage: React.FC = () => {
 
 
 
-                    {/* TABS */}
-
-                    <div className="flex gap-0 border-b-0 bg-white">
+                    {/* TABS — scroll horizontal pour afficher Board/Kanban sur tous les écrans */}
+                    <div className="overflow-x-auto border-b border-slate-100 -mx-6 px-6 scrollbar-thin">
+                    <div className="flex gap-0 min-w-max bg-white">
 
                         {([
                             { id: 'table', label: t('projects.main_table'), icon: <List className="w-3.5 h-3.5" /> },
-                            { id: 'board', label: t('projects.kanban_view'), icon: <Layers className="w-3.5 h-3.5" /> },
+                            { id: 'board', label: t('projects.kanban_view', 'Board'), icon: <Layers className="w-3.5 h-3.5" /> },
                             { id: 'calendar', label: t('projects.calendar_view'), icon: <CalendarDays className="w-3.5 h-3.5" /> },
                             { id: 'backlog', label: t('projects.backlog'), icon: <CheckSquare className="w-3.5 h-3.5" /> },
                             { id: 'sprints', label: t('projects.sprints'), icon: <Zap className="w-3.5 h-3.5" /> },
                             { id: 'dashboard', label: t('projects.kpi_indicators'), icon: <Activity className="w-3.5 h-3.5" /> },
-                        ] as { id: 'table' | 'board' | 'calendar' | 'backlog' | 'sprints' | 'dashboard'; label: string; icon: React.ReactNode }[]).map(t => (
+                        ] as { id: 'table' | 'board' | 'calendar' | 'backlog' | 'sprints' | 'dashboard'; label: string; icon: React.ReactNode }[]).map(tabItem => (
 
                             <button
 
-                                key={t.id}
+                                key={tabItem.id}
 
-                                onClick={() => setTab(t.id)}
+                                onClick={() => setTab(tabItem.id)}
 
-                                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all ${tab === t.id
+                                className={`flex shrink-0 items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${tab === tabItem.id
 
                                     ? 'border-primary-500 text-primary-700'
 
@@ -486,12 +492,13 @@ export const ProjectDetailPage: React.FC = () => {
 
                             >
 
-                                {t.icon}{t.label}
+                                {tabItem.icon}{tabItem.label}
 
                             </button>
 
                         ))}
 
+                    </div>
                     </div>
 
                 </div>

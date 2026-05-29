@@ -10,7 +10,7 @@ interface AuraReportListProps {
 
 export const AuraReportList: React.FC<AuraReportListProps> = ({ projectId }) => {
   const [reports, setReports] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
@@ -27,7 +27,12 @@ export const AuraReportList: React.FC<AuraReportListProps> = ({ projectId }) => 
   };
 
   useEffect(() => {
-    if (projectId) fetchReports();
+    if (!projectId) {
+      setLoading(false);
+      setReports([]);
+      return;
+    }
+    fetchReports();
   }, [projectId]);
 
   const handleGenerateReport = async () => {
@@ -42,6 +47,22 @@ export const AuraReportList: React.FC<AuraReportListProps> = ({ projectId }) => 
       setGenerating(false);
     }
   };
+
+  if (!projectId) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-4 bg-white h-full">
+        <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-sm">
+          <Info className="w-5 h-5 text-slate-400" />
+        </div>
+        <div className="space-y-1 text-center">
+          <p className="text-[14px] font-medium text-slate-900">Aucun projet sélectionné</p>
+          <p className="text-[12px] text-slate-500 max-w-[320px]">
+            Pour afficher vos rapports Aura IA, sélectionnez d’abord un projet (ou ouvrez Aura depuis un projet).
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !generating) {
     return (

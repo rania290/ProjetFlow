@@ -89,13 +89,6 @@ const PERMISSIONS_CONFIG = {
     EXPORT_DATA: { label: 'Exporter des données', category: 'Reporting', icon: '📤', description: 'Télécharger les données' },
 };
 
-// Regrouper les permissions par catégorie
-const PERMISSIONS_BY_CATEGORY = Object.entries(PERMISSIONS_CONFIG).reduce((acc, [key, config]) => {
-    if (!acc[config.category]) acc[config.category] = [];
-    acc[config.category].push({ key, ...config });
-    return acc;
-}, {} as Record<string, Array<{ key: string; label: string; category: string; icon: string; description: string }>>);
-
 // Configuration des rôles avec permissions par défaut
 const ROLE_PERMISSIONS_CONFIG = {
     ADMIN: {
@@ -246,11 +239,49 @@ const avatarColor = (role: string) => {
 
 
 /* ───────────────────────── component ───────────────────────── */
+const ROLE_DESC_KEYS: Record<string, string> = {
+    ADMIN: 'admin.role_desc_admin',
+    PROJECT_MANAGER: 'admin.role_desc_pm',
+    DEVELOPER: 'admin.role_desc_dev',
+    DESIGNER: 'admin.role_desc_designer',
+    TESTER: 'admin.role_desc_tester',
+    CLIENT: 'admin.role_desc_client',
+    RH: 'admin.role_desc_rh',
+};
+
 export const UsersManagementPage: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     type UserWithPermissions = User & { permissions?: string[] };
     type RoleKey = keyof typeof ROLE_PERMISSIONS_CONFIG;
     const isRoleKey = (role: string): role is RoleKey => role in ROLE_PERMISSIONS_CONFIG;
+
+    const permissionsByCategory = useMemo(() => {
+        const acc: Record<string, Array<{ key: string; label: string; category: string; icon: string; description: string }>> = {};
+        for (const [key, config] of Object.entries(PERMISSIONS_CONFIG)) {
+            if (!acc[config.category]) acc[config.category] = [];
+            acc[config.category].push({
+                key,
+                icon: config.icon,
+                category: t(`admin.perm_categories.${config.category}`, config.category),
+                label: t(`admin.perm_labels.${key}`, config.label),
+                description: t(`admin.perm_descriptions.${key}`, config.description),
+            });
+        }
+        return acc;
+    }, [t, i18n.language]);
+
+    const rolePermissionsConfig = useMemo(() => {
+        return Object.fromEntries(
+            Object.entries(ROLE_PERMISSIONS_CONFIG).map(([role, cfg]) => [
+                role,
+                {
+                    ...cfg,
+                    label: t(`admin.roles.${role}`, cfg.label),
+                    description: t(ROLE_DESC_KEYS[role] ?? '', cfg.description),
+                },
+            ]),
+        ) as typeof ROLE_PERMISSIONS_CONFIG;
+    }, [t, i18n.language]);
 
     const [users, setUsers] = useState<UserWithPermissions[]>([]);
     const [loading, setLoading] = useState(true);
@@ -865,7 +896,7 @@ export const UsersManagementPage: React.FC = () => {
                                                     className="w-full appearance-none bg-slate-50/50 border border-slate-200/60 rounded-2xl px-5 py-3.5 text-[11px] font-medium uppercase tracking-widest text-slate-900 cursor-pointer focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400/50 transition-all outline-none"
                                                 >
                                                     <option value="" disabled>Choisir un profil</option>
-                                                    {Object.entries(ROLE_PERMISSIONS_CONFIG).map(([k, cfg]) => (
+                                                    {Object.entries(rolePermissionsConfig).map(([k, cfg]) => (
                                                         <option key={k} value={k}>{cfg.label}</option>
                                                     ))}
                                                 </select>
@@ -960,10 +991,10 @@ export const UsersManagementPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                                            Matrice de Contrôle RBAC
+                                            {t('admin.rbac_control_matrix')}
                                         </h3>
                                         <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">
-                                            Privilèges granulaires pour <span className="text-slate-900">{selectedUserForPermissions.fullName}</span>
+                                            {t('admin.granular_privileges_for')} <span className="text-slate-900">{selectedUserForPermissions.fullName}</span>
                                         </p>
                                     </div>
                                 </div>
@@ -976,7 +1007,7 @@ export const UsersManagementPage: React.FC = () => {
                                 {/* Left Panel: Control Center */}
                                 <div className="w-[240px] flex-none border-r border-slate-100 bg-white p-5 space-y-6 overflow-y-auto custom-scrollbar">
                                     <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Profil Cible</h4>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{t('admin.target_profile')}</h4>
                                         <GlassCard className="p-4 flex flex-col items-center text-center gap-3 border-none shadow-xl shadow-slate-200/50">
                                             <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarColor(selectedUserForPermissions.role)} flex items-center justify-center text-white font-black text-lg shadow-xl ring-4 ring-white`}>
                                                 {initials(selectedUserForPermissions.fullName)}
@@ -989,15 +1020,15 @@ export const UsersManagementPage: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Modèle de Rôle</h4>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{t('admin.role_model_label')}</h4>
                                         <div className="relative group">
                                             <select
                                                 value={selectedRole}
                                                 onChange={(e) => handleRoleChange(e.target.value)}
                                                 className="w-full appearance-none bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 shadow-sm focus:ring-4 focus:ring-purple-500/10 focus:border-purple-400 transition-all cursor-pointer"
                                             >
-                                                <option value="" disabled>Sélectionner un profil...</option>
-                                                {Object.entries(ROLE_PERMISSIONS_CONFIG).map(([role, config]) => (
+                                                <option value="" disabled>{t('admin.select_profile_placeholder')}</option>
+                                                {Object.entries(rolePermissionsConfig).map(([role, config]) => (
                                                     <option key={role} value={role}>{config.label}</option>
                                                 ))}
                                             </select>
@@ -1006,22 +1037,22 @@ export const UsersManagementPage: React.FC = () => {
                                         {selectedRole && isRoleKey(selectedRole) && (
                                             <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
                                                 <p className="text-[10px] leading-relaxed text-purple-700 font-bold uppercase tracking-wider opacity-80">
-                                                    {ROLE_PERMISSIONS_CONFIG[selectedRole].description}
+                                                    {rolePermissionsConfig[selectedRole].description}
                                                 </p>
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="space-y-4 pt-4 border-t border-slate-100">
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Résumé des Droits</h4>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{t('admin.rights_summary')}</h4>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="p-4 rounded-xl bg-indigo-900 text-white shadow-xl shadow-indigo-900/20">
                                                 <div className="text-2xl font-black">{selectedPermissions.length}</div>
-                                                <div className="text-[8px] font-black uppercase tracking-widest mt-1 opacity-60">Actives</div>
+                                                <div className="text-[8px] font-black uppercase tracking-widest mt-1 opacity-60">{t('admin.active_permissions')}</div>
                                             </div>
                                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                                 <div className="text-2xl font-black text-slate-900">{Object.keys(PERMISSIONS_CONFIG).length}</div>
-                                                <div className="text-[8px] font-black uppercase tracking-widest mt-1 text-slate-400">Total</div>
+                                                <div className="text-[8px] font-black uppercase tracking-widest mt-1 text-slate-400">{t('admin.total_label')}</div>
                                             </div>
                                         </div>
                                         <button
@@ -1029,7 +1060,7 @@ export const UsersManagementPage: React.FC = () => {
                                             className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                                         >
                                             <RotateCcw className="w-3 h-3" />
-                                            Reset au Modèle
+                                            {t('admin.reset_to_model')}
                                         </button>
                                     </div>
                                 </div>
@@ -1037,7 +1068,7 @@ export const UsersManagementPage: React.FC = () => {
                                 {/* Right Panel: Matrix Grid */}
                                 <div className="flex-1 p-6 overflow-y-auto custom-scrollbar relative">
                                     <div className="max-w-6xl mx-auto space-y-10 pb-8">
-                                        {Object.entries(PERMISSIONS_BY_CATEGORY).map(([category, permissions]) => {
+                                        {Object.entries(permissionsByCategory).map(([category, permissions]) => {
                                             const categoryCodes = permissions.map(p => p.key);
                                             const allSelected = categoryCodes.every(key => selectedPermissions.includes(key));
 
@@ -1049,8 +1080,8 @@ export const UsersManagementPage: React.FC = () => {
                                                                 {permissions[0]?.icon}
                                                             </div>
                                                             <div>
-                                                                <h5 className="text-lg font-black text-slate-900 uppercase tracking-tight">{category}</h5>
-                                                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{permissions.length} Modules de Sécurité</p>
+                                                                <h5 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t(`admin.perm_categories.${category}`, category)}</h5>
+                                                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{t('admin.security_modules_count', { count: permissions.length })}</p>
                                                             </div>
                                                         </div>
                                                         <button
@@ -1060,7 +1091,7 @@ export const UsersManagementPage: React.FC = () => {
                                                                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                                                 }`}
                                                         >
-                                                            {allSelected ? 'Batch: Désactiver' : 'Batch: Activer Tout'}
+                                                            {allSelected ? t('admin.batch_disable') : t('admin.batch_enable_all')}
                                                         </button>
                                                     </div>
 
@@ -1121,7 +1152,7 @@ export const UsersManagementPage: React.FC = () => {
                                                 className="flex items-center gap-3 px-5 py-2.5 bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-500/20"
                                             >
                                                 <AlertTriangle className="w-5 h-5" />
-                                                <span className="text-[10px] font-black uppercase tracking-[0.15em]">Modifications en attente d'écriture</span>
+                                                <span className="text-[10px] font-black uppercase tracking-[0.15em]">{t('admin.pending_changes')}</span>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -1131,7 +1162,7 @@ export const UsersManagementPage: React.FC = () => {
                                         onClick={closePermissionsModal}
                                         className="px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-900 transition-colors"
                                     >
-                                        Annuler
+                                        {t('common.cancel')}
                                     </button>
                                     <button
                                         onClick={savePermissions}
@@ -1141,12 +1172,12 @@ export const UsersManagementPage: React.FC = () => {
                                         {isLoadingPermissions ? (
                                             <>
                                                 <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                <span>Synchronisation...</span>
+                                                <span>{t('admin.syncing_permissions')}</span>
                                             </>
                                         ) : (
                                             <>
                                                 <Save className="w-3 h-3" />
-                                                <span>Appliquer la Sécurité</span>
+                                                <span>{t('admin.apply_security')}</span>
                                             </>
                                         )}
                                     </button>
@@ -1162,8 +1193,8 @@ export const UsersManagementPage: React.FC = () => {
                 isOpen={confirmDialog.isOpen}
                 title={confirmDialog.title}
                 message={confirmDialog.message}
-                confirmText="Supprimer"
-                cancelText="Annuler"
+                confirmText={t('admin.delete_confirm_text')}
+                cancelText={t('common.cancel')}
                 type="danger"
                 onConfirm={confirmDialog.onConfirm}
                 onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}

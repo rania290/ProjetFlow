@@ -25,7 +25,18 @@ import { timeTrackingApi } from '../../features/hr/time-tracking/api/time-tracki
 import { adminApi } from '../../api/admin.api';
 
 export const AdminDashboard: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
+
+  const getWorkloadLabel = (status: string) => {
+    switch (status) {
+      case 'OVERLOADED': return t('dashboard.workload_saturated');
+      case 'AVAILABLE_SOON': return t('dashboard.workload_soon');
+      case 'AVAILABLE': return t('dashboard.workload_free');
+      case 'OPTIMAL': return t('dashboard.workload_optimal');
+      default: return status;
+    }
+  };
   const [users, setUsers] = useState<any[]>([]);
   const [showCriticalPanel, setShowCriticalPanel] = useState(false);
   const [selectedReport, setSelectedReport] = useState('avancement');
@@ -327,9 +338,9 @@ export const AdminDashboard: React.FC = () => {
   const projectsProgress = sortedProjects.map(p => p.progress);
 
   const realProjectProgressData = {
-    labels: projectsNames.length ? projectsNames : ['Aucun projet'],
+    labels: projectsNames.length ? projectsNames : [t('dashboard.no_project')],
     datasets: [{
-      label: 'Progression (%)',
+      label: t('dashboard.progress_chart_label'),
       data: projectsProgress.length ? projectsProgress : [0],
       backgroundColor: 'rgba(79, 70, 229, 0.8)', // Indigo-600
       borderColor: 'rgba(79, 70, 229, 1)',
@@ -341,15 +352,15 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const tasksByStatusCount = {
-    'À faire': summary.tasksByStatus.TODO,
-    'En cours': summary.tasksByStatus.IN_PROGRESS,
-    'En test': summary.tasksByStatus.IN_TEST,
-    'Terminées': summary.tasksByStatus.DONE,
+    [t('dashboard.task_todo')]: summary.tasksByStatus.TODO,
+    [t('dashboard.task_in_progress')]: summary.tasksByStatus.IN_PROGRESS,
+    [t('dashboard.task_in_test')]: summary.tasksByStatus.IN_TEST,
+    [t('dashboard.task_done')]: summary.tasksByStatus.DONE,
   };
 
   const hasTasks = summary.totalTasks > 0;
   const realTaskStatusData = {
-    labels: hasTasks ? Object.keys(tasksByStatusCount) : ['Aucune tâche'],
+    labels: hasTasks ? Object.keys(tasksByStatusCount) : [t('dashboard.no_task')],
     datasets: [{
       data: hasTasks ? Object.values(tasksByStatusCount) : [1],
       backgroundColor: [
@@ -452,11 +463,11 @@ export const AdminDashboard: React.FC = () => {
       await projectsService.deleteAll();
       dispatch({ type: 'SET_PROJECTS', projects: [] });
       setShowDeleteConfirm(false);
-      setFeedback({ type: 'success', message: 'Toutes les données de projet ont été effacées.' });
+      setFeedback({ type: 'success', message: t('dashboard.delete_all_success') });
       setTimeout(() => setFeedback(null), 3000);
     } catch (error) {
       console.error('Failed to delete all projects:', error);
-      setFeedback({ type: 'error', message: 'Erreur lors de la suppression des données.' });
+      setFeedback({ type: 'error', message: t('dashboard.delete_all_error') });
       setTimeout(() => setFeedback(null), 3000);
     } finally {
       setIsDeleting(false);
@@ -482,11 +493,11 @@ export const AdminDashboard: React.FC = () => {
 
       pdf.addImage(dataUrl, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`Dashboard_VAERDIA_${new Date().toISOString().split('T')[0]}.pdf`);
-      setFeedback({ type: 'success', message: 'Export PDF réussi !' });
+      setFeedback({ type: 'success', message: t('dashboard.export_pdf_success') });
       setTimeout(() => setFeedback(null), 3000);
     } catch (error) {
       console.error('Erreur lors de l\'export PDF:', error);
-      setFeedback({ type: 'error', message: 'Une erreur est survenue lors de l\'export PDF.' });
+      setFeedback({ type: 'error', message: t('dashboard.export_pdf_error') });
       setTimeout(() => setFeedback(null), 3000);
     } finally {
       setIsExporting(false);
@@ -520,7 +531,7 @@ export const AdminDashboard: React.FC = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              Supervision et reporting de portefeuille intelligent
+              {t('dashboard.portfolio_subtitle')}
             </p>
           </div>
 
@@ -554,10 +565,10 @@ export const AdminDashboard: React.FC = () => {
       {/* Tabs for mobile */}
       <div className="md:hidden flex bg-white/80 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-indigo-100 shadow-lg overflow-x-auto gap-2 no-scrollbar">
         {[
-          { id: 'avancement', name: 'Projets', icon: <BarChart3 className="w-4 h-4" /> },
-          { id: 'charge', name: 'Ressources', icon: <Users className="w-4 h-4" /> },
-          { id: 'financier', name: 'Finances', icon: <ShieldCheck className="w-4 h-4" /> },
-          { id: 'rh', name: 'Équipe', icon: <Activity className="w-4 h-4" /> }
+          { id: 'avancement', name: t('dashboard.tab_projects'), icon: <BarChart3 className="w-4 h-4" /> },
+          { id: 'charge', name: t('dashboard.tab_resources'), icon: <Users className="w-4 h-4" /> },
+          { id: 'financier', name: t('dashboard.finances'), icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'rh', name: t('dashboard.tab_team_short'), icon: <Activity className="w-4 h-4" /> }
         ].map(tab => (
           <button
             key={tab.id}
@@ -621,7 +632,7 @@ export const AdminDashboard: React.FC = () => {
                   <Target className="w-5 h-5" />
                 </div>
                 <div className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded-lg uppercase tracking-tighter">
-                  Moyenne pondérée
+                  {t('dashboard.weighted_average')}
                 </div>
               </div>
               <p className="text-[11px] text-slate-400 font-black mb-1 uppercase tracking-[0.1em]">{t('dashboard.global_completion')}</p>
@@ -659,7 +670,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   {reportData.avancement.delayedTasks > 0 && (
                     <span className="animate-pulse px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-[9px] font-black uppercase tracking-wider border border-red-200">
-                      {showCriticalPanel ? 'Masquer ▲' : 'Voir détail ▼'}
+                      {showCriticalPanel ? t('dashboard.hide_detail') : t('dashboard.show_detail')}
                     </span>
                   )}
                 </div>
@@ -675,7 +686,7 @@ export const AdminDashboard: React.FC = () => {
                       ? 'bg-red-50 text-red-700 border-red-100'
                       : 'bg-slate-50 text-slate-500 border-slate-200'
                   }`}>
-                    {reportData.avancement.delayedTasks > 0 ? 'En retard / Critique' : t('dashboard.no_alerts')}
+                    {reportData.avancement.delayedTasks > 0 ? t('dashboard.delayed_critical') : t('dashboard.no_alerts')}
                   </span>
                 </div>
               </button>
@@ -691,26 +702,26 @@ export const AdminDashboard: React.FC = () => {
                     className="overflow-hidden"
                   >
                     <div className="mt-4 pt-4 border-t border-red-100 space-y-2">
-                      {criticalTasksList.slice(0, 8).map(t => {
-                        const proj = analytics?.projects?.find(p => p.id === t.projectId) || state.projects.find(p => p.id === t.projectId);
-                        const isOverdue = t.dueDate && new Date(t.dueDate) < now;
+                      {criticalTasksList.slice(0, 8).map(task => {
+                        const proj = analytics?.projects?.find(p => p.id === task.projectId) || state.projects.find(p => p.id === task.projectId);
+                        const isOverdue = task.dueDate && new Date(task.dueDate) < now;
                         return (
-                          <div key={t.id} className="flex items-start justify-between gap-2 p-2 rounded-xl bg-red-50/60 border border-red-100/80">
+                          <div key={task.id} className="flex items-start justify-between gap-2 p-2 rounded-xl bg-red-50/60 border border-red-100/80">
                             <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-black text-slate-800 truncate">{t.title}</p>
-                              <p className="text-[9px] font-bold text-slate-400 truncate">{proj?.name ?? 'Projet inconnu'}</p>
+                              <p className="text-[11px] font-black text-slate-800 truncate">{task.title}</p>
+                              <p className="text-[9px] font-bold text-slate-400 truncate">{proj?.name ?? t('dashboard.unknown_project')}</p>
                             </div>
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md border ${
-                                t.priority === 'CRITICAL'
+                                task.priority === 'CRITICAL'
                                   ? 'bg-red-100 text-red-700 border-red-200'
                                   : 'bg-orange-50 text-orange-700 border-orange-100'
                               }`}>
-                                {t.priority === 'CRITICAL' ? 'CRITIQUE' : 'HAUTE'}
+                                {task.priority === 'CRITICAL' ? t('dashboard.priority_critical') : t('dashboard.priority_high')}
                               </span>
                               {isOverdue && (
                                 <span className="text-[8px] font-bold text-red-500">
-                                  ⚠ {new Date(t.dueDate!).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                                  ⚠ {new Date(task.dueDate!).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short' })}
                                 </span>
                               )}
                             </div>
@@ -752,12 +763,12 @@ export const AdminDashboard: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
                     <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-                    Santé des Tâches
+                    {t('dashboard.task_health')}
                   </h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Répartition par statut opérationnel</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{t('dashboard.task_status_breakdown')}</p>
                 </div>
                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-black text-[10px] uppercase">
-                   Stable
+                   {t('admin.stable')}
                 </Badge>
               </div>
               <div className="relative flex justify-center py-6">
@@ -767,12 +778,12 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100/50">
                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-slate-400 uppercase">Productivité</p>
-                    <p className="text-sm font-black text-slate-800">Haute density</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase">{t('dashboard.productivity_short')}</p>
+                    <p className="text-sm font-black text-slate-800">{t('dashboard.high_density')}</p>
                  </div>
                  <div className="space-y-1 text-right">
-                    <p className="text-[9px] font-black text-slate-400 uppercase">Focus</p>
-                    <p className="text-sm font-black text-emerald-600">Livraisons</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase">{t('dashboard.focus_label')}</p>
+                    <p className="text-sm font-black text-emerald-600">{t('dashboard.deliveries_label')}</p>
                  </div>
               </div>
             </GlassCard>
@@ -791,31 +802,31 @@ export const AdminDashboard: React.FC = () => {
                     <Activity className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-slate-800 font-display">Capacité & Charge d'Équipe</h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Optimisation des ressources</p>
+                    <h3 className="text-lg font-black text-slate-800 font-display">{t('dashboard.team_capacity')}</h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.resource_optimization')}</p>
                   </div>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-500 border border-slate-200">
-                  <span className="text-[10px] font-black uppercase tracking-tighter">Analyse hebdomadaire</span>
+                  <span className="text-[10px] font-black uppercase tracking-tighter">{t('dashboard.weekly_analysis')}</span>
               </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <GlassCard className="p-6 border-white/40" delay={0.1}>
-              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Volume Assigné</p>
+              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.assigned_volume')}</p>
               <div className="flex items-end justify-between">
                 <p className="text-4xl font-black text-slate-900 font-display">
                   {reportData.charge.totalHoursWeek}
                   <span className="text-sm font-bold text-slate-300 ml-1">h</span>
                 </p>
                 <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-500">{reportData.charge.resources.length} experts actifs</p>
+                  <p className="text-[10px] font-bold text-slate-500">{t('dashboard.active_experts_count', { count: reportData.charge.resources.length })}</p>
                 </div>
               </div>
             </GlassCard>
 
             <GlassCard className="p-6 border-white/40" delay={0.2}>
-              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Temps Réalisé</p>
+              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.time_completed')}</p>
               <div className="flex items-end justify-between">
                 <p className="text-4xl font-black text-slate-900 font-display">
                   {reportData.charge.totalCompletedHours}
@@ -823,7 +834,7 @@ export const AdminDashboard: React.FC = () => {
                 </p>
                 <div className="text-right">
                   <span className="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100">
-                    {reportData.charge.totalHoursWeek > 0 ? reportData.charge.averageEfficiency : 0}% efficacité
+                    {t('dashboard.efficiency_percent', { percent: reportData.charge.totalHoursWeek > 0 ? reportData.charge.averageEfficiency : 0 })}
                   </span>
                 </div>
               </div>
@@ -833,11 +844,11 @@ export const AdminDashboard: React.FC = () => {
               className={`p-6 border-white/40 ${overloadedCount > 0 ? 'ring-2 ring-amber-100 bg-amber-50/10' : ''}`} 
               delay={0.3}
             >
-              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Alerte Surcharge</p>
+              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.overload_alert')}</p>
               <div className="flex items-end justify-between">
                 <p className={`text-4xl font-black font-display ${overloadedCount > 0 ? 'text-amber-500' : 'text-slate-900'}`}>{overloadedCount}</p>
                 <span className={`text-[10px] font-black px-2 py-1 rounded-lg border ${overloadedCount > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
-                  &gt; 40h / ressource
+                  {t('dashboard.hours_per_resource')}
                 </span>
               </div>
             </GlassCard>
@@ -847,18 +858,18 @@ export const AdminDashboard: React.FC = () => {
             <div className="p-6 border-b border-slate-100/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-indigo-500 rounded-full"></div>
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Détail des ressources</h3>
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{t('dashboard.resource_details')}</h3>
               </div>
             </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-slate-50/50">
                   <TableRow className="hover:bg-transparent border-slate-100/50">
-                    <TableHead className="px-8 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Membre de l'équipe</TableHead>
-                    <TableHead className="px-6 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Tâches</TableHead>
-                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Reste à faire</TableHead>
-                    <TableHead className="px-6 py-5 text-center text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Progression</TableHead>
-                    <TableHead className="px-8 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Disponibilité</TableHead>
+                    <TableHead className="px-8 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_team_member')}</TableHead>
+                    <TableHead className="px-6 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_tasks')}</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_remaining')}</TableHead>
+                    <TableHead className="px-6 py-5 text-center text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_progress')}</TableHead>
+                    <TableHead className="px-8 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_availability')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -880,12 +891,12 @@ export const AdminDashboard: React.FC = () => {
                       </TableCell>
                       <TableCell className="px-6 py-5">
                         <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-black text-[10px]">
-                          {r.tasksCount} active
+                          {t('dashboard.tasks_active_count', { count: r.tasksCount })}
                         </span>
                       </TableCell>
                       <TableCell className="px-6 py-5 text-right">
                         <span className="font-black text-slate-800">{r.remainingHours}h</span>
-                        <span className="text-[10px] text-slate-400 font-bold block">sur {r.assignedHours}h</span>
+                        <span className="text-[10px] text-slate-400 font-bold block">{t('dashboard.hours_of_total', { remaining: r.remainingHours, assigned: r.assignedHours })}</span>
                       </TableCell>
                       <TableCell className="px-6 py-5">
                         <div className="flex flex-col items-center gap-2 w-full max-w-[140px] mx-auto">
@@ -896,19 +907,19 @@ export const AdminDashboard: React.FC = () => {
                               className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500" 
                             />
                           </div>
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{r.efficiency}% complété</span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{t('dashboard.percent_completed', { percent: r.efficiency })}</span>
                         </div>
                       </TableCell>
                       <TableCell className="px-8 py-5 text-right">
-                        {r.workloadStatus === 'OVERLOADED' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-red-50 text-red-600 border border-red-100">SATURÉ</span>}
-                        {r.workloadStatus === 'AVAILABLE_SOON' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100">PROCHAINEMENT</span>}
-                        {r.workloadStatus === 'AVAILABLE' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100">LIBRE</span>}
-                        {r.workloadStatus === 'OPTIMAL' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100">OPTIMAL</span>}
+                        {r.workloadStatus === 'OVERLOADED' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-red-50 text-red-600 border border-red-100">{getWorkloadLabel(r.workloadStatus)}</span>}
+                        {r.workloadStatus === 'AVAILABLE_SOON' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100">{getWorkloadLabel(r.workloadStatus)}</span>}
+                        {r.workloadStatus === 'AVAILABLE' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100">{getWorkloadLabel(r.workloadStatus)}</span>}
+                        {r.workloadStatus === 'OPTIMAL' && <span className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100">{getWorkloadLabel(r.workloadStatus)}</span>}
                       </TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="px-8 py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">Aucune ressource assignée au workflow actuel.</TableCell>
+                        <TableCell colSpan={5} className="px-8 py-16 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">{t('dashboard.no_resources_assigned')}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -927,33 +938,33 @@ export const AdminDashboard: React.FC = () => {
                         <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-black text-slate-800 font-display">Performance Financière</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Santé du portefeuille de projets</p>
+                        <h3 className="text-lg font-black text-slate-800 font-display">{t('dashboard.financial_performance')}</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.portfolio_health')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 text-slate-500 border border-slate-200">
-                    <span className="text-[10px] font-black uppercase tracking-tighter">Budget Consolidé</span>
+                    <span className="text-[10px] font-black uppercase tracking-tighter">{t('dashboard.consolidated_budget')}</span>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <GlassCard className="p-6 border-white/40" delay={0.1}>
-                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Budget Alloué</p>
+                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.budget_allocated')}</p>
                     <p className="text-3xl font-black text-slate-900 font-display">{(totalBudget / 1000).toFixed(0)}k <span className="text-xs font-bold text-slate-300">DT</span></p>
                 </GlassCard>
 
                 <GlassCard className="p-6 border-white/40" delay={0.2}>
-                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Consommé</p>
+                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.consumed')}</p>
                     <p className="text-3xl font-black text-slate-900 font-display">{(totalSpent / 1000).toFixed(1)}k <span className="text-xs font-bold text-slate-300">DT</span></p>
                 </GlassCard>
 
                 <GlassCard className="p-6 border-white/40" delay={0.3}>
-                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Disponible</p>
+                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.available')}</p>
                     <p className="text-3xl font-black text-emerald-600 font-display">{(totalRemaining / 1000).toFixed(1)}k <span className="text-xs font-bold text-emerald-300">DT</span></p>
                 </GlassCard>
 
                 <GlassCard className={`p-6 border-white/40 ${isOverBudget ? 'bg-red-50/10 ring-2 ring-red-100' : ''}`} delay={0.4}>
-                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Marge Estimée</p>
+                    <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.estimated_margin')}</p>
                     <p className={`text-3xl font-black font-display ${isOverBudget ? 'text-red-600' : 'text-slate-900'}`}>
                       {Math.abs(margin / 1000).toFixed(1)}k <span className="text-xs font-bold opacity-30">DT</span>
                     </p>
@@ -964,14 +975,14 @@ export const AdminDashboard: React.FC = () => {
             <GlassCard className="p-8 border-white/40" delay={0.5}>
                 <div className="flex justify-between items-end mb-6">
                     <div>
-                        <div className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">Analyse du Workflow</div>
-                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Vitesse de consommation globale</h4>
+                        <div className="text-[11px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">{t('dashboard.workflow_analysis_title')}</div>
+                        <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{t('dashboard.global_consumption_speed')}</h4>
                     </div>
                     <div className="flex items-end gap-2 text-3xl font-black font-display">
                         <span className={burnRate > 90 ? 'text-red-500' : burnRate > 75 ? 'text-amber-500' : 'text-emerald-500'}>
                           {burnRate}%
                         </span>
-                        <span className="text-xs text-slate-300 pb-2">consommé</span>
+                        <span className="text-xs text-slate-300 pb-2">{t('dashboard.percent_consumed_label')}</span>
                     </div>
                 </div>
                 <div className="h-6 bg-slate-50 border border-slate-200/50 rounded-2xl overflow-hidden p-[3px]">
@@ -992,9 +1003,9 @@ export const AdminDashboard: React.FC = () => {
                           <AlertCircle className="w-5 h-5 shrink-0" />
                         </div>
                         <div className="space-y-1">
-                          <p className="text-xs font-black uppercase tracking-wider">Alerte de Dépassement</p>
+                          <p className="text-xs font-black uppercase tracking-wider">{t('dashboard.overrun_alert_title')}</p>
                           <p className="text-[11px] font-bold leading-relaxed text-red-500/80">
-                              La projection actuelle indique un dépassement de budget inter-projets de <span className="font-black text-red-600">{Math.abs(margin / 1000).toFixed(1)}k DT</span>.
+                              {t('dashboard.overrun_alert_message', { amount: `${Math.abs(margin / 1000).toFixed(1)}k DT` })}
                           </p>
                         </div>
                     </div>
@@ -1006,7 +1017,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="p-8 border-b border-slate-100/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Coûts par Projet</h3>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{t('dashboard.costs_by_project')}</h3>
                 </div>
 
               </div>
@@ -1014,11 +1025,11 @@ export const AdminDashboard: React.FC = () => {
               <Table>
                 <TableHeader className="bg-slate-50/50">
                   <TableRow className="hover:bg-transparent border-slate-100/50">
-                    <TableHead className="px-8 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Identifiant Projet</TableHead>
-                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Budget Alloué</TableHead>
-                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Consommé Réel</TableHead>
-                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Reste</TableHead>
-                    <TableHead className="px-8 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">Progression Budget</TableHead>
+                    <TableHead className="px-8 py-5 text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_project_id')}</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_budget_allocated')}</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_actual_spent')}</TableHead>
+                    <TableHead className="px-6 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_remaining_budget')}</TableHead>
+                    <TableHead className="px-8 py-5 text-right text-slate-400 font-black text-[10px] uppercase tracking-[0.15em] h-14">{t('dashboard.col_budget_progress')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1055,23 +1066,23 @@ export const AdminDashboard: React.FC = () => {
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-800 font-display">Performance RH</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Capital humain & engagement</p>
+                <h3 className="text-lg font-black text-slate-800 font-display">{t('dashboard.hr_performance')}</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t('dashboard.human_capital_engagement')}</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <GlassCard className="p-6 border-white/40" delay={0.1}>
-              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Effectif Total</p>
+              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.total_headcount')}</p>
               <div className="flex items-end justify-between">
                 <p className="text-4xl font-black text-slate-900 font-display">{reportData.rh.totalStaff}</p>
-                <span className="text-[10px] font-black px-2 py-1 bg-purple-50 text-purple-600 rounded-lg">Experts actifs</span>
+                <span className="text-[10px] font-black px-2 py-1 bg-purple-50 text-purple-600 rounded-lg">{t('dashboard.active_experts_badge')}</span>
               </div>
             </GlassCard>
 
             <GlassCard className="p-6 border-white/40" delay={0.2}>
-              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Taux de Rétention</p>
+              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.retention_rate')}</p>
               <div className="flex items-end justify-between">
                 <p className="text-4xl font-black text-slate-900 font-display">{reportData.rh.retentionRate}%</p>
                 <div className="w-12 h-12">
@@ -1083,7 +1094,7 @@ export const AdminDashboard: React.FC = () => {
             </GlassCard>
 
             <GlassCard className="p-6 border-white/40" delay={0.3}>
-              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">Climat Social</p>
+              <p className="text-[11px] text-slate-400 font-black mb-2 uppercase tracking-widest">{t('dashboard.social_climate')}</p>
               <div className="flex items-end justify-between">
                 <p className="text-4xl font-black text-indigo-600 font-display">{reportData.rh.socialClimate.toFixed(1)}</p>
                 <div className="flex gap-0.5 mb-1">
@@ -1098,10 +1109,10 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
                   <div className="w-1.5 h-6 bg-purple-500 rounded-full"></div>
-                  Productivité Mensuelle
+                  {t('dashboard.monthly_productivity')}
                 </h3>
                 <div className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-1 rounded-lg uppercase">
-                  Vs mois précédent : +{Math.max(0, reportData.rh.productivityTrend[5] - reportData.rh.productivityTrend[4])}%
+                  {t('dashboard.vs_previous_month', { percent: Math.max(0, reportData.rh.productivityTrend[5] - reportData.rh.productivityTrend[4]) })}
                 </div>
               </div>
               <div className="relative">
@@ -1110,12 +1121,12 @@ export const AdminDashboard: React.FC = () => {
                       const labels = [];
                       const now = new Date();
                       for (let i = 5; i >= 0; i--) {
-                        labels.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toLocaleString('fr-FR', { month: 'short' }));
+                        labels.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toLocaleString(dateLocale, { month: 'short' }));
                       }
                       return labels;
                     })(),
                    datasets: [{
-                     label: 'Productivité (%)',
+                     label: t('dashboard.productivity_chart_label'),
                      data: reportData.rh.productivityTrend,
                      borderColor: '#8b5cf6',
                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
@@ -1128,14 +1139,14 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wider">
                   <div className="w-1.5 h-6 bg-amber-500 rounded-full"></div>
-                  Répartition des Compétences
+                  {t('dashboard.skills_distribution')}
                 </h3>
               </div>
               <div className="relative">
                  <ChartComponent type="bar" data={{
                    labels: reportData.rh.roleDistribution.labels,
                    datasets: [{
-                     label: 'Nombre d\'Experts',
+                     label: t('dashboard.experts_count_label'),
                      data: reportData.rh.roleDistribution.data,
                      backgroundColor: 'rgba(245, 158, 11, 0.8)',
                    }]
@@ -1148,17 +1159,17 @@ export const AdminDashboard: React.FC = () => {
              <div className="p-8 border-b border-slate-100/50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Présence en Direct</h3>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{t('dashboard.live_presence')}</h3>
                 </div>
                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 font-black text-[10px] uppercase">
-                   {activeSessions.length} actif(s)
+                   {t('dashboard.active_sessions_count', { count: activeSessions.length })}
                 </Badge>
              </div>
              <div className="p-6">
                  {activeSessions.length === 0 ? (
                     <div className="text-center py-10">
                        <Clock className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                       <p className="text-xs text-slate-400 font-black uppercase tracking-widest">Personne n'est actuellement pointé</p>
+                       <p className="text-xs text-slate-400 font-black uppercase tracking-widest">{t('dashboard.nobody_clocked_in')}</p>
                     </div>
                  ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1172,13 +1183,13 @@ export const AdminDashboard: React.FC = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                  <p className="text-xs font-black text-slate-800 truncate">{session.employeeName}</p>
-                                 <p className="text-[10px] font-bold text-slate-500 truncate mt-0.5">{session.activity || 'Travail standard'}</p>
+                                 <p className="text-[10px] font-bold text-slate-500 truncate mt-0.5">{session.activity || t('dashboard.standard_work')}</p>
                                  <div className="flex items-center gap-2 mt-1.5">
                                     <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">
-                                       Depuis {new Date(session.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                       {t('dashboard.since_time', { time: new Date(session.startTime).toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' }) })}
                                     </span>
                                     {session.status === 'PAUSED' && (
-                                       <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-700 uppercase">En pause</span>
+                                       <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-100 text-amber-700 uppercase">{t('dashboard.paused_status')}</span>
                                     )}
                                  </div>
                               </div>
@@ -1195,7 +1206,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <AppLayout title={t('admin.dashboard.title', 'Global Administration')} subtitle={t('admin.dashboard.subtitle', 'Centralized configuration, monitoring and reporting')}>
+    <AppLayout title={t('dashboard.global_admin_title')} subtitle={t('dashboard.global_admin_subtitle')}>
       <div className="p-6">
         {renderReports()}
       </div>

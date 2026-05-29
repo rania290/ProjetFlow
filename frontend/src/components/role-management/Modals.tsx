@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -21,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import type { User, Project } from './types';
-import { ROLE_CONFIG } from './types';
+import { useRoleConfig } from './useRoleConfig';
 
 interface BulkAssignModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ interface BulkAssignModalProps {
 }
 
 export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClose, user, projects, onBulkAssign }) => {
+  const { t } = useTranslation();
+  const roleConfig = useRoleConfig();
   const [assignments, setAssignments] = useState<{ projectId: string; role: string; tjm: number }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -60,9 +63,9 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
         <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16" />
           <div className="relative z-10">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-display">Assignations Multiples</h3>
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight font-display">{t('roles.bulk_assign_title')}</h3>
             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-                Gérer les accès pour <span className="text-indigo-600 underline decoration-indigo-200 underline-offset-4">{user.fullName}</span>
+                {t('roles.manage_access_for', { name: user.fullName })}
             </p>
           </div>
           <button onClick={onClose} className="p-3 text-slate-300 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all relative z-10">
@@ -75,11 +78,11 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
              <div className="flex items-center justify-between mb-4">
                <div className="flex items-center gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">1. Sélection des roadmaps</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('roles.step_select_roadmaps')}</label>
                </div>
                {assignments.length > 0 && (
                  <button onClick={() => setAssignments([])} className="text-[9px] font-black uppercase tracking-widest text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors">
-                   Tout désélectionner
+                   {t('roles.deselect_all')}
                  </button>
                )}
              </div>
@@ -102,7 +105,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
                             <div className="flex items-start justify-between relative z-10">
                                 <div className="min-w-0 flex-1">
                                     <p className={`font-black text-xs uppercase tracking-tight truncate ${isAssigned ? 'text-indigo-900' : 'text-slate-900'}`}>{p.name}</p>
-                                    <p className="text-[10px] text-slate-400 font-medium line-clamp-1 mt-0.5 italic">{p.description || 'Pas de description'}</p>
+                                    <p className="text-[10px] text-slate-400 font-medium line-clamp-1 mt-0.5 italic">{p.description || t('roles.no_description')}</p>
                                 </div>
                                 <div className={`w-6 h-6 rounded-xl border flex items-center justify-center shrink-0 transition-all ${
                                     isAssigned ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg shadow-indigo-200' : 'border-slate-200 bg-white group-hover/item:border-slate-300'
@@ -125,7 +128,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
                >
                    <div className="flex items-center gap-3 mb-4">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">2. Configuration des Rôles</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('roles.step_configure_roles')}</label>
                    </div>
                    <div className="space-y-3">
                       {assignments.map(a => {
@@ -137,19 +140,19 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
                                   </div>
                                   <div className="flex items-center gap-3">
                                     <div className="flex flex-col gap-1">
-                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1">Rôle</label>
+                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1">{t('roles.role_label')}</label>
                                        <select
                                           value={a.role}
                                           onChange={(e) => setAssignments(assignments.map(x => x.projectId === a.projectId ? {...x, role: e.target.value} : x))}
                                           className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase text-indigo-600 tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 outline-none w-40 shadow-sm transition-all text-center"
                                        >
-                                          {Object.entries(ROLE_CONFIG).map(([role, config]) => (
+                                          {Object.entries(roleConfig).map(([role, config]) => (
                                           <option key={role} value={role}>{config.label.toUpperCase()}</option>
                                           ))}
                                        </select>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1">TJM (DT)</label>
+                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1">{t('roles.daily_rate')}</label>
                                        <input
                                           type="number"
                                           min={0}
@@ -170,7 +173,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
 
         <div className="p-6 border-t border-slate-50 bg-slate-50/20 flex justify-end gap-4">
            <button onClick={onClose} className="px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
-              Annuler
+              {t('common.cancel')}
            </button>
            <button 
               onClick={handleSubmit}
@@ -178,7 +181,7 @@ export const BulkAssignModal: React.FC<BulkAssignModalProps> = ({ isOpen, onClos
               className="px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:grayscale transition-all shadow-xl shadow-slate-900/10 active:scale-95 flex items-center gap-2"
            >
               {isSubmitting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-              Confirmer ({assignments.length})
+              {t('roles.confirm_count', { count: assignments.length })}
            </button>
         </div>
       </motion.div>
@@ -196,6 +199,8 @@ interface AddMemberModalProps {
 }
 
 export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, project, users, existingUserIds = [], onAssignRole }) => {
+  const { t } = useTranslation();
+  const roleConfig = useRoleConfig();
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedRole, setSelectedRole] = useState('DEVELOPER');
   const [tjm, setTjm] = useState(450);
@@ -222,9 +227,9 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
   const selectedUserDisplay = selectedUser
     ? (() => {
         const u = users.find((user: User) => user.id === selectedUser);
-        return u ? `${u.fullName} (${u.email})` : "Rechercher par nom...";
+        return u ? `${u.fullName} (${u.email})` : t('roles.search_by_name');
       })()
-    : "Rechercher par nom...";
+    : t('roles.search_by_name');
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
@@ -234,7 +239,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
         className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col"
       >
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">Ajouter à {project.name}</h3>
+          <h3 className="text-lg font-bold text-slate-900">{t('roles.add_to_project', { name: project.name })}</h3>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -242,15 +247,15 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
         
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
            <div className="flex flex-col">
-               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Utilisateur à ajouter</label>
+               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('roles.user_to_add')}</label>
                <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-400 transition-all">
                  <Command className="bg-transparent border-none">
                    <CommandInput 
-                      placeholder="Rechercher par nom..." 
+                      placeholder={t('roles.search_by_name')} 
                       className="h-12 border-none focus:ring-0 bg-transparent placeholder:text-slate-400"
                    />
                    <CommandList className="max-h-[180px] border-t border-slate-100">
-                     <CommandEmpty className="py-4 text-center text-sm text-slate-500">Aucun membre trouvé.</CommandEmpty>
+                     <CommandEmpty className="py-4 text-center text-sm text-slate-500">{t('roles.no_member_found')}</CommandEmpty>
                      <CommandGroup>
                        {users.filter(u => !existingUserIds.includes(u.id)).map((u: User) => (
                          <CommandItem
@@ -282,7 +287,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                </div>
                {selectedUser && (
                   <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-primary-50/50 rounded-lg border border-primary-100 w-fit">
-                    <span className="text-[10px] font-bold text-primary-600 uppercase">Sélection :</span>
+                    <span className="text-[10px] font-bold text-primary-600 uppercase">{t('roles.selection')}</span>
                     <span className="text-xs font-semibold text-slate-700">
                       {users.find(u => u.id === selectedUser)?.fullName}
                     </span>
@@ -300,19 +305,19 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
            <div>
            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Rôle</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('roles.role_label')}</label>
                 <select
                   value={selectedRole}
                   onChange={e => setSelectedRole(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all"
                 >
-                  {Object.entries(ROLE_CONFIG).map(([role, config]) => (
+                  {Object.entries(roleConfig).map(([role, config]) => (
                     <option key={role} value={role}>{config.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">TJM (DT)</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('roles.daily_rate')}</label>
                 <input
                   type="number"
                   min={0}
@@ -326,10 +331,10 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
            
            <div className="pt-2 flex gap-3">
                <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-100 transition-colors">
-                   Annuler
+                   {t('common.cancel')}
                </button>
                <button type="submit" disabled={!selectedUser} className="flex-1 py-3 rounded-xl font-medium text-sm text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 transition-colors shadow-sm shadow-primary-500/30">
-                   Ajouter
+                   {t('common.add')}
                </button>
            </div>
         </form>
@@ -347,6 +352,7 @@ interface DeleteConfirmModalProps {
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, onClose, onConfirm, userName, projectName }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[200]">
@@ -358,7 +364,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, 
         <div className="p-4 border-b border-red-100 flex items-center justify-between bg-red-50/50">
           <div className="flex items-center gap-2 text-red-600">
              <AlertCircle className="w-5 h-5" />
-             <h3 className="text-[17px] font-semibold">Confirmation de suppression</h3>
+             <h3 className="text-[17px] font-semibold">{t('roles.delete_confirm_title')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
             <X className="w-5 h-5" />
@@ -367,16 +373,16 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ isOpen, 
         
         <div className="p-6 border-b border-slate-100">
            <p className="text-slate-600 text-[15px] leading-relaxed">
-             Êtes-vous sûr de vouloir supprimer l'assignation de <span className="font-semibold text-slate-900">"{userName}"</span> sur le projet <span className="font-semibold text-slate-900">"{projectName}"</span> ? Cette action est irréversible.
+             {t('roles.delete_confirm_msg', { user: userName, project: projectName })}
            </p>
         </div>
         
         <div className="p-4 bg-slate-50/50 flex justify-end gap-3">
            <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-medium text-sm text-slate-600 hover:bg-slate-200/50 transition-colors">
-               Annuler
+               {t('common.cancel')}
            </button>
            <button onClick={onConfirm} className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm shadow-red-500/30">
-               Supprimer
+               {t('common.delete')}
            </button>
         </div>
       </motion.div>

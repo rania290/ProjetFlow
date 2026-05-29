@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FolderKanban, Plus, Users, CheckCircle2,
     Clock, AlertTriangle, Zap, Bot, ArrowUpRight,
+
     CalendarDays, Target, Activity, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
@@ -16,16 +18,6 @@ import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { projectsService } from '../api/projects.service';
-
-const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-    PLANNED: { label: 'Planifié', color: 'text-slate-500', bg: 'bg-slate-100' },
-    IN_PROGRESS: { label: 'En cours', color: 'text-blue-600', bg: 'bg-blue-50' },
-    DELIVERED: { label: 'Livré', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    SUSPENDED: { label: 'Suspendu', color: 'text-red-500', bg: 'bg-red-50' },
-};
-
-
 const PRIORITY_BADGES = {
     CRITICAL: 'bg-red-100 text-red-700 border-red-200',
     HIGH: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -34,13 +26,41 @@ const PRIORITY_BADGES = {
 };
 
 export const DashboardPage: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const { state, dashboardStats, dispatch } = useStore();
     const { insights, fetchInsights, toggleOpen } = useAuraStore();
     const { user } = useAuth();
     const navigate = useNavigate();
     const [showCreateModal, setShowCreateModal] = useState(false);
 
-    const canSeeClientPortal = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'PROJECT_MANAGER';
+    const statusLabels = useMemo(
+        () => ({
+            PLANNED: { label: t('common.planned'), color: 'text-slate-500', bg: 'bg-slate-100' },
+            IN_PROGRESS: { label: t('common.in_progress'), color: 'text-blue-600', bg: 'bg-blue-50' },
+            DELIVERED: { label: t('dashboard.status_delivered'), color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            SUSPENDED: { label: t('dashboard.status_suspended'), color: 'text-red-500', bg: 'bg-red-50' },
+        }),
+        [t, i18n.language],
+    );
+
+    const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
+
+    const userRole = (user?.role || '').toUpperCase();
+    const canSeeAllProjects =
+        userRole === 'ADMIN' ||
+        userRole === 'SUPER_ADMIN' ||
+        userRole === 'HR_ADMIN' ||
+        userRole === 'PROJECT_MANAGER' ||
+        userRole === 'MANAGER';
+    const canSeeClientPortal = canSeeAllProjects || userRole === 'CLIENT';
+
+    const visibleProjects = state.projects.filter(p => {
+        if (canSeeAllProjects) return true;
+        const isMember = (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
+        const isManager = p.managerId === user?.id;
+        const isClient = userRole === 'CLIENT' && p.clientName === user?.fullName;
+        return isMember || isManager || isClient;
+    });
 
 
     useEffect(() => {
@@ -55,20 +75,25 @@ export const DashboardPage: React.FC = () => {
     // Use current updated state instead of stale state
     const criticalTasks = state.tasks.filter(t => t.priority === 'CRITICAL' || (t.priority === 'HIGH' && t.status !== 'DONE'));
 
+    const kpiCards = [
+        { label: t('dashboard.total_projects'), value: dashboardStats.totalProjects, icon: <FolderKanban />, color: 'text-indigo-600' },
+        { label: t('common.in_progress'), value: dashboardStats.activeProjects, icon: <Activity />, color: 'text-blue-600' },
+        { label: t('dashboard.tasks_kpi'), value: dashboardStats.totalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
+        { label: t('dashboard.completed_kpi'), value: dashboardStats.completedTasks, icon: <Target />, color: 'text-emerald-600' },
+        { label: t('dashboard.team'), value: dashboardStats.teamMembers, icon: <Users />, color: 'text-violet-600' },
+        { label: t('dashboard.upcoming_deadlines'), value: dashboardStats.upcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
+    ];
+
     return (
-        <AppLayout title="Dashboard" subtitle={`Bienvenue dans votre espace ${state.workspaceName}`}>
+        <AppLayout
+            title={t('common.dashboard')}
+            subtitle={t('dashboard.welcome_workspace', { name: state.workspaceName })}
+        >
             <div className="p-6 space-y-6">
 
                 {/* ===== KPI CARDS ===== */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {[
-                        { label: 'Projets total', value: dashboardStats.totalProjects, icon: <FolderKanban />, color: 'text-indigo-600' },
-                        { label: 'En cours', value: dashboardStats.activeProjects, icon: <Activity />, color: 'text-blue-600' },
-                        { label: 'Tâches', value: dashboardStats.totalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
-                        { label: 'Terminées', value: dashboardStats.completedTasks, icon: <Target />, color: 'text-emerald-600' },
-                        { label: 'Membres', value: dashboardStats.teamMembers, icon: <Users />, color: 'text-violet-600' },
-                        { label: 'Échéances', value: dashboardStats.upcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
-                    ].map((kpi, i) => (
+                    {kpiCards.map((kpi, i) => (
                         <motion.div
                             key={kpi.label}
                             initial={{ opacity: 0, y: 16 }}
@@ -97,25 +122,34 @@ export const DashboardPage: React.FC = () => {
                     {/* ===== PROJETS ===== */}
                     <div className="lg:col-span-2 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-base font-bold text-slate-800">Mes projets</h2>
+                            <h2 className="text-base font-bold text-slate-800">{t('dashboard.my_projects')}</h2>
                         </div>
 
                         <div className="space-y-3">
-                            {state.projects
-                                .filter(p => {
-                                    const isMember = (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
-                                    const isManager = p.managerId === user?.id;
-                                    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
-                                    const isClient = user?.role === 'CLIENT' && p.clientName === user?.fullName;
-                                    return isAdmin || isMember || isManager || isClient;
-                                })
-
-                                .map((p, i) => (
-                                <ProjectRow key={p.id} project={p} index={i} onOpen={() => {
-                                    dispatch({ type: 'SELECT_PROJECT', id: p.id });
-                                    navigate(`/projects/${p.id}`);
-                                }} />
-                            ))}
+                            {visibleProjects.length === 0 ? (
+                                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-10 text-center">
+                                    <FolderKanban className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-sm font-semibold text-slate-600">{t('dashboard_custom.no_assigned_projects')}</p>
+                                    <p className="text-xs text-slate-400 mt-1 mb-4">{t('dashboard.browse_or_create')}</p>
+                                    <Button variant="outline" size="sm" onClick={() => navigate('/projects')}>
+                                        {t('dashboard.view_all_projects')}
+                                    </Button>
+                                </div>
+                            ) : (
+                                visibleProjects.map((p, i) => (
+                                    <ProjectRow
+                                        key={p.id}
+                                        project={p}
+                                        index={i}
+                                        statusLabels={statusLabels}
+                                        dateLocale={dateLocale}
+                                        onOpen={() => {
+                                            dispatch({ type: 'SELECT_PROJECT', id: p.id });
+                                            navigate(`/projects/${p.id}`);
+                                        }}
+                                    />
+                                ))
+                            )}
                         </div>
                     </div>
 
@@ -129,9 +163,9 @@ export const DashboardPage: React.FC = () => {
                                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
                                        <Bot className="w-4 h-4 text-indigo-400" />
                                    </div>
-                                   <CardTitle className="text-sm">Aura IA</CardTitle>
+                                   <CardTitle className="text-sm">{t('common.aura_ai')}</CardTitle>
                                 </div>
-                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20">En ligne</Badge>
+                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20">{t('dashboard.aura_online')}</Badge>
                             </CardHeader>
                             <CardContent className="pt-4 space-y-2">
                                 {insights.length > 0 ? (
@@ -142,7 +176,7 @@ export const DashboardPage: React.FC = () => {
                                     ))
                                 ) : (
                                     <div className="text-xs text-slate-400 italic px-3 py-2">
-                                        Analyse en cours...
+                                        {t('dashboard.aura_analyzing')}
                                     </div>
                                 )}
                                 <Button 
@@ -151,7 +185,7 @@ export const DashboardPage: React.FC = () => {
                                     size="sm"
                                     onClick={toggleOpen}
                                 >
-                                    Ouvrir Aura &rarr;
+                                    {t('dashboard.open_aura')} &rarr;
                                 </Button>
                             </CardContent>
                         </Card>
@@ -164,11 +198,11 @@ export const DashboardPage: React.FC = () => {
                                     <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
                                         <Sparkles className="w-4 h-4" />
                                     </div>
-                                    <span className="font-bold text-sm text-slate-800">Portail Client</span>
+                                    <span className="font-bold text-sm text-slate-800">{t('common.client_portal')}</span>
                                     <ArrowUpRight className="ml-auto w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                                 </div>
                                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                                    Accédez à l'interface dédiée pour vos clients. Validez les livrables et gérez le support.
+                                    {t('dashboard.client_portal_desc')}
                                 </p>
                             </div>
                         )}
@@ -179,7 +213,7 @@ export const DashboardPage: React.FC = () => {
                             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-50">
                                 <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4 text-amber-500" />
-                                    Tâches urgentes
+                                    {t('dashboard.urgent_tasks')}
                                 </span>
                                 <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{criticalTasks.length}</span>
                             </div>
@@ -195,7 +229,7 @@ export const DashboardPage: React.FC = () => {
                                                 {task.dueDate && (
                                                     <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
                                                         <CalendarDays className="w-2.5 h-2.5" />
-                                                        {new Date(task.dueDate).toLocaleDateString('fr-FR')}
+                                                        {new Date(task.dueDate).toLocaleDateString(dateLocale)}
                                                     </p>
                                                 )}
                                             </div>
@@ -220,8 +254,15 @@ export const DashboardPage: React.FC = () => {
 };
 
 // ===== PROJECT ROW CARD =====
-const ProjectRow: React.FC<{ project: Project; index: number; onOpen: () => void }> = ({ project, index, onOpen }) => {
-    const { label, color, bg } = STATUS_LABELS[project.status];
+const ProjectRow: React.FC<{
+    project: Project;
+    index: number;
+    statusLabels: Record<string, { label: string; color: string; bg: string }>;
+    dateLocale: string;
+    onOpen: () => void;
+}> = ({ project, index, statusLabels, onOpen }) => {
+    const { t } = useTranslation();
+    const { label, color, bg } = statusLabels[project.status] ?? statusLabels.PLANNED;
     const isBoardView = project.viewMode === 'BOARD';
 
     return (
@@ -242,7 +283,7 @@ const ProjectRow: React.FC<{ project: Project; index: number; onOpen: () => void
                                 {project.name}
                             </h3>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isBoardView ? 'bg-indigo-50 text-indigo-700' : 'bg-violet-50 text-violet-700'}`}>
-                                Vue {project.viewMode}
+                                {t('dashboard.view_mode', { mode: project.viewMode })}
                             </span>
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-slate-600`}>
                                 {project.type}
@@ -256,7 +297,7 @@ const ProjectRow: React.FC<{ project: Project; index: number; onOpen: () => void
                         {/* Progress bar */}
                         <div className="space-y-1">
                             <div className="flex justify-between text-[10px] text-slate-400">
-                                <span>Avancement</span>
+                                <span>{t('dashboard.progress_label')}</span>
                                 <span className="font-semibold text-slate-600">{project.progress}%</span>
                             </div>
                             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -279,11 +320,11 @@ const ProjectRow: React.FC<{ project: Project; index: number; onOpen: () => void
                                 </div>
                             ))}
                             {(!project.members || project.members.length === 0) && (
-                                <span className="text-[10px] text-slate-400">0 membre</span>
+                                <span className="text-[10px] text-slate-400">{t('dashboard.member_count')}</span>
                             )}
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] text-slate-400">Budget</p>
+                            <p className="text-[10px] text-slate-400">{t('common.budget')}</p>
                             <p className="text-xs font-bold text-slate-700">{project.budget.toLocaleString()} DT</p>
                         </div>
                         <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Send, User, Loader2, History, Plus, FileText, Copy, Check, MessageSquare } from 'lucide-react';
 import { useAuraStore } from '../../store/auraStore';
 import { useStore } from '../../store/projectStore';
+import { useAuth } from '../../hooks/useAuth';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { AuraReportList } from './AuraReportList';
@@ -37,6 +38,7 @@ export const AuraChatPanel: React.FC = () => {
     } = useAuraStore();
     
     const { state } = useStore();
+    const { user } = useAuth();
     const location = useLocation();
     const [inputValue, setInputValue] = useState('');
     const [showHistory, setShowHistory] = useState(false); // Reports
@@ -57,12 +59,19 @@ export const AuraChatPanel: React.FC = () => {
     // Is this a fresh conversation? (Only welcome message present)
     const isFreshConversation = messages.length <= 1;
 
+    const isClient = (user?.role || '').toUpperCase() === 'CLIENT';
+
     const quickPrompts = [
         "Résumer l'état d'avancement du projet",
         "Quels sont les principaux risques actuels ?",
         "Lister les tâches en retard",
-        "Générer un rapport de synthèse pour le client"
+        ...(isClient ? [] : ["Générer un rapport de synthèse pour le client"])
     ];
+
+    // Clients should not have access to Aura reports UI
+    useEffect(() => {
+        if (isClient && showHistory) setShowHistory(false);
+    }, [isClient, showHistory]);
 
     useEffect(() => {
         if (isOpen && activeProject) {
@@ -202,13 +211,15 @@ export const AuraChatPanel: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button 
-                                    onClick={() => setShowHistory(!showHistory)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm font-medium ${showHistory ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:bg-slate-50'}`}
-                                >
-                                    <FileText className="w-4 h-4" />
-                                    <span>Rapports</span>
-                                </button>
+                                {!isClient && (
+                                    <button
+                                        onClick={() => setShowHistory(!showHistory)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm font-medium ${showHistory ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        <span>Rapports</span>
+                                    </button>
+                                )}
                                 <div className="w-px h-5 bg-slate-200"></div>
                                 <button 
                                     onClick={toggleOpen}
@@ -221,7 +232,7 @@ export const AuraChatPanel: React.FC = () => {
 
                         {/* Project Context & Content */}
                         <div className="flex-1 overflow-hidden flex flex-col relative z-10">
-                            {showHistory ? (
+                            {showHistory && !isClient ? (
                                 <div className="flex-1 overflow-y-auto bg-white border-l border-slate-100">
                                     <AuraReportList projectId={activeProject?.id || ''} />
                                 </div>

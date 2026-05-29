@@ -34,11 +34,12 @@ export class TicketService {
       client = await this.clientRepository.findOne({ where: { email: userEmail } });
     }
 
-    if (!client && userRole === 'CLIENT' && userEmail) {
+    // Créer un profil client pour tout utilisateur authentifié (CLIENT, PM, admin…) sans fiche existante
+    if (!client && userEmail) {
       client = this.clientRepository.create({
         email: userEmail,
-        companyName: user.fullName || userEmail,
-        contactPerson: user.fullName || userEmail,
+        companyName: user.fullName || user.name || userEmail,
+        contactPerson: user.fullName || user.name || userEmail,
         isActive: true,
       });
       client = await this.clientRepository.save(client);

@@ -56,8 +56,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         { id: 'team', label: t('common.team'), icon: <Users className="w-4 h-4" />, path: '/team' },
         { id: 'documents', label: t('common.documents'), icon: <FileText className="w-4 h-4" />, path: '/documents' },
         { id: 'messages', label: t('common.messages'), icon: <MessageSquare className="w-4 h-4" />, path: '/messages' },
-        { id: 'analytics', label: t('common.reporting'), icon: <TrendingUp className="w-4 h-4" />, path: '/analytics', roles: ['PROJECT_MANAGER', 'ADMIN', 'SUPER_ADMIN', 'RH', 'HR_ADMIN'] },
-        { id: 'client-portal', label: t('common.client_portal'), icon: <Circle className="w-4 h-4 text-emerald-500" />, path: '/client-portal', roles: ['ADMIN', 'SUPER_ADMIN', 'PROJECT_MANAGER', 'CLIENT'] },
+        { id: 'analytics', label: t('common.reporting'), icon: <TrendingUp className="w-4 h-4" />, path: '/analytics', roles: ['PROJECT_MANAGER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN', 'RH', 'HR_ADMIN'] },
+        { id: 'client-portal', label: t('common.client_portal'), icon: <Circle className="w-4 h-4 text-emerald-500" />, path: '/client-portal', roles: ['ADMIN', 'SUPER_ADMIN', 'PROJECT_MANAGER', 'MANAGER', 'CLIENT'] },
         { id: 'hr', label: t('common.hr'), icon: <HeartPulse className="w-4 h-4" />, path: '/hr' },
         { id: 'calendar', label: t('common.calendar'), icon: <Calendar className="w-4 h-4" />, path: '/calendar' },
         { id: 'aura', label: t('common.aura_ai'), icon: <Sparkles className="w-4 h-4 text-indigo-500" />, onClick: true },
@@ -71,11 +71,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         { id: 'admin-settings', label: t('common.configuration'), icon: <Settings className="w-4 h-4" />, path: '/admin/settings' },
     ];
 
-    // Pure CLIENT role: only show Tickets in the sidebar
+    // Pure CLIENT role: show Tickets + Aura in the sidebar
     // Admins/PMs who visit client portal see the full navigation
     const isClient = user?.role === 'CLIENT';
     const CLIENT_NAV_ITEMS = isClient ? [
         { id: 'client-tickets', label: t('client.tickets_title'), icon: <Ticket className="w-4 h-4" />, path: '/client-portal/tickets' },
+        { id: 'client-aura', label: t('common.aura_ai'), icon: <Sparkles className="w-4 h-4 text-indigo-400" />, onClick: true },
     ] : [
         { id: 'client-dash', label: t('common.dashboard'), icon: <LayoutDashboard className="w-4 h-4" />, path: '/client-portal' },
         { id: 'client-projects', label: t('common.my_projects'), icon: <FolderKanban className="w-4 h-4" />, path: '/client-portal/projects' },
@@ -102,6 +103,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
     const notificationTriggered = useRef(false);
 
     const isAdminUser = user?.role === 'ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'SUPER_ADMIN';
+    const isProjectManager =
+        user?.role === 'PROJECT_MANAGER' || user?.role === 'MANAGER';
+    const canSeeAllProjects = isAdminUser || isProjectManager;
     const isAdmin = location.pathname.startsWith('/admin');
     const isClientPortal = location.pathname.startsWith('/client-portal');
     const isHRPortal = location.pathname.startsWith('/hr');
@@ -127,7 +131,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                     ]);
 
                     let filteredProjects = projectsData;
-                    if (!isAdminUser) {
+                    if (!canSeeAllProjects) {
                         filteredProjects = projectsData.filter(p =>
                             p.managerId === user.id ||
                             (p.members || []).some((m: any) => m.id === user.id || m.email === user.email) ||
@@ -182,7 +186,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
             }
         };
         fetchData();
-    }, [jwtToken, user, dispatch, isAdminUser]);
+    }, [jwtToken, user, dispatch, canSeeAllProjects]);
 
     const handleLogout = async () => {
         await logout();
@@ -193,7 +197,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         const isMember = (p.members || []).some(m => m.id === user?.id);
         const isManager = p.managerId === user?.id;
         const matchesStatus = ['IN_PROGRESS', 'PLANNED', 'SUSPENDED'].includes(p.status);
-        return matchesStatus && (isAdminUser || isMember || isManager);
+        return matchesStatus && (canSeeAllProjects || isMember || isManager);
     });
 
     const userInitials = (user?.fullName || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -303,23 +307,34 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                                 <>
                                     {filteredClientNavItems.length > 0 && <div className="px-2 py-1.5 mb-1 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{t('common.client_space')}</div>}
                                     {filteredClientNavItems.map(item => (
-                                        <Link
-                                            key={item.id}
-                                            to={item.path}
-                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${location.pathname === item.path ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                                        >
-                                            {item.icon}
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    ))}
-                                    {(!isClient || isAdminUser) && (
-                                        <div className="pt-4">
-                                            <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white border border-white/5">
-                                                <ArrowLeftRight className="w-4 h-4" />
-                                                <span>{t('common.exit_portal')}</span>
+                                        item.onClick ? (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => {
+                                                    if (item.id === 'client-aura') toggleOpen();
+                                                }}
+                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                                            >
+                                                {item.icon}
+                                                <span>{item.label}</span>
+                                            </button>
+                                        ) : (
+                                            <Link
+                                                key={item.id}
+                                                to={item.path!}
+                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${location.pathname === item.path ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                            >
+                                                {item.icon}
+                                                <span>{item.label}</span>
                                             </Link>
-                                        </div>
-                                    )}
+                                        )
+                                    ))}
+                                    <div className="pt-4">
+                                        <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white border border-white/5">
+                                            <ArrowLeftRight className="w-4 h-4" />
+                                            <span>{isClient ? t('common.back_to_home') : t('common.exit_portal')}</span>
+                                        </Link>
+                                    </div>
                                 </>
                             ) : isHRPortal ? (
                                 <>

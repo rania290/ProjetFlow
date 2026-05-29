@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/api-client';
 import { 
@@ -13,7 +14,7 @@ import type {
   RoleAssignment, 
   UserProjectRolesResponse 
 } from '../role-management/types';
-import { ROLE_CONFIG } from '../role-management/types';
+import { useRoleConfig } from '../role-management/useRoleConfig';
 import { useStore } from '../../store/projectStore';
 
 
@@ -25,6 +26,8 @@ import { ManagerFilters } from '../role-management/ManagerFilters';
 import { DeleteConfirmModal } from '../role-management/Modals';
 
 export const AdvancedRoleManager: React.FC = () => {
+  const { t } = useTranslation();
+  const roleConfig = useRoleConfig();
   const { state } = useStore();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -72,7 +75,7 @@ export const AdvancedRoleManager: React.FC = () => {
 
     } catch (err) {
       console.error('[AdvancedRoleManager] Load error:', err);
-      setError('Erreur lors du chargement des données');
+      setError(t('roles.load_error'));
     } finally {
       setLoading(false);
     }
@@ -83,7 +86,7 @@ export const AdvancedRoleManager: React.FC = () => {
       const response = await api.get(`/role-assignments/user/${userId}/projects`);
       setUserRoles(response.data);
     } catch (err) {
-      setError('Erreur lors du chargement des rôles utilisateur');
+      setError(t('roles.load_roles_error'));
     }
   };
 
@@ -106,11 +109,14 @@ export const AdvancedRoleManager: React.FC = () => {
       if (selectedUser?.id === userId) fetchUserRoles(userId);
       await fetchInitialData();
       
-      toast.success("Assignation réussie", {
+      toast.success(t('roles.assign_success'), {
         description: (
           <div className="flex flex-col gap-1">
             <p className="text-emerald-800">
-              <span className="font-bold text-indigo-700 underline decoration-indigo-200">{user?.fullName || "L'utilisateur"}</span> a été avec succès assigné(e) au projet <span className="font-bold text-emerald-700 underline decoration-emerald-200">{project?.name || "Inconnu"}</span>.
+              {t('roles.assign_success_desc', {
+                user: user?.fullName || t('roles.unknown_user'),
+                project: project?.name || t('roles.unknown_project'),
+              })}
             </p>
           </div>
         ),
@@ -119,8 +125,8 @@ export const AdvancedRoleManager: React.FC = () => {
       });
     } catch (err: any) {
       console.error('Assignment error:', err);
-      toast.error("Échec de l'assignation", {
-        description: err.response?.data?.message || err.message || "Une erreur est survenue lors de l'assignation."
+      toast.error(t('roles.assign_failed'), {
+        description: err.response?.data?.message || err.message || t('roles.assign_error_default')
       });
     } finally {
       setLoading(false);
@@ -134,7 +140,7 @@ export const AdvancedRoleManager: React.FC = () => {
       await api.put(`/role-assignments/${assignmentId}`, payload);
       fetchInitialData();
     } catch (err: any) {
-      setError(`Erreur: ${err.response?.data?.message || err.message}`);
+      setError(t('roles.update_error', { message: err.response?.data?.message || err.message }));
     }
   };
 
@@ -163,11 +169,14 @@ export const AdvancedRoleManager: React.FC = () => {
       await fetchInitialData();
       
       const projectNames = assignments.map(a => projects.find(p => p.id === a.projectId)?.name).filter(Boolean).join(', ');
-      toast.success("Assignations réussies", {
+      toast.success(t('roles.bulk_assign_success'), {
         description: (
           <div className="flex flex-col gap-1">
             <p className="text-emerald-800">
-              <span className="font-bold text-indigo-700 underline decoration-indigo-200">{user?.fullName || "L'utilisateur"}</span> a été assigné(e) aux projets : <span className="font-bold text-emerald-700 underline decoration-emerald-200">{projectNames || "projets sélectionnés"}</span>.
+              {t('roles.bulk_assign_success_desc', {
+                user: user?.fullName || t('roles.unknown_user'),
+                projects: projectNames || t('roles.selected_projects'),
+              })}
             </p>
           </div>
         ),
@@ -176,8 +185,8 @@ export const AdvancedRoleManager: React.FC = () => {
       });
     } catch (err: any) {
       console.error('Bulk assignment error:', err);
-      toast.error("Échec des assignations", {
-        description: err.response?.data?.message || err.message || "Une erreur est survenue lors des assignations groupées."
+      toast.error(t('roles.bulk_assign_failed'), {
+        description: err.response?.data?.message || err.message || t('roles.bulk_assign_error_default')
       });
     } finally {
       setLoading(false);
@@ -196,7 +205,7 @@ export const AdvancedRoleManager: React.FC = () => {
       fetchInitialData();
       setDeleteConfirm(null);
     } catch (err: any) {
-      setError(`Erreur de suppression: ${err.response?.data?.message || err.message}`);
+      setError(t('roles.delete_error', { message: err.response?.data?.message || err.message }));
       setDeleteConfirm(null);
     }
   };
@@ -227,7 +236,7 @@ export const AdvancedRoleManager: React.FC = () => {
         projectFilter={projectFilter}
         setProjectFilter={setProjectFilter}
         projects={projects}
-        roleConfig={ROLE_CONFIG}
+        roleConfig={roleConfig}
         assignments={allAssignments}
       />
 

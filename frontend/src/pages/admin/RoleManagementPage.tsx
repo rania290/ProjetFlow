@@ -8,8 +8,8 @@ export const RoleManagementPage: React.FC = () => {
   const { t } = useTranslation();
   return (
     <AppLayout 
-      title={t('admin.roles.title', 'Roles & Permissions')} 
-      subtitle={t('admin.roles.subtitle', 'Centralized management of the RBAC system and multi-project access')}
+      title={t('roles.page_title')} 
+      subtitle={t('roles.page_subtitle')}
     >
       <div className="max-w-7xl mx-auto pt-6 pb-2">
         <AdvancedRoleManager />

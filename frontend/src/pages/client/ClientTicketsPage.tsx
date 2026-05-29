@@ -204,7 +204,7 @@ export const ClientTicketsPage: React.FC = () => {
                         )}
                     </div>
 
-                    <ScrollArea className="flex-1 bg-white">
+                    <div className="flex-1 overflow-y-auto bg-white">
                         <div className="p-3 space-y-2">
                             {filteredTickets.map(ticket => (
                                 <button
@@ -231,7 +231,7 @@ export const ClientTicketsPage: React.FC = () => {
                                 </button>
                             ))}
                         </div>
-                    </ScrollArea>
+                    </div>
                 </div>
 
                 {/* Right Content - Chat Thread - Legible, Beautiful & Modern */}

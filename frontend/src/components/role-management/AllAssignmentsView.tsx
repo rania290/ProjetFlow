@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Edit,
@@ -14,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { RoleAssignment } from './types';
-import { ROLE_CONFIG } from './types';
+import { useRoleConfig } from './useRoleConfig';
 
 interface AllAssignmentsViewProps {
   assignments: RoleAssignment[];
@@ -27,6 +28,9 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
   onRemoveRole,
   onUpdateRole
 }) => {
+  const { t, i18n } = useTranslation();
+  const roleConfig = useRoleConfig();
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<string>('');
 
@@ -35,7 +39,7 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
       <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.5)]" />
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Journal des Assignations</h3>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('roles.assignment_log')}</h3>
           <Badge variant="outline" className="text-slate-600 border-slate-200 bg-white ml-2 px-2 py-0.5 rounded-full text-[10px] font-black">{assignments.length}</Badge>
         </div>
       </div>
@@ -43,17 +47,17 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
         <Table>
           <TableHeader>
             <TableRow className="bg-transparent hover:bg-transparent border-slate-50">
-              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest pl-8 py-5">Collaborateur</TableHead>
-              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">Roadmap</TableHead>
-              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">Niveau d'accès</TableHead>
-              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">TJM</TableHead>
-              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">Date d'effet</TableHead>
-              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5 text-right pr-8">Options</TableHead>
+              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest pl-8 py-5">{t('roles.collaborator')}</TableHead>
+              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">{t('roles.roadmap')}</TableHead>
+              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">{t('roles.access_level')}</TableHead>
+              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">{t('roles.daily_rate')}</TableHead>
+              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5">{t('roles.effective_date')}</TableHead>
+              <TableHead className="font-black text-slate-400 uppercase text-[10px] tracking-widest py-5 text-right pr-8">{t('roles.options')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {assignments.length > 0 ? assignments.map((assignment: RoleAssignment, idx) => {
-              const roleConfig = ROLE_CONFIG[assignment.role as keyof typeof ROLE_CONFIG];
+              const roleItem = roleConfig[assignment.role as keyof typeof roleConfig];
               const isEditing = editingId === assignment.id;
 
               return (
@@ -82,24 +86,24 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
                   <TableCell className="py-5">
                     <div className="font-black text-slate-700 text-[11px] uppercase tracking-tight flex items-center gap-2">
                       <Briefcase className="w-3 h-3 text-slate-300" />
-                      {assignment.project.name || `Projet #${assignment.project.id.slice(0, 6)}`}
+                      {assignment.project.name || t('roles.project_fallback', { id: assignment.project.id.slice(0, 6) })}
                     </div>
                   </TableCell>
                   <TableCell className="py-5">
                     {isEditing ? (
                       <Select value={editingRole} onValueChange={(val) => setEditingRole(val || '')}>
                         <SelectTrigger className="w-[160px] h-9 text-[10px] font-black uppercase tracking-widest rounded-xl border-slate-200 bg-white">
-                          <SelectValue placeholder="Rôle" />
+                          <SelectValue placeholder={t('roles.role_label')} />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-                          {Object.entries(ROLE_CONFIG).map(([rKey, config]) => (
+                          {Object.entries(roleConfig).map(([rKey, config]) => (
                             <SelectItem key={rKey} value={rKey} className="text-[10px] font-black uppercase tracking-widest rounded-lg m-1">{config.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Badge variant="outline" className={`px-2.5 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${roleConfig?.color || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                        {roleConfig?.label || assignment.role}
+                      <Badge variant="outline" className={`px-2.5 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${roleItem?.color || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                        {roleItem?.label || assignment.role}
                       </Badge>
                     )}
                   </TableCell>
@@ -109,16 +113,16 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
                     </span>
                   </TableCell>
                   <TableCell className="text-[10px] text-slate-400 font-bold uppercase tracking-tight whitespace-nowrap italic py-5">
-                    {new Date(assignment.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(assignment.createdAt).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}
                   </TableCell>
                   <TableCell className="text-right pr-8 py-5">
                     <div className="flex items-center justify-end gap-2">
                       {isEditing ? (
                         <>
-                          <Button variant="ghost" size="icon" onClick={() => { onUpdateRole(assignment.id, editingRole); setEditingId(null); }} className="w-9 h-9 rounded-xl text-emerald-600 hover:bg-emerald-50 bg-emerald-50/10" title="Sauvegarder">
+                          <Button variant="ghost" size="icon" onClick={() => { onUpdateRole(assignment.id, editingRole); setEditingId(null); }} className="w-9 h-9 rounded-xl text-emerald-600 hover:bg-emerald-50 bg-emerald-50/10" title={t('common.save')}>
                             <CheckCircle className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setEditingId(null)} className="w-9 h-9 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100" title="Annuler">
+                          <Button variant="ghost" size="icon" onClick={() => setEditingId(null)} className="w-9 h-9 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100" title={t('common.cancel')}>
                             <X className="w-4 h-4" />
                           </Button>
                         </>
@@ -129,7 +133,7 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
                             size="icon"
                             onClick={() => { setEditingId(assignment.id); setEditingRole(assignment.role); }}
                             className="w-9 h-9 rounded-xl text-slate-300 hover:text-indigo-600 hover:bg-indigo-50/30 opacity-0 group-hover/row:opacity-100 transition-all shadow-sm bg-white border border-transparent hover:border-indigo-100"
-                            title="Modifier"
+                            title={t('common.edit')}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -138,7 +142,7 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
                             size="icon"
                             onClick={() => onRemoveRole(assignment.user.id, assignment.project.id, assignment.user.fullName, assignment.project.name)}
                             className="w-9 h-9 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover/row:opacity-100 transition-all shadow-sm bg-white border border-transparent hover:border-red-100"
-                            title="Supprimer"
+                            title={t('common.delete')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -154,7 +158,7 @@ export const AllAssignmentsView: React.FC<AllAssignmentsViewProps> = ({
                   <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <UserCheck className="w-8 h-8 text-slate-200" />
                   </div>
-                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucune assignation</p>
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{t('roles.no_assignments')}</p>
                 </TableCell>
               </TableRow>
             )}

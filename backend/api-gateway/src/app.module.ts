@@ -7,6 +7,20 @@ import { AuthContextMiddleware } from './middleware/auth-context.middleware';
 import { NotificationGateway } from './notification/notification.gateway';
 import { WsJwtGuard } from './guards/ws-jwt.guard';
 
+/** Service URLs: use docker-compose env in containers, 127.0.0.1 when running gateway on the host. */
+const serviceUrl = (envKey: string, port: number) =>
+  process.env[envKey] || `http://127.0.0.1:${port}`;
+
+const SERVICE_TARGETS = {
+  auth: serviceUrl('AUTH_SERVICE_URL', 3001),
+  projects: serviceUrl('PROJECTS_SERVICE_URL', 3002),
+  clientPortal: serviceUrl('CLIENT_PORTAL_SERVICE_URL', 3003),
+  hr: serviceUrl('HR_SERVICE_URL', 3004),
+  reporting: serviceUrl('REPORTING_SERVICE_URL', 3005),
+  communication: serviceUrl('COMMUNICATION_SERVICE_URL', 3006),
+  aura: serviceUrl('AURA_SERVICE_URL', 3007),
+};
+
 @Module({
   imports: [
     // Register JwtModule to provide JwtService for AuthContextMiddleware
@@ -34,16 +48,16 @@ export class AppModule implements NestModule {
           changeOrigin: true,
           router: (req: any) => {
             const url = req.originalUrl || req.url || '';
-            if (url.includes('/api/auth') || url.includes('/api/users')) return 'http://127.0.0.1:3001';
-            if (url.includes('/api/task-timelogs') || url.includes('/api/storage') || 
-                url.includes('/api/projects') || url.includes('/api/tasks') || url.includes('/api/sprints') || 
-                url.includes('/api/role-assignments') || url.includes('/api/permissions')) return 'http://127.0.0.1:3002';
-            if (url.includes('/api/client-portal')) return 'http://127.0.0.1:3003';
-            if (url.includes('/api/hr')) return 'http://127.0.0.1:3004';
-            if (url.includes('/api/reporting')) return 'http://127.0.0.1:3005';
-            if (url.includes('/api/communication')) return 'http://127.0.0.1:3006';
-            if (url.includes('/api/aura')) return 'http://127.0.0.1:3007';
-            return 'http://127.0.0.1:3000';
+            if (url.includes('/api/auth') || url.includes('/api/users')) return SERVICE_TARGETS.auth;
+            if (url.includes('/api/task-timelogs') || url.includes('/api/storage') ||
+                url.includes('/api/projects') || url.includes('/api/tasks') || url.includes('/api/sprints') ||
+                url.includes('/api/role-assignments') || url.includes('/api/permissions')) return SERVICE_TARGETS.projects;
+            if (url.includes('/api/client-portal')) return SERVICE_TARGETS.clientPortal;
+            if (url.includes('/api/hr')) return SERVICE_TARGETS.hr;
+            if (url.includes('/api/reporting')) return SERVICE_TARGETS.reporting;
+            if (url.includes('/api/communication')) return SERVICE_TARGETS.communication;
+            if (url.includes('/api/aura')) return SERVICE_TARGETS.aura;
+            return `http://127.0.0.1:${process.env.PORT ?? 3000}`;
           },
           pathRewrite: (path, req: any) => {
             const url = req.originalUrl || path || '';

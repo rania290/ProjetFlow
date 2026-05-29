@@ -15,7 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { User, Project, UserProjectRolesResponse } from './types';
-import { ROLE_CONFIG } from './types';
+import { useRoleConfig } from './useRoleConfig';
 import { BulkAssignModal } from './Modals';
 
 interface UserCentricViewProps {
@@ -37,7 +37,9 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
   onBulkAssignRoles, 
   onRemoveRole 
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const roleConfig = useRoleConfig();
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [userSearch, setUserSearch] = useState('');
 
@@ -52,13 +54,13 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
       <div className="lg:col-span-4 flex flex-col gap-4">
         <Card className="flex flex-col h-[calc(100vh-220px)] min-h-[400px] overflow-hidden border-none shadow-sm bg-white rounded-[32px]">
           <div className="p-6 border-b border-slate-50 bg-slate-50/30">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Annuaire Utilisateurs</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">{t('roles.user_directory')}</h2>
             <div className="relative group">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
               <input 
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
-                placeholder="Filtrer les profils..."
+                placeholder={t('roles.filter_profiles')}
                 className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200/60 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400/50 text-slate-700 transition-all font-medium"
               />
             </div>
@@ -106,7 +108,7 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                     <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
                         <Users className="w-6 h-6 text-slate-200" />
                     </div>
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Aucun résultat</p>
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{t('roles.no_results')}</p>
                 </div>
             )}
           </div>
@@ -137,14 +139,14 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                     <div>
                       <div className="flex items-center gap-3">
                         <h2 className="text-xl font-black text-slate-900 font-display tracking-tight uppercase leading-tight">{selectedUser.fullName}</h2>
-                        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-50 text-[10px] font-black uppercase tracking-widest">Actif</Badge>
+                        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-50 text-[10px] font-black uppercase tracking-widest">{t('roles.active_badge')}</Badge>
                       </div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover/header:text-indigo-500 transition-colors mt-1">{selectedUser.email}</p>
                       <div className="mt-4 flex items-center gap-4">
                           <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
                             <Briefcase className="w-3 h-3 text-slate-400" />
                             <span className="text-[10px] text-slate-600 font-black uppercase tracking-tight">
-                                {userRoles?.totalProjects || 0} projet(s)
+                                {t('roles.project_count', { count: userRoles?.totalProjects || 0 })}
                             </span>
                           </div>
                       </div>
@@ -155,7 +157,7 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                     className="gap-2 shrink-0 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl px-6 py-6 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-slate-900/10 active:scale-95 transition-all"
                   >
                     <Plus className="w-4 h-4" />
-                    Gérer les accès
+                    {t('roles.manage_access')}
                   </Button>
                 </div>
               </CardContent>
@@ -166,14 +168,14 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
               <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
                 <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Rôles par Projet</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('roles.roles_by_project')}</h3>
                 </div>
               </div>
               <div className="p-8">
                 {userRoles?.projects.length ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {userRoles.projects.map((projectRole, idx) => {
-                      const roleConfig = ROLE_CONFIG[projectRole.role as keyof typeof ROLE_CONFIG];
+                      const roleItem = roleConfig[projectRole.role as keyof typeof roleConfig];
                       return (
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
@@ -187,12 +189,12 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                           <div className="flex items-start justify-between gap-3 mb-4 relative z-10">
                             <div className="flex-1 min-w-0">
                                 <h4 className="font-black text-slate-900 truncate uppercase tracking-tight font-display">
-                                    {projectRole.projectName || `Projet #${projectRole.projectId.slice(0, 6)}`}
+                                    {projectRole.projectName || t('roles.project_fallback', { id: projectRole.projectId.slice(0, 6) })}
                                 </h4>
                                 <div className="flex items-center gap-2 mt-1">
                                     <div className="w-1 h-1 rounded-full bg-slate-300" />
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight italic">
-                                      Assigné le {new Date(projectRole.assignedAt).toLocaleDateString('fr-FR')}
+                                      {t('roles.assigned_on', { date: new Date(projectRole.assignedAt).toLocaleDateString(dateLocale) })}
                                     </p>
                                 </div>
                             </div>
@@ -205,8 +207,8 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                           </div>
                           
                           <div className="flex items-center gap-3 relative z-10">
-                             <div className={`flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${roleConfig?.color || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                                {roleConfig?.label || projectRole.role}
+                             <div className={`flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${roleItem?.color || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                                {roleItem?.label || projectRole.role}
                              </div>
                              {projectRole.tjm && (
                                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50/50 px-2 py-1 rounded-xl border border-indigo-100/50">
@@ -214,7 +216,7 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                                </span>
                              )}
                              {!projectRole.isActive && (
-                                <Badge variant="outline" className="text-slate-400 border-slate-200 text-[9px] font-black uppercase tracking-tighter">Inactif</Badge>
+                                <Badge variant="outline" className="text-slate-400 border-slate-200 text-[9px] font-black uppercase tracking-tighter">{t('roles.inactive_badge')}</Badge>
                              )}
                           </div>
                         </motion.div>
@@ -226,8 +228,8 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
                     <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center mx-auto mb-6 border border-slate-100 shadow-inner">
                         <UserPlus className="w-8 h-8 text-slate-200" />
                     </div>
-                    <h4 className="text-slate-900 font-black uppercase tracking-tight mb-2">Aucun projet assigné</h4>
-                    <p className="text-xs text-slate-400 font-medium mb-8 max-w-[240px] mx-auto uppercase tracking-wide">Cet utilisateur n'a pas encore de droits d'accès sur vos roadmaps.</p>
+                    <h4 className="text-slate-900 font-black uppercase tracking-tight mb-2">{t('roles.no_project_assigned')}</h4>
+                    <p className="text-xs text-slate-400 font-medium mb-8 max-w-[240px] mx-auto uppercase tracking-wide">{t('roles.no_access_hint')}</p>
                   </div>
                 )}
               </div>
@@ -239,9 +241,9 @@ export const UserCentricView: React.FC<UserCentricViewProps> = ({
             <div className="w-24 h-24 bg-slate-50 border border-slate-100 rounded-[32px] flex items-center justify-center mb-8 relative z-10 shadow-inner group-hover:scale-110 transition-transform duration-500">
                 <Users className="w-10 h-10 text-slate-200" />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10 uppercase tracking-tight font-display">{t('roles.select_profile', 'SELECT A PROFILE')}</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10 uppercase tracking-tight font-display">{t('roles.select_profile')}</h3>
             <p className="text-slate-400 text-sm max-w-xs relative z-10 font-medium leading-relaxed">
-              {t('roles.choose_collaborator', 'Choose a collaborator in the directory to manage their clearances and cross-functional roles.')}
+              {t('roles.choose_collaborator')}
             </p>
           </Card>
         )}
