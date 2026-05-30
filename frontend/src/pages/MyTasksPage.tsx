@@ -21,6 +21,8 @@ import {
 import { useStore } from '../store/projectStore';
 import type { Task, TaskStatus } from '../types/project.types';
 import { TaskTimerButton } from '../components/tasks/TaskTimerButton';
+import { useAuth } from '../hooks/useAuth';
+import { canViewAllTasks, filterTasksForCurrentUser } from '../utils/taskAccess';
 
 // Configs moved inside component to use t() — see STATUS_CONFIG / PRIORITY_CONFIG / TYPE_CONFIG below
 
@@ -74,14 +76,19 @@ const useTaskConfigs = () => {
 
 export const MyTasksPage: React.FC = () => {
     const { state, dispatch } = useStore();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const { t, STATUS_CONFIG } = useTaskConfigs();
     const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
 
-    // All tasks from all projects in store
-    const allTasks = useMemo(() => state.tasks, [state.tasks]);
+    const isAdminViewer = canViewAllTasks(user?.role);
+
+    const allTasks = useMemo(
+        () => filterTasksForCurrentUser(state.tasks, user?.id, user?.role),
+        [state.tasks, user?.id, user?.role],
+    );
 
     // Project name lookup
     const projectMap = useMemo(() => {
@@ -137,7 +144,8 @@ export const MyTasksPage: React.FC = () => {
                         <div>
                             <h1 className="text-xl font-black text-slate-900 tracking-tight">{t('team_custom.tasks')}</h1>
                             <p className="text-slate-500 text-xs font-medium mt-0.5">
-                                {allTasks.length} {allTasks.length !== 1 ? t('team_custom.tasks') : t('projects.task_status.TODO').toLowerCase()} {t('common.ongoing_projects').toLowerCase().replace('projects','').replace('projets','')} {state.projects.length}
+                                {allTasks.length} {t('team_custom.tasks').toLowerCase()}
+                                {isAdminViewer ? ` · ${state.projects.length} ${t('common.projects').toLowerCase()}` : ''}
                             </p>
                         </div>
 

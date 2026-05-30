@@ -85,7 +85,10 @@ const resources = {
         "role_client": "Client",
         "role_collaborator": "Collaborator",
         "currency_dt": "DT",
-        "locale": "en-US"
+        "locale": "en-US",
+        "management": "Management",
+        "project": "project",
+        "projects_plural": "projects"
       },
       "messages": {
         "internal_messaging": "Internal Messaging",
@@ -911,7 +914,10 @@ const resources = {
         "role_client": "Client",
         "role_collaborator": "Collaborateur",
         "currency_dt": "DT",
-        "locale": "fr-FR"
+        "locale": "fr-FR",
+        "management": "Gestion",
+        "project": "projet",
+        "projects_plural": "projets"
       },
       "messages": {
         "internal_messaging": "Messagerie Interne",
@@ -1277,6 +1283,8 @@ const resources = {
         "max_size": "Maximum 50 MB par fichier",
         "delete_title": "Supprimer le document",
         "delete_confirm": "Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible.",
+        "add_document": "Ajouter un document",
+        "filename": "Nom du fichier",
         "date": "Date",
         "loading_docs": "Chargement des documents...",
         "download": "Télécharger",
@@ -1497,6 +1505,7 @@ const resources = {
         "my_documents": "Mes Documents",
         "doc_space": "Espace Documentaire",
         "add_document": "Ajouter un document",
+        "search_file_placeholder": "Rechercher un fichier...",
         "adding_doc": "Ajout en cours...",
         "search_doc": "Rechercher un document...",
         "doc_types": "Types de documents",

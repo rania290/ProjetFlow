@@ -28,6 +28,10 @@ export class AuthContextMiddleware implements NestMiddleware {
           if (ADMIN_ROLES.includes(originalRole)) {
             // Admins get all roles
             roles = [...ADMIN_ROLES, 'EMPLOYEE', 'HR_ADMIN', 'MANAGER', ...EMPLOYEE_EQUIVALENT_ROLES];
+          } else if (originalRole === 'RH' || originalRole === 'HR_ADMIN') {
+            roles = [...roles, 'EMPLOYEE', 'HR_ADMIN', 'MANAGER'];
+          } else if (originalRole === 'PROJECT_MANAGER' || originalRole === 'MANAGER') {
+            roles = [...roles, 'EMPLOYEE', 'MANAGER', 'PROJECT_MANAGER'];
           } else if (EMPLOYEE_EQUIVALENT_ROLES.includes(originalRole)) {
             // Regular employees/team members always get EMPLOYEE role for HR service
             roles = [...roles, 'EMPLOYEE'];

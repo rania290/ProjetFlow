@@ -211,21 +211,18 @@ export const TimeTrackingPage: React.FC = () => {
             )}
           </TabsList>
 
-          <TabsContent value="personal">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1">
-                <TimeTrackingWidget />
-              </div>
-              <div className="lg:col-span-2">
-                <Card className="p-6 border-none shadow-xl bg-white rounded-[2.5rem]">
-                  <div className="flex items-center justify-between mb-8">
+          <TabsContent value="personal" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+              <TimeTrackingWidget showHistory={false} className="h-full" />
+              <Card className="p-6 h-full min-h-[320px] border-none shadow-xl bg-white rounded-[2.5rem] flex flex-col">
+                  <div className="flex items-center justify-between mb-8 shrink-0">
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Statistiques Mensuelles</h3>
                     <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[10px] px-3 py-1 uppercase tracking-widest">
                       Ce Mois
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1 content-center">
                     {[
                       { label: 'Heures Ce Mois', value: `${myTotalHours}h`, color: 'bg-blue-50 text-blue-600' },
                       { label: 'Moyenne/Jour', value: `${myAvgHours}h`, color: 'bg-emerald-50 text-emerald-600' },
@@ -238,8 +235,8 @@ export const TimeTrackingPage: React.FC = () => {
                     ))}
                   </div>
                 </Card>
-              </div>
             </div>
+            <TimeTrackingWidget showHistoryOnly showClock={false} />
           </TabsContent>
 
 
