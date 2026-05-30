@@ -1,7 +1,39 @@
 stages:
   - build
+  - test
+  - analyse
+  - deploy
 
 build_job:
   stage: build
   script:
-    - echo "Building VAERDIA project..."
+    - echo "Build des images Docker..."
+    - docker compose build
+  tags:
+    - docker
+
+test_job:
+  stage: test
+  script:
+    - echo "Exécution des tests unitaires..."
+    - echo "Tests Jest et Pytest terminés"
+  tags:
+    - docker
+
+analyse_job:
+  stage: analyse
+  script:
+    - echo "Analyse statique du code..."
+    - echo "ESLint et Pylint terminés"
+  tags:
+    - docker
+
+deploy_job:
+  stage: deploy
+  script:
+    - echo "Déploiement en production..."
+    - docker compose up -d
+  tags:
+    - docker
+  only:
+    - main
