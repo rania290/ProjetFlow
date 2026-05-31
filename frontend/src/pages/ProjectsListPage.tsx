@@ -47,7 +47,25 @@ export const ProjectsListPage: React.FC = () => {
         void fetchProjects();
     }, [dispatch]);
 
-    const filtered = state.projects.filter(p => {
+    const userRole = (user?.role || '').toUpperCase();
+    // ADMIN et HR_ADMIN voient tous les projets ; le chef de projet ne voit que les siens
+    const canSeeAllProjects =
+        userRole === 'ADMIN' ||
+        userRole === 'SUPER_ADMIN' ||
+        userRole === 'HR_ADMIN';
+
+    // Projets accessibles selon le rôle (avant filtres de recherche/statut)
+    const accessibleProjects = state.projects.filter(p => {
+        if (canSeeAllProjects) return true;
+        if (userRole === 'PROJECT_MANAGER' || userRole === 'MANAGER') {
+            const isManager = p.managerId === user?.id;
+            const isMember = (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
+            return isManager || isMember;
+        }
+        return (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
+    });
+
+    const filtered = accessibleProjects.filter(p => {
         const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
             p.description.toLowerCase().includes(search.toLowerCase()) ||
             (p.clientName ?? '').toLowerCase().includes(search.toLowerCase());
@@ -57,7 +75,7 @@ export const ProjectsListPage: React.FC = () => {
     });
 
     return (
-        <AppLayout title={t('common.projects', 'Projects')} subtitle={t('projects.total_projects', '{{count}} projects in total', { count: state.projects.length })}>
+        <AppLayout title={t('common.projects', 'Projects')} subtitle={t('projects.total_projects', '{{count}} projects in total', { count: accessibleProjects.length })}>
             <FadeInView className="p-4 md:p-6 space-y-6">
 
                 {/* Premium Toolbar */}

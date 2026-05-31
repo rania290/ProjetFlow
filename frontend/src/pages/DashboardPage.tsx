@@ -27,7 +27,7 @@ const PRIORITY_BADGES = {
 
 export const DashboardPage: React.FC = () => {
     const { t, i18n } = useTranslation();
-    const { state, dashboardStats, dispatch } = useStore();
+    const { state, dispatch } = useStore();
     const { insights, fetchInsights, toggleOpen } = useAuraStore();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -46,20 +46,25 @@ export const DashboardPage: React.FC = () => {
     const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
 
     const userRole = (user?.role || '').toUpperCase();
+    // Seuls ADMIN, SUPER_ADMIN et HR_ADMIN voient tous les projets
     const canSeeAllProjects =
         userRole === 'ADMIN' ||
         userRole === 'SUPER_ADMIN' ||
-        userRole === 'HR_ADMIN' ||
-        userRole === 'PROJECT_MANAGER' ||
-        userRole === 'MANAGER';
-    const canSeeClientPortal = canSeeAllProjects || userRole === 'CLIENT';
+        userRole === 'HR_ADMIN';
+    const canSeeClientPortal = canSeeAllProjects || userRole === 'PROJECT_MANAGER' || userRole === 'MANAGER' || userRole === 'CLIENT';
 
     const visibleProjects = state.projects.filter(p => {
         if (canSeeAllProjects) return true;
+        // Chef de projet : uniquement les projets où il est manager ou membre
+        if (userRole === 'PROJECT_MANAGER' || userRole === 'MANAGER') {
+            const isManager = p.managerId === user?.id;
+            const isMember = (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
+            return isManager || isMember;
+        }
+        // Membre d'équipe : projets dont il est membre
         const isMember = (p.members || []).some(m => m.id === user?.id || (m as any).email === user?.email);
-        const isManager = p.managerId === user?.id;
         const isClient = userRole === 'CLIENT' && p.clientName === user?.fullName;
-        return isMember || isManager || isClient;
+        return isMember || isClient;
     });
 
 
@@ -72,16 +77,37 @@ export const DashboardPage: React.FC = () => {
     }, [state.selectedProjectId, state.projects.length, fetchInsights]);
 
 
-    // Use current updated state instead of stale state
-    const criticalTasks = state.tasks.filter(t => t.priority === 'CRITICAL' || (t.priority === 'HIGH' && t.status !== 'DONE'));
+    // IDs des projets visibles par l'utilisateur
+    const visibleProjectIds = new Set(visibleProjects.map(p => p.id));
+
+    // Tâches filtrées selon les projets visibles
+    const visibleTasks = canSeeAllProjects
+        ? state.tasks
+        : state.tasks.filter(t => visibleProjectIds.has(t.projectId));
+
+    // Stats scopées au rôle
+    const visibleActiveProjects = visibleProjects.filter(p => p.status === 'IN_PROGRESS' || p.status === 'PLANNED').length;
+    const visibleTotalTasks = visibleTasks.length;
+    const visibleCompletedTasks = visibleTasks.filter(t => t.status === 'DONE').length;
+    const visibleTeamMembers = new Set(
+        visibleProjects.flatMap(p => (p.members || []).map(m => m.id))
+    ).size;
+    const visibleUpcomingDeadlines = visibleTasks.filter(
+        t => t.dueDate && new Date(t.dueDate) <= new Date(Date.now() + 7 * 24 * 3600 * 1000) && t.status !== 'DONE'
+    ).length;
+
+    // Tâches critiques/urgentes filtrées selon les projets visibles
+    const criticalTasks = visibleTasks.filter(
+        t => t.priority === 'CRITICAL' || (t.priority === 'HIGH' && t.status !== 'DONE')
+    );
 
     const kpiCards = [
-        { label: t('dashboard.total_projects'), value: dashboardStats.totalProjects, icon: <FolderKanban />, color: 'text-indigo-600' },
-        { label: t('common.in_progress'), value: dashboardStats.activeProjects, icon: <Activity />, color: 'text-blue-600' },
-        { label: t('dashboard.tasks_kpi'), value: dashboardStats.totalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
-        { label: t('dashboard.completed_kpi'), value: dashboardStats.completedTasks, icon: <Target />, color: 'text-emerald-600' },
-        { label: t('dashboard.team'), value: dashboardStats.teamMembers, icon: <Users />, color: 'text-violet-600' },
-        { label: t('dashboard.upcoming_deadlines'), value: dashboardStats.upcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
+        { label: t('dashboard.total_projects'), value: visibleProjects.length, icon: <FolderKanban />, color: 'text-indigo-600' },
+        { label: t('common.in_progress'), value: visibleActiveProjects, icon: <Activity />, color: 'text-blue-600' },
+        { label: t('dashboard.tasks_kpi'), value: visibleTotalTasks, icon: <CheckCircle2 />, color: 'text-slate-600' },
+        { label: t('dashboard.completed_kpi'), value: visibleCompletedTasks, icon: <Target />, color: 'text-emerald-600' },
+        { label: t('dashboard.team'), value: visibleTeamMembers, icon: <Users />, color: 'text-violet-600' },
+        { label: t('dashboard.upcoming_deadlines'), value: visibleUpcomingDeadlines, icon: <Clock />, color: 'text-amber-600' },
     ];
 
     return (
