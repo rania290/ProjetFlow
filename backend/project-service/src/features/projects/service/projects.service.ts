@@ -46,6 +46,7 @@ export class ProjectsService {
     console.log(`[ProjectsService] findAll called | userId: "${userId}" | role: "${role}" (normalized: "${normalizedRole}")`);
 
     // Admin, PM and managers can see all projects (chef de projet = vue globale)
+    // CLIENT also gets the full list so they can select the project when creating a support ticket
     const isGlobalAdmin = !userId || 
                          normalizedRole === 'SUPER_ADMIN' || 
                          normalizedRole === 'ADMIN' || 
@@ -53,7 +54,10 @@ export class ProjectsService {
                          normalizedRole === 'SUPERADMIN' ||
                          normalizedRole === 'ADMINISTRATOR' ||
                          normalizedRole === 'PROJECT_MANAGER' ||
-                         normalizedRole === 'MANAGER';
+                         normalizedRole === 'MANAGER' ||
+                         normalizedRole === 'CLIENT' ||
+                         normalizedRole === 'RH' ||
+                         normalizedRole === 'HR_ADMIN';
 
     if (isGlobalAdmin) {
       console.log(`[ProjectsService] GRANTING GLOBAL ACCESS to role: [${normalizedRole}]`);

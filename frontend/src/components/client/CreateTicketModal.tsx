@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
     X, Paperclip, AlertCircle, Clock, Send, 
     CheckCircle2, Plus, Info, ChevronRight,
@@ -8,6 +8,7 @@ import { useStore } from '../../store/projectStore';
 import { useAuth } from '../../hooks/useAuth';
 import { ticketsService } from '../../api/tickets.service';
 import { storageService } from '../../api/storage.service';
+import { projectsService } from '../../api/projects.service';
 import {
     Select,
     SelectContent,
@@ -50,9 +51,36 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('MEDIUM');
+    const [projectId, setProjectId] = useState('none');
+    const [availableProjects, setAvailableProjects] = useState<{id: string; name: string}[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Load projects directly from API when modal opens (so it works for all roles)
+    useEffect(() => {
+        if (!isOpen) return;
+        const load = async () => {
+            try {
+                // Always use the standard projects endpoint — the backend filters by role automatically
+                // For CLIENT role, the backend returns projects where clientName matches
+                const all = await projectsService.getAll();
+                let projects: {id: string; name: string}[] = all.map((p: any) => ({ id: p.id, name: p.name }));
+
+                // If API returns nothing (e.g. backend filtered too aggressively for this role),
+                // use all projects from store as fallback (store may already have them loaded)
+                if (projects.length === 0 && state.projects.length > 0) {
+                    projects = state.projects.map(p => ({ id: p.id, name: p.name }));
+                }
+
+                setAvailableProjects(projects);
+            } catch {
+                // fallback to store projects
+                setAvailableProjects(state.projects.map(p => ({ id: p.id, name: p.name })));
+            }
+        };
+        load();
+    }, [isOpen, user?.role, state.projects]);
 
     const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
         e?.preventDefault();
@@ -71,6 +99,14 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
                 priority,
                 type: 'SUPPORT',
             };
+
+            if (projectId && projectId !== 'none') {
+                ticketData.projectId = projectId;
+                const project = state.projects.find(p => p.id === projectId);
+                if (project) {
+                    ticketData.projectName = project.name;
+                }
+            }
 
             if (attachedFile) {
                 const uploadResult = await storageService.uploadFile(attachedFile);
@@ -91,6 +127,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
             setTitle('');
             setDescription('');
             setPriority('MEDIUM');
+            setProjectId('none');
             setAttachedFile(null);
         } catch (error: any) {
             console.error('Failed to create ticket:', error);
@@ -134,6 +171,27 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({ isOpen, on
                             className="h-10 border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm text-slate-900"
                             required
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Projet concerné</Label>
+                        <Select value={projectId} onValueChange={setProjectId}>
+                            <SelectTrigger className="h-10 border-emerald-50 bg-emerald-50/10 rounded-xl font-medium focus-visible:ring-emerald-500/20 text-sm text-slate-900">
+                                <SelectValue placeholder="Sélectionnez un projet (optionnel)">
+                                    {projectId === 'none'
+                                        ? 'Général / Autre (Aucun projet)'
+                                        : availableProjects.find(p => p.id === projectId)?.name || 'Sélectionnez un projet (optionnel)'}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-emerald-100">
+                                <SelectItem value="none" className="text-xs font-semibold m-1 text-slate-400">Général / Autre (Aucun projet)</SelectItem>
+                                {availableProjects.map(p => (
+                                    <SelectItem key={p.id} value={p.id} className="text-xs font-semibold m-1 text-slate-700">
+                                        {p.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-3">

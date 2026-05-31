@@ -329,9 +329,23 @@ export const ClientDashboard: React.FC = () => {
         }
     };
 
-    const clientProjects = state.projects;
+    const isAdminOrRh = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'RH';
+
+    const clientProjects = state.projects.filter(p => {
+        if (isAdminOrRh || user?.role === 'CLIENT') return true;
+        const isManager = p.managerId === user?.id;
+        const isMember = p.members?.some(m => m.id === user?.id);
+        return isManager || isMember;
+    });
+
+    const clientTickets = state.tickets.filter(tk => {
+        if (isAdminOrRh || user?.role === 'CLIENT') return true;
+        const projectIds = new Set(clientProjects.map(p => p.id));
+        return projectIds.has(tk.projectId);
+    });
+
     const avgProgress = Math.round(clientProjects.reduce((acc, p) => acc + p.progress, 0) / Math.max(clientProjects.length, 1));
-    const openTickets = state.tickets.filter(t => t.status !== 'CLOSED' && t.status !== 'RESOLVED').length;
+    const openTickets = clientTickets.filter(t => t.status !== 'CLOSED' && t.status !== 'RESOLVED').length;
 
     const stats = [
         { label: t('client.active_projects'), value: clientProjects.length, icon: <Target className="w-5 h-5" />, color: 'bg-emerald-50 text-emerald-600 border border-emerald-100/50' },
@@ -373,12 +387,14 @@ export const ClientDashboard: React.FC = () => {
                             <Printer className="w-4 h-4" /> 
                             {t('client.export_pdf')}
                         </Button>
-                        <Link to="/client-portal/tickets">
-                            <Button className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 border-none">
-                                <Plus className="w-4 h-4" /> 
-                                {t('client.new_ticket')}
-                            </Button>
-                        </Link>
+                        {(isAdminOrRh || user?.role === 'CLIENT') && (
+                            <Link to="/client-portal/tickets">
+                                <Button className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 border-none">
+                                    <Plus className="w-4 h-4" /> 
+                                    {t('client.new_ticket')}
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -501,7 +517,7 @@ export const ClientDashboard: React.FC = () => {
                             </div>
 
                             <div className="space-y-3">
-                                {state.tickets.slice(0, 3).map(ticket => (
+                                {clientTickets.slice(0, 3).map(ticket => (
                                     <Link 
                                         key={ticket.id} 
                                         to="/client-portal/tickets" 
@@ -531,7 +547,7 @@ export const ClientDashboard: React.FC = () => {
                                     </Link>
                                 ))}
 
-                                {state.tickets.length === 0 && (
+                                {clientTickets.length === 0 && (
                                     <div className="py-10 text-center">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aucun ticket actif</p>
                                     </div>

@@ -268,9 +268,20 @@ export const MessagesPage: React.FC = () => {
         }
     };
 
-    const sortedProjects = [...state.projects].filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const isAdminOrRh = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'RH';
+
+    const sortedProjects = [...state.projects].filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+        if (!matchesSearch) return false;
+        
+        if (isAdminOrRh) return true;
+        
+        // For project managers, developers, testers, designers: only if assigned
+        const isManager = p.managerId === user?.id;
+        const isMember = p.members?.some(m => m.id === user?.id);
+        
+        return isManager || isMember;
+    });
 
     return (
         <AppLayout title={t('messages.internal_messaging')} subtitle={t('messages.collaborative_platform')}>
@@ -943,37 +954,39 @@ export const MessagesPage: React.FC = () => {
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                                                 {t('messages.members_count', { count: selectedProject.members?.length || 0 })}
                                                             </span>
-                                                            <Popover open={isInviting} onOpenChange={setIsInviting}>
-                                                                <PopoverTrigger className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest px-3 flex items-center shadow-lg shadow-indigo-600/20 transition-all active:scale-95 border-none cursor-pointer">
-                                                                    <UserPlus className="w-3 h-3 mr-2" />
-                                                                    {t('messages.invite')}
-                                                                </PopoverTrigger>
-                                                                <PopoverContent align="end" className="w-[280px] p-2 rounded-2xl shadow-2xl border-slate-100">
-                                                                    <div className="p-2 mb-2 border-b border-slate-50">
-                                                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('messages.search_user')}</span>
-                                                                    </div>
-                                                                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                                                                        {allUsers
-                                                                            .filter(u => !selectedProject.members?.some(m => m.id === u.id))
-                                                                            .map(u => (
-                                                                                <button
-                                                                                    key={u.id}
-                                                                                    onClick={() => handleAddMember(u.id)}
-                                                                                    className="w-full flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl transition-all group"
-                                                                                >
-                                                                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-[10px]">
-                                                                                        {u.fullName.substring(0, 2).toUpperCase()}
-                                                                                    </div>
-                                                                                    <div className="flex-1 text-left">
-                                                                                        <p className="text-[11px] font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{u.fullName}</p>
-                                                                                        <p className="text-[9px] text-slate-400 uppercase tracking-widest">{u.role || 'Utilisateur'}</p>
-                                                                                    </div>
-                                                                                    <Plus className="w-3 h-3 text-slate-300 group-hover:text-indigo-500" />
-                                                                                </button>
-                                                                            ))}
-                                                                    </div>
-                                                                </PopoverContent>
-                                                            </Popover>
+                                                            {(user?.role === 'PROJECT_MANAGER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'RH') && (
+                                                                <Popover open={isInviting} onOpenChange={setIsInviting}>
+                                                                    <PopoverTrigger className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest px-3 flex items-center shadow-lg shadow-indigo-600/20 transition-all active:scale-95 border-none cursor-pointer">
+                                                                        <UserPlus className="w-3 h-3 mr-2" />
+                                                                        {t('messages.invite')}
+                                                                    </PopoverTrigger>
+                                                                    <PopoverContent align="end" className="w-[280px] p-2 rounded-2xl shadow-2xl border-slate-100">
+                                                                        <div className="p-2 mb-2 border-b border-slate-50">
+                                                                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('messages.search_user')}</span>
+                                                                        </div>
+                                                                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                                            {allUsers
+                                                                                .filter(u => !selectedProject.members?.some(m => m.id === u.id))
+                                                                                .map(u => (
+                                                                                    <button
+                                                                                        key={u.id}
+                                                                                        onClick={() => handleAddMember(u.id)}
+                                                                                        className="w-full flex items-center gap-3 p-2 hover:bg-slate-50 rounded-xl transition-all group"
+                                                                                    >
+                                                                                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-[10px]">
+                                                                                            {u.fullName.substring(0, 2).toUpperCase()}
+                                                                                        </div>
+                                                                                        <div className="flex-1 text-left">
+                                                                                            <p className="text-[11px] font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{u.fullName}</p>
+                                                                                            <p className="text-[9px] text-slate-400 uppercase tracking-widest">{u.role || 'Utilisateur'}</p>
+                                                                                        </div>
+                                                                                        <Plus className="w-3 h-3 text-slate-300 group-hover:text-indigo-500" />
+                                                                                    </button>
+                                                                                ))}
+                                                                        </div>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            )}
                                                         </div>
 
                                                         <div className="space-y-1">

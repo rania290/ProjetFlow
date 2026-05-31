@@ -28,7 +28,7 @@ interface NavItem {
 }
 
 export const RoleBasedNavigation: React.FC = () => {
-  const { hasPermission } = usePermissions();
+  const { hasPermission, userRole } = usePermissions();
   const location = useLocation();
 
   const navigationItems: NavItem[] = [
@@ -66,7 +66,8 @@ export const RoleBasedNavigation: React.FC = () => {
       name: 'Reporting & Analytics',
       href: '/analytics',
       icon: BarChart3,
-      requiredPermission: 'READ_ANALYTICS'
+      requiredPermission: 'READ_ANALYTICS',
+      requiredRole: ['ADMIN', 'SUPER_ADMIN', 'HR_ADMIN', 'RH']
     },
     {
       name: 'Tickets',
@@ -97,17 +98,18 @@ export const RoleBasedNavigation: React.FC = () => {
     }
   ];
 
-  // Filtrer les éléments de navigation selon les permissions
+  // Filtrer les éléments de navigation selon les permissions et rôles
   const filteredNavItems = navigationItems.filter(item => {
-    // Si l'élément nécessite une permission spécifique
-    if (item.requiredPermission) {
-      return hasPermission(item.requiredPermission);
-    }
-    
     // Si l'élément nécessite un rôle spécifique
     if (item.requiredRole) {
       const roles = Array.isArray(item.requiredRole) ? item.requiredRole : [item.requiredRole];
-      return roles.some(role => hasPermission(`ROLE_${role}`));
+      const hasRequiredRole = userRole && roles.includes(userRole);
+      if (!hasRequiredRole) return false;
+    }
+
+    // Si l'élément nécessite une permission spécifique
+    if (item.requiredPermission) {
+      return hasPermission(item.requiredPermission);
     }
     
     return true;
@@ -169,7 +171,7 @@ export const RoleBasedNavigation: React.FC = () => {
 
 // Composant pour afficher les actions rapides selon le rôle
 export const RoleBasedQuickActions: React.FC = () => {
-  const { hasPermission } = usePermissions();
+  const { hasPermission, userRole } = usePermissions();
 
   const quickActions = [
     {
@@ -205,13 +207,20 @@ export const RoleBasedQuickActions: React.FC = () => {
       icon: BarChart3,
       href: '/analytics',
       permission: 'READ_ANALYTICS',
+      requiredRole: ['ADMIN', 'SUPER_ADMIN', 'HR_ADMIN', 'RH'],
       color: 'bg-indigo-500 hover:bg-indigo-600'
     }
   ];
 
-  const availableActions = quickActions.filter(action => 
-    !action.permission || hasPermission(action.permission)
-  );
+  const availableActions = quickActions.filter(action => {
+    // Si l'action nécessite un rôle spécifique
+    if (action.requiredRole) {
+      if (!userRole || !action.requiredRole.includes(userRole)) {
+        return false;
+      }
+    }
+    return !action.permission || hasPermission(action.permission);
+  });
 
   if (availableActions.length === 0) {
     return null;

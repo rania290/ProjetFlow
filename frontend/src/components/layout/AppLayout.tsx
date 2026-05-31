@@ -56,7 +56,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
         { id: 'team', label: t('common.team'), icon: <Users className="w-4 h-4" />, path: '/team' },
         { id: 'documents', label: t('common.documents'), icon: <FileText className="w-4 h-4" />, path: '/documents' },
         { id: 'messages', label: t('common.messages'), icon: <MessageSquare className="w-4 h-4" />, path: '/messages' },
-        { id: 'analytics', label: t('common.reporting'), icon: <TrendingUp className="w-4 h-4" />, path: '/analytics', roles: ['PROJECT_MANAGER', 'MANAGER', 'ADMIN', 'SUPER_ADMIN', 'RH', 'HR_ADMIN'] },
+        { id: 'analytics', label: t('common.reporting'), icon: <TrendingUp className="w-4 h-4" />, path: '/analytics', roles: ['ADMIN', 'SUPER_ADMIN', 'RH', 'HR_ADMIN'] },
         { id: 'client-portal', label: t('common.client_portal'), icon: <Circle className="w-4 h-4 text-emerald-500" />, path: '/client-portal', roles: ['ADMIN', 'SUPER_ADMIN', 'PROJECT_MANAGER', 'MANAGER', 'CLIENT'] },
         { id: 'hr', label: t('common.hr'), icon: <HeartPulse className="w-4 h-4" />, path: '/hr' },
         { id: 'calendar', label: t('common.calendar'), icon: <Calendar className="w-4 h-4" />, path: '/calendar' },
@@ -109,6 +109,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
     const isAdmin = location.pathname.startsWith('/admin');
     const isClientPortal = location.pathname.startsWith('/client-portal');
     const isHRPortal = location.pathname.startsWith('/hr');
+    const canSeeReporting = user?.role && ['ADMIN', 'SUPER_ADMIN', 'HR_ADMIN', 'RH'].includes(user.role);
 
     React.useEffect(() => {
         if (user?.id) {
@@ -466,7 +467,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                         )}
                     </div>
                     <div className="flex items-center gap-1.5">
-                        {!isClient && (
+                        {canSeeReporting && (
                             <Link to="/analytics">
                                 <button className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
                                     <TrendingUp className="w-4 h-4" />

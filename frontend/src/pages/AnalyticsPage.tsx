@@ -43,8 +43,8 @@ export const AnalyticsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [selectedSprintId, setSelectedSprintId] = useState<string>('');
 
-    // Check authorization - only PROJECT_MANAGER, RH, and ADMIN can access analytics
-    const isAuthorized = user?.role === 'PROJECT_MANAGER' || user?.role === 'RH' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
+    // Check authorization - only RH and ADMIN can access analytics
+    const isAuthorized = user?.role === 'RH' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
 
     if (!isAuthorized) {
         return (
@@ -52,7 +52,7 @@ export const AnalyticsPage: React.FC = () => {
                 <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                     <Lock className="w-16 h-16 text-red-400" />
                     <h2 className="text-2xl font-bold text-slate-900">{t('common.access_denied', { defaultValue: 'Accès refusé' })}</h2>
-                    <p className="text-slate-500">{t('analytics.requires_permission', { defaultValue: 'Vous devez être Chef de Projet, RH ou Admin pour accéder à cette page.' })}</p>
+                    <p className="text-slate-500">{t('analytics.requires_permission_rh_admin', { defaultValue: 'Vous devez être RH ou Admin pour accéder à cette page.' })}</p>
                 </div>
             </AppLayout>
         );

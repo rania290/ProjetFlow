@@ -84,15 +84,31 @@ export const ClientTicketsPage: React.FC = () => {
 
     // Use the tickets returned by the backend for the client.
     const isClientRole = user?.role?.toUpperCase() === 'CLIENT';
-    const ownTickets = isClientRole
-        ? state.tickets.filter(tk =>
-            tk.clientEmail === user?.email ||
-            tk.requesterEmail === user?.email ||
-            tk.createdBy === user?.email ||
-            tk.reporterEmail === user?.email ||
-            (tk as any).authorEmail === user?.email
-          )
-        : state.tickets;
+    const isAdminOrRh = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'RH';
+
+    const ownTickets = React.useMemo(() => {
+        if (isClientRole) {
+            return state.tickets.filter(tk =>
+                tk.clientEmail === user?.email ||
+                tk.requesterEmail === user?.email ||
+                tk.createdBy === user?.email ||
+                tk.reporterEmail === user?.email ||
+                (tk as any).authorEmail === user?.email
+            );
+        }
+        if (isAdminOrRh) {
+            return state.tickets;
+        }
+
+        const assignedProjects = state.projects.filter(p => {
+            const isManager = p.managerId === user?.id;
+            const isMember = p.members?.some(m => m.id === user?.id);
+            return isManager || isMember;
+        });
+        const assignedProjectIds = new Set(assignedProjects.map(p => p.id));
+
+        return state.tickets.filter(tk => assignedProjectIds.has(tk.projectId));
+    }, [state.tickets, state.projects, user, isClientRole, isAdminOrRh]);
     const selectedTicket = ownTickets.find(t => t.id === selectedTicketId);
 
     const filteredTickets = ownTickets.filter(t => {
@@ -180,13 +196,15 @@ export const ClientTicketsPage: React.FC = () => {
                                     className="pl-9 h-10 border-slate-100 bg-slate-50/50 rounded-xl text-sm focus-visible:ring-emerald-500/10 placeholder:text-slate-400"
                                 />
                             </div>
-                            <Button
-                                onClick={() => setIsModalOpen(true)}
-                                size="icon"
-                                className="h-10 w-10 bg-emerald-600 hover:bg-black text-white rounded-xl shadow-lg shadow-emerald-500/15 flex-shrink-0 transition-all"
-                            >
-                                <Plus className="w-5 h-5" />
-                            </Button>
+                            {(isAdminOrRh || isClientRole) && (
+                                <Button
+                                    onClick={() => setIsModalOpen(true)}
+                                    size="icon"
+                                    className="h-10 w-10 bg-emerald-600 hover:bg-black text-white rounded-xl shadow-lg shadow-emerald-500/15 flex-shrink-0 transition-all"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </Button>
+                            )}
                         </div>
                         
                         {!isClientRole && (

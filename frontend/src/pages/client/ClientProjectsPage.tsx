@@ -5,6 +5,7 @@ import {
     Calendar, Users, ArrowUpRight, Target, Search, ListFilter
 } from 'lucide-react';
 import { useStore } from '../../store/projectStore';
+import { useAuth } from '../../hooks/useAuth';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { ProjectDetailsModal } from '../../components/client/ProjectDetailsModal';
 import type { Project } from '../../types/project.types';
@@ -17,7 +18,15 @@ import { Progress } from "@/components/ui/progress";
 export const ClientProjectsPage: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { state } = useStore();
-    const projects = state.projects;
+    const { user } = useAuth();
+    const isAdminOrRh = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'RH';
+    
+    const projects = state.projects.filter(p => {
+        if (isAdminOrRh || user?.role === 'CLIENT') return true;
+        const isManager = p.managerId === user?.id;
+        const isMember = p.members?.some(m => m.id === user?.id);
+        return isManager || isMember;
+    });
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
