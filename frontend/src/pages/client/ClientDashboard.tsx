@@ -4,7 +4,7 @@ import {
     TrendingUp,
     CheckCircle2, Target, Printer,
     ArrowRight, MessageSquare, FileText, Plus,
-    Sparkles, ArrowUpRight, Ticket, HeadphonesIcon, Send, Clock, AlertCircle
+    ArrowUpRight, Ticket, HeadphonesIcon, Send, Clock, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../../store/projectStore';
@@ -27,7 +27,6 @@ const ClientWelcomePortal: React.FC = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
     const { state, dispatch } = useStore();
-    const { toggleOpen } = useAuraStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     React.useEffect(() => {
@@ -146,45 +145,7 @@ const ClientWelcomePortal: React.FC = () => {
                             </div>
                         </motion.div>
 
-                        {/* Aura IA Assistant Card */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.35, duration: 0.45 }}
-                            className="bg-slate-900 rounded-3xl border border-slate-800 shadow-lg shadow-slate-900/30 p-6 mb-6 text-white"
-                        >
-                            <div className="flex items-start gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center flex-shrink-0">
-                                    <Sparkles className="w-6 h-6 text-indigo-300" />
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                    <h2 className="text-base font-bold tracking-tight">
-                                        {t('client.aura_client_title')}
-                                    </h2>
-                                    <p className="text-sm text-slate-200 leading-relaxed">
-                                        {t('client.aura_client_desc')}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2 text-[11px] text-slate-300">
-                                        <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                            {t('client.aura_tag_ticket_summary')}
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                            {t('client.aura_tag_simple_explanations')}
-                                        </span>
-                                        <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-                                            {t('client.aura_tag_available_247')}
-                                        </span>
-                                    </div>
-                                    <Button
-                                        onClick={toggleOpen}
-                                        className="mt-3 h-10 px-5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-500/30 flex items-center gap-2"
-                                    >
-                                        <Sparkles className="w-4 h-4" />
-                                        {t('client.open_aura_ia')}
-                                    </Button>
-                                </div>
-                            </div>
-                        </motion.div>
+
 
                         {/* Recent tickets summary */}
                         <motion.div

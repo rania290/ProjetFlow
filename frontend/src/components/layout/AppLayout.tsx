@@ -76,7 +76,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
     const isClient = user?.role === 'CLIENT';
     const CLIENT_NAV_ITEMS = isClient ? [
         { id: 'client-tickets', label: t('client.tickets_title'), icon: <Ticket className="w-4 h-4" />, path: '/client-portal/tickets' },
-        { id: 'client-aura', label: t('common.aura_ai'), icon: <Sparkles className="w-4 h-4 text-indigo-400" />, onClick: true },
     ] : [
         { id: 'client-dash', label: t('common.dashboard'), icon: <LayoutDashboard className="w-4 h-4" />, path: '/client-portal' },
         { id: 'client-projects', label: t('common.my_projects'), icon: <FolderKanban className="w-4 h-4" />, path: '/client-portal/projects' },
@@ -495,7 +494,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, title, subtitle 
                 <main className="flex-1 overflow-y-auto p-0">
                     {children}
                 </main>
-                <AuraChatPanel />
+                {!isClient && <AuraChatPanel />}
             </div>
             <Toaster position="bottom-right" />
         </div>
