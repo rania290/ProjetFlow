@@ -365,7 +365,7 @@ export const useChartData = () => {
     labels: ['VAERDIA Website', 'Mobile App V2', 'API Integration'],
     datasets: [
       {
-        label: 'Budget (€)',
+        label: 'Budget (DT)',
         data: [25000, 30000, 15000],
         backgroundColor: 'rgba(52, 152, 219, 0.8)',
         borderColor: 'rgba(52, 152, 219, 1)',
@@ -373,7 +373,7 @@ export const useChartData = () => {
         borderRadius: 6
       },
       {
-        label: 'Dépensé (€)',
+        label: 'Dépensé (DT)',
         data: [16250, 8000, 12000],
         backgroundColor: 'rgba(231, 76, 60, 0.8)',
         borderColor: 'rgba(231, 76, 60, 1)',
@@ -381,7 +381,7 @@ export const useChartData = () => {
         borderRadius: 6
       },
       {
-        label: 'Restant (€)',
+        label: 'Restant (DT)',
         data: [8750, 22000, 3000],
         backgroundColor: 'rgba(39, 174, 96, 0.8)',
         borderColor: 'rgba(39, 174, 96, 1)',
@@ -395,7 +395,7 @@ export const useChartData = () => {
     labels: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
     datasets: [
       {
-        label: 'Dépenses Mensuelles (€)',
+        label: 'Dépenses Mensuelles (DT)',
         data: [8000, 12000, 9500, 11000, 16250, 14000, 13000, 15500, 16000, 18000, 17500, 19000],
         backgroundColor: 'rgba(231, 76, 60, 0.8)',
         borderColor: 'rgba(231, 76, 60, 1)',
