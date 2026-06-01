@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import type { Sprint, Task } from '@/types/project.types';
+import { useAuth } from '../../hooks/useAuth';
 
 interface SprintReportModalProps {
     isOpen: boolean;
@@ -25,6 +26,18 @@ export const SprintReportModal: React.FC<SprintReportModalProps> = ({
 }) => {
     // CRITICAL GUARD: Component must not render if sprint is null
     if (!sprint) return null;
+
+    const { user } = useAuth();
+    const canExport = 
+      user?.role === 'ADMIN' || 
+      user?.role === 'SUPER_ADMIN' || 
+      user?.role === 'ROOT' || 
+      user?.role === 'RH' || 
+      user?.role === 'HR_ADMIN' || 
+      user?.role === 'PROJECT_MANAGER' || 
+      user?.role === 'MANAGER' ||
+      user?.role === 'CHEF' ||
+      user?.role === 'CHEF DE PROJET';
 
     const isClosing = sprint.status === 'ACTIVE';
     const safeTasks = tasks || [];
@@ -163,15 +176,17 @@ export const SprintReportModal: React.FC<SprintReportModalProps> = ({
                     <Button variant="ghost" onClick={onClose} className="h-10 px-6 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
                         Retour
                     </Button>
-                    <Button 
-                        onClick={isClosing ? () => onConfirmClose?.(sprint.id) : handleExportPdf}
-                        className={`h-11 px-8 rounded-xl text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-lg flex items-center gap-2.5 transition-all active:scale-95 ${
-                            isClosing ? "bg-indigo-600 hover:bg-black shadow-indigo-500/20" : "bg-slate-900 hover:bg-black shadow-slate-900/10"
-                        }`}
-                    >
-                        {isClosing ? <Archive className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                        {isClosing ? "Valider la clôture" : "Exporter le rapport"}
-                    </Button>
+                    {(!isClosing ? canExport : true) && (
+                        <Button 
+                            onClick={isClosing ? () => onConfirmClose?.(sprint.id) : handleExportPdf}
+                            className={`h-11 px-8 rounded-xl text-white font-black text-[11px] uppercase tracking-[0.1em] shadow-lg flex items-center gap-2.5 transition-all active:scale-95 ${
+                                isClosing ? "bg-indigo-600 hover:bg-black shadow-indigo-500/20" : "bg-slate-900 hover:bg-black shadow-slate-900/10"
+                            }`}
+                        >
+                            {isClosing ? <Archive className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                            {isClosing ? "Valider la clôture" : "Exporter le rapport"}
+                        </Button>
+                    )}
                 </DialogFooter>
 
 

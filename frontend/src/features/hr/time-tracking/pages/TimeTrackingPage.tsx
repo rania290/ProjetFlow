@@ -18,6 +18,16 @@ import { ConfirmDialog } from '../../../../components/ui/ConfirmDialog';
 export const TimeTrackingPage: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR_ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'SUPERADMIN';
+  const canExport = 
+    user?.role === 'ADMIN' || 
+    user?.role === 'SUPER_ADMIN' || 
+    user?.role === 'ROOT' || 
+    user?.role === 'RH' || 
+    user?.role === 'HR_ADMIN' || 
+    user?.role === 'PROJECT_MANAGER' || 
+    user?.role === 'MANAGER' ||
+    user?.role === 'CHEF' ||
+    user?.role === 'CHEF DE PROJET';
   const { state: { projects } } = useStore();
   
   const { history: personalHistory } = useTimeTracking(user?.id);
@@ -189,7 +199,7 @@ export const TimeTrackingPage: React.FC = () => {
               <p className="text-slate-400 text-xs font-black uppercase tracking-widest mt-1">Espace de gestion du temps VAERDIA</p>
             </div>
           </div>
-          {isAdmin && (
+          {canExport && (
               <div className="flex gap-2">
                   <Button variant="outline" onClick={handleExportCSV} className="h-10 border-slate-200 text-xs font-black uppercase tracking-widest text-slate-600 rounded-xl">
                       <Download className="w-4 h-4 mr-2" /> Exporter CSV

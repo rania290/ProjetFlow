@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Download, Share2, Sparkles, X, FileText, Copy } from 'lucide-react';
 import { Button } from '../ui/button';
 import { jsPDF } from 'jspdf';
+import { useAuth } from '../../hooks/useAuth';
 
 interface AuraReportViewProps {
   report: {
@@ -17,6 +18,18 @@ interface AuraReportViewProps {
 }
 
 export const AuraReportView: React.FC<AuraReportViewProps> = ({ report, onClose }) => {
+  const { user } = useAuth();
+  const canExport = 
+    user?.role === 'ADMIN' || 
+    user?.role === 'SUPER_ADMIN' || 
+    user?.role === 'ROOT' || 
+    user?.role === 'RH' || 
+    user?.role === 'HR_ADMIN' || 
+    user?.role === 'PROJECT_MANAGER' || 
+    user?.role === 'MANAGER' ||
+    user?.role === 'CHEF' ||
+    user?.role === 'CHEF DE PROJET';
+
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
     const date = new Date(report.created_at).toLocaleDateString('fr-FR');
@@ -136,12 +149,14 @@ export const AuraReportView: React.FC<AuraReportViewProps> = ({ report, onClose 
         >
           <Copy className="w-4 h-4 mr-2" /> Copier
         </Button>
-        <Button 
-          onClick={handleDownloadPDF}
-          className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium text-[13px] h-10 px-6 shadow-sm transition-all"
-        >
-          <Download className="w-4 h-4 mr-2" /> Télécharger PDF
-        </Button>
+        {canExport && (
+          <Button 
+            onClick={handleDownloadPDF}
+            className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium text-[13px] h-10 px-6 shadow-sm transition-all"
+          >
+            <Download className="w-4 h-4 mr-2" /> Télécharger PDF
+          </Button>
+        )}
       </div>
     </motion.div>
   );

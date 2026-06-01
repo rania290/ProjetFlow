@@ -217,6 +217,17 @@ export const ClientDashboard: React.FC = () => {
         return <ClientWelcomePortal />;
     }
 
+    const canExport = 
+      user?.role === 'ADMIN' || 
+      user?.role === 'SUPER_ADMIN' || 
+      user?.role === 'ROOT' || 
+      user?.role === 'RH' || 
+      user?.role === 'HR_ADMIN' || 
+      user?.role === 'PROJECT_MANAGER' || 
+      user?.role === 'MANAGER' ||
+      user?.role === 'CHEF' ||
+      user?.role === 'CHEF DE PROJET';
+
     const [notification, setNotification] = useState<string | null>(null);
 
     const showNotification = (msg: string) => {
@@ -340,14 +351,16 @@ export const ClientDashboard: React.FC = () => {
                     </h1>
 
                     <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={handleExportReport}
-                            className="h-10 px-5 rounded-xl font-bold text-xs bg-white border-slate-200 hover:bg-slate-50 text-slate-600 transition-all flex items-center gap-2 shadow-sm"
-                        >
-                            <Printer className="w-4 h-4" /> 
-                            {t('client.export_pdf')}
-                        </Button>
+                        {canExport && (
+                            <Button
+                                variant="outline"
+                                onClick={handleExportReport}
+                                className="h-10 px-5 rounded-xl font-bold text-xs bg-white border-slate-200 hover:bg-slate-50 text-slate-600 transition-all flex items-center gap-2 shadow-sm"
+                            >
+                                <Printer className="w-4 h-4" /> 
+                                {t('client.export_pdf')}
+                            </Button>
+                        )}
                         {(isAdminOrRh || user?.role === 'CLIENT') && (
                             <Link to="/client-portal/tickets">
                                 <Button className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 border-none">

@@ -43,6 +43,17 @@ export const AnalyticsPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [selectedSprintId, setSelectedSprintId] = useState<string>('');
 
+    const canExport = 
+      user?.role === 'ADMIN' || 
+      user?.role === 'SUPER_ADMIN' || 
+      user?.role === 'ROOT' || 
+      user?.role === 'RH' || 
+      user?.role === 'HR_ADMIN' || 
+      user?.role === 'PROJECT_MANAGER' || 
+      user?.role === 'MANAGER' ||
+      user?.role === 'CHEF' ||
+      user?.role === 'CHEF DE PROJET';
+
     // Check authorization - only RH and ADMIN can access analytics
     const isAuthorized = user?.role === 'RH' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' || user?.role === 'HR_ADMIN';
 
@@ -275,9 +286,11 @@ export const AnalyticsPage: React.FC = () => {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={handleExportPDF} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition-colors shadow-sm print:hidden">
-                            <Printer className="w-3.5 h-3.5" /> {t('analytics.export_pdf')}
-                        </button>
+                        {canExport && (
+                            <button onClick={handleExportPDF} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold transition-colors shadow-sm print:hidden">
+                                <Printer className="w-3.5 h-3.5" /> {t('analytics.export_pdf')}
+                            </button>
+                        )}
                     </div>
                 </div>
 
